@@ -30,7 +30,7 @@ import path from 'node:path'
 import crypto from 'node:crypto'
 import { restrictPermissions } from './open-external.js'
 
-const REPO = 'Ebony-Vinyl/dsh-our-free-model'
+const REPO = 'liuleiyu121520/dsh-our-free-model'
 /** This package's own name, as a package manager records it in the profile. */
 const PACKAGE_NAME = 'dsh-our-free-model'
 
@@ -73,11 +73,25 @@ export const DEFAULT_MANIFEST_SOURCES = [
  * deliberately not in this repository, because a trust root committed beside
  * the code it authenticates authenticates nothing.
  *
+ * ⚠️ **This is a personal fork: the key is the fork's own, not upstream's.**
+ * The fork republishes under `liuleiyu121520/dsh-our-free-model` (see
+ * {@link REPO}) so that upstream releases — which **remove** the WorkBuddy CN /
+ * international and Huawei Cloud channels, and whose content-level风控 fix the
+ * fork carries — cannot overwrite the restored build. Changing `REPO` without
+ * changing this key would leave the fork's manifests unverifiable (fail-closed:
+ * `apply()` refuses an unsigned or foreign-signed manifest), and keeping
+ * upstream's key would mean trusting a key whose private half the fork does
+ * not hold. The keypair was generated 2026-11-01; the private half lives
+ * outside the repository (owner-only) and must be backed up — losing it makes
+ * new releases uninstallable by this same check. Manifests published **before**
+ * the switch are signed with upstream's key and are no longer accepted by this
+ * build; that is intended (they describe a tree without the restored channels).
+ *
  * The sha256 per file pins content, but those hashes travel inside the manifest
  * itself — whoever forges the manifest forges the hashes. This key is the step
  * the forger cannot take.
  */
-export const PINNED_MANIFEST_PUBLIC_KEY = 'MCowBQYDK2VwAyEAeLdSVwYFyazc2PIBC0oLsvo4LghGEQz9iXIl3CqRuXI='
+export const PINNED_MANIFEST_PUBLIC_KEY = 'MCowBQYDK2VwAyEAN0qQxp49zpJ7qJfPf6w2abFq1T46pGKNBGRCCQqgfm8='
 
 /** The manifest fields a signature covers, in canonical (sorted-key) JSON. */
 const SIGNED_FIELDS = ['version', 'base', 'publishedAt', 'notes', 'files', 'minSupported']

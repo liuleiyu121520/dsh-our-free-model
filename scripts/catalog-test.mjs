@@ -96,7 +96,10 @@ if (manifest.artifact !== undefined) {
 }
 
 const source = manifest.source ?? {}
-check('source repository is the plugin repository', source.repository, `https://github.com/Ebony-Vinyl/${pkg.name}`)
+// Fork identity: the catalog's source repository is the fork that publishes
+// this build (the same repo the in-app updater reads). See the note on
+// PINNED_MANIFEST_PUBLIC_KEY in src/updater.js for why this fork republishes.
+check('source repository is the plugin repository', source.repository, `https://github.com/liuleiyu121520/${pkg.name}`)
 check('source revision is a full commit sha', /^[0-9a-f]{40}$/.test(source.revision ?? ''), true)
 // The revision names the most recent commit that touched the release content —
 // package.json plus everything in the `files` list, exactly the set the
