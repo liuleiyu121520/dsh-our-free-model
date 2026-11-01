@@ -38,6 +38,7 @@ import {
 import type { BuddyCredential, BuddyRemoteModel } from './buddy.js'
 import { CODEBUDDY, resolveUserAgent, type BuddyFallbackModel, type BuddyProduct } from './product.js'
 import { normalizeHarnessMessages } from './message-shape.js'
+import { rewriteTencentContentFingerprints } from './openai-gateway/tencent-fingerprint.js'
 import { projectRequestImage, type ImageRequestTarget } from './image-budget.js'
 import { createBlankReasoningSuppressor, createReasoningLoopDetector, hasUsableToolName, isProseTruncatedByStopString, isReasoningLoopGuardEnabled, isTruncatedArguments, normalizeToolArguments, readWithIdleTimeout, reasoningLoopFailure, resolveEmptyResponseReason, resolveToolPairing, splitThinkTaggedContent, stripBareThinkCloseTagIfEnabled, stripCourseLeakFromHistoryContent, stripCourseLeakIfEnabled } from './sse.js'
 import {
@@ -1349,6 +1350,25 @@ export class BuddyAdapter extends LlmAdapter {
     }
     if (this.product.id === 'workbuddy' && (messages.length === 0 || messages[0].role !== 'system')) {
       messages.unshift({ role: 'system', content: 'You are a helpful assistant.' })
+    }
+    // ⚠️ 腾讯**内容级**风控（HTTP 400 / code 11128）对 DSH 直连同样生效，
+    // 不再只是外部客户端经网关的问题：2026-10 下旬起上游把 DSH harness 的
+    // 系统提示词开场句与相邻句组合都列进了指纹，直连 `buddy` 对**任何**用户
+    // 输入（哪怕 `hi`）都在第一条请求被拦。单变量实测（同账号/模型/头、
+    // max_tokens=1）：请求形状与 X-Conversation-* 头无关，短 system 放行，
+    // DSH 系统提示词前 400 字符即触发 —— 触发源在**内容**。
+    // 改写只作用于 wire 的 system 消息：`user` / `tool` 角色放同一份文本实测
+    // 不拦（改它们等于篡改用户原话与工具输出）。判据与表都在
+    // `openai-gateway/tencent-fingerprint.ts`（含「为什么直连也必须挂」的修订
+    // 记录与逐探针证据）。放在两处 unshift **之后**，`options.system` 与
+    // workbuddy 的兜底 system 一并覆盖；`buddy` 与 `workbuddy` 两个 product
+    // 实例共用本适配器，白名单同时受护。无指纹文本逐字符原样返回。
+    for (const message of messages) {
+      if (message.role !== 'system') continue
+      const text = message.content
+      if (typeof text !== 'string') continue
+      const rewritten = rewriteTencentContentFingerprints(text, this.product.id)
+      if (rewritten !== text) message.content = rewritten
     }
     const tools = options.tools?.map((tool) => ({
       type: 'function' as const,

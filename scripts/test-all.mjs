@@ -108,6 +108,7 @@ const suites = [
   ['effort', 'effort-test.mjs', []],
   ['projection', 'projection-test.mjs', []],
   ['fingerprint', 'fingerprint-test.mjs', []],
+  ['tencent-fingerprint', 'tencent-fingerprint-test.mjs', []],
   ['wire-tool-alias', 'wire-tool-alias-test.mjs', []],
   ['opencode-parity', 'opencode-parity-test.mjs', []],
   ['free-lane-wire', 'free-lane-wire-test.mjs', []],
