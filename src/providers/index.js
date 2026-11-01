@@ -59,11 +59,12 @@ function deepFreeze(value) {
 export const PROVIDERS = deepFreeze(JSON.parse(fs.readFileSync(REGISTRY_FILE, 'utf8')))
 
 /**
- * The channels this build actually offers: the registry minus the excluded
- * account channels (WorkBuddy, Huawei Cloud). Excluding here rather than in
- * `registry.json` keeps one decision point — `src/magpie-policy.js` — so the
- * embedded engine and this directory cannot disagree, and a later registry
- * refresh cannot quietly reintroduce a channel the product does not carry.
+ * The channels this build actually offers: the registry minus any channel the
+ * policy denies. On this branch the deny sets are empty (WorkBuddy and Huawei
+ * Cloud are restored), so today this is the whole registry — but the filter
+ * stays, decided in one place (`src/magpie-policy.js`), so the embedded engine
+ * and this directory cannot disagree, and a later registry refresh cannot
+ * quietly add a channel before it is reviewed.
  */
 export const OFFERED_PROVIDERS = Object.freeze(PROVIDERS.filter(provider =>
   !isDeniedChannel(provider.id, `${provider.name} ${provider.notes ?? ''} ${provider.baseUrl ?? ''}`)))

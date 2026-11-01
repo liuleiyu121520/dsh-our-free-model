@@ -96,8 +96,8 @@ try {
     await page.getByLabel('搜索渠道').waitFor()
     assert.equal(await page.getByRole('heading', { name: 'EAC router', exact: true }).count(), 1)
     const names = await page.locator('.channel-directory-row h2, .provider-card h2').allTextContents()
-    assert.ok(names.length >= 10)
-    assert.equal(names.some(name => /CodeBuddy|WorkBuddy/i.test(name)), false)
+    assert.ok(names.length >= 13)
+    assert.ok(names.some(name => /WorkBuddy/i.test(name)), 'the restored WorkBuddy cards show')
     await page.screenshot({ path: path.join(outputDir, 'eac-router-desktop.png'), fullPage: true })
   })
   await check('resource editor and saved client profiles persist through real management APIs', async () => {

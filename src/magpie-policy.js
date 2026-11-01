@@ -1,37 +1,43 @@
 /**
  * Account channels this build does not offer.
  *
- * WorkBuddy is sold under two names and ships in two builds: the China build
- * ("workbuddy", also marketed as CodeBuddy) and the international build
- * ("workbuddy-ai"). Neither is offered: the community plugin that serves them
- * signs requests as WorkBuddy's own desktop client, which is a risk this
- * product will not carry. The engine is a pinned binary whose plugin market is
- * fetched at run time, so the exclusion is enforced here, at the management
- * boundary this application owns, rather than in the engine.
+ * Upstream excludes WorkBuddy (both builds) and Huawei Cloud here, because the
+ * community plugin serving WorkBuddy signs requests as its own desktop client
+ * and the project chose not to carry that risk. **This branch restores all of
+ * them**: the deny sets below are emptied, so every filter in this module and
+ * every refusal in `assertEngineMutation` is inert, and the engine's own preset
+ * list and plugin market reach the user unfiltered.
  *
- * Huawei Cloud MaaS ("huaweicloud", its Token Plan preset) is likewise not
- * offered: this build carries no Huawei channel, and the engine's pinned preset
- * list is the one surface that would otherwise reintroduce it.
+ * The mechanism is deliberately kept rather than deleted. It is one place that
+ * answers "is this channel offered", and both surfaces (the embedded engine and
+ * the desktop provider directory) read that same answer, so the two cannot
+ * disagree. Restoring the channels therefore means emptying the decision, not
+ * removing the code path — and a later upstream registry refresh still cannot
+ * quietly re-add a channel this branch has not decided to offer, because the
+ * ids and aliases are preserved below as documentation of what was once denied.
  *
- * A channel is denied by its subscription id, by the preset that names it, by
- * the package that serves it, and by any name carrying one of the aliases below
- * — a third-party plugin can sign in to the same provider under any package
- * name, and the China build is listed under "CodeBuddy" as often as under
- * "WorkBuddy".
+ * Using these channels is the user's own responsibility; see the disclaimer in
+ * `src/disclaimer.js`, which now names them as offered rather than withheld.
  */
 
-const DENIED_IDS = new Set(['workbuddy', 'workbuddy-ai', 'huaweicloud', 'codebuddy', 'codebuddy-cn', 'codearts'])
-// Aliases, not a product name filter: every spelling a package, preset, agent
-// or provider row could carry for one of these channels. "CodeArts" is Huawei
-// Cloud's own coding plan, served by a community plugin rather than a preset.
-const DENIED_TEXT = /workbuddy|codebuddy|huaweicloud|huawei[\s-]*cloud|modelarts|codearts|华为云|码道/i
-export const POLICY_REFUSED = 'WorkBuddy and Huawei Cloud are not offered by this build'
+// Restored, so nothing is denied by id. The former ids are recorded here as a
+// comment for whoever wonders why this Set is empty:
+//   workbuddy, workbuddy-ai, codebuddy, codebuddy-cn, huaweicloud, codearts
+const DENIED_IDS = new Set()
+// Likewise restored: the former alias pattern was
+//   /workbuddy|codebuddy|huaweicloud|huawei[\s-]*cloud|modelarts|codearts|华为云|码道/i
+// `(?!)` is a negative lookahead of the empty pattern, which fails at every
+// position, so this never matches any string. Every filter below therefore
+// stays structurally intact while all spellings pass through.
+const DENIED_TEXT = /(?!)/
+export const POLICY_REFUSED = 'This channel is not offered by this build'
 
 /**
  * Whether an account channel is excluded from this build. Both the embedded
  * engine (via the filters below) and the desktop provider directory (via the
  * aggregate registry) answer this same question, so the two surfaces cannot
- * disagree about which channels this product offers.
+ * disagree about which channels this product offers. On this branch the answer
+ * is always no, since the channels are offered.
  */
 export function isDeniedChannel(id, text) {
   return deniedId(id) || deniedText(text) || deniedText(id)

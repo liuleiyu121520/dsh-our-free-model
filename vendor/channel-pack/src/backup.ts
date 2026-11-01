@@ -122,6 +122,9 @@ export function assertBackupPayload(value: unknown): asserts value is BackupPayl
     throw new BackupFormatError('备份内容不是对象')
   }
   const record = value as Record<string, unknown>
+  // 命名空间迁移（codearts-auth → channel-pack，及本分支恢复旧渠道后的
+  // legacy-* 备份）之后，历史备份的 format 前缀会不同但结构完全一致；
+  // 这里按形状放行，保证旧导出文件仍可导入。
   if (typeof record.format !== 'string' || !/^[a-z][a-z0-9-]*\/backup$/i.test(record.format)) {
     throw new BackupFormatError(`不是 ${BACKUP_FORMAT} 备份文件（format=${String(record.format)}）`)
   }
@@ -152,6 +155,12 @@ export function assertBackupPayload(value: unknown): asserts value is BackupPayl
  * 从备份载荷里取出锁定表，并兼容**只有老字段**的备份。
  *
  * 三种情形必须区分清楚（判错会让用户「以为锁着、其实没锁」）：
+ *
+ * | 备份来源 | 返回 | 效果 |
+ * |---|---|---|
+ * | 有 `permanentLocks`（新版导出） | 该表（已过滤脏值） | 整体替换当前锁定状态 |
+ * | 只有 `loomyPermanentLocked`（老版导出） | `{ loomy: true }` 或 `{}` | 恢复 Loomy 那一项；buddy 无从得知 → 空 |
+ * | 两个都没有（更早的备份） | `undefined` | **保持当前值**，不误解锁 |
  *
  * ⚠️ 老字段为 `false` 时**也**返回 `{}`（而不是 `undefined`）：既然这份备份
  * 明确表达了「Loomy 未锁定」，导入后就该解锁 —— 与「无从得知」不同。

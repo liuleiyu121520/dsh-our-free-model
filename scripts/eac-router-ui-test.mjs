@@ -146,7 +146,12 @@ try {
   const channelIds = await page.evaluate(() => window.channelIds)
   await count('[data-channel]', channelIds.length)
   assert.equal(await page.getByRole('heading', { name: 'EAC router', exact: true }).count(), 1)
-  assert.ok(!channelIds.some(id => /codebuddy|workbuddy|opencode/i.test(id)), 'removed account channels stay absent')
+  // Restored on this branch: both WorkBuddy builds and CodeArts are offered.
+  assert.ok(channelIds.includes('buddy'), 'WorkBuddy 国内版 is present')
+  assert.ok(channelIds.includes('workbuddy'), 'WorkBuddy 国际版 is present')
+  assert.ok(channelIds.includes('codearts'), 'CodeArts is present')
+  // OpenCode stays absent only because this host disables it (unrelated choice).
+  assert.ok(!channelIds.includes('opencode'), 'opencode stays disabled in this host')
   await text(channel('qoder').locator('.ofm_chanstate'), '已连接')
   await text(channel('gemini').locator('.ofm_chanstate'), '已关闭')
   for (const id of channelIds.filter(id => !['qoder', 'gemini'].includes(id))) {

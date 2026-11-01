@@ -9,36 +9,47 @@
  * matter instead: those channels are not part of what this build offers, and
  * anything a user does with a channel is their own responsibility.
  *
+ * THIS BRANCH RESTORES ALL THREE CHANNELS. The exclusion mechanism stays in
+ * place (so the plugin and desktop surfaces still cannot disagree), but its
+ * deny sets are empty, and this copy now says what is true of the build: the
+ * channels are offered, using them is your own decision, and the risk they
+ * carry — the community adapter signs requests as WorkBuddy's desktop client,
+ * which is why upstream withdrew them — belongs to whoever enables them.
+ *
  * The copy is data, not markup: each surface renders it in its own idiom, so
  * there is exactly one place to change what the product says. It is deliberately
  * short — a wall of legal text is read by nobody — and states the project's
  * purpose plainly, because that is the honest description of what it is.
  */
 
-export const DISCLAIMER_VERSION = 2
+export const DISCLAIMER_VERSION = 3
 
-/** Channels this build does not offer, named for the reader. */
-export const EXCLUDED_CHANNELS = Object.freeze([
+/** Channels this build does not offer, named for the reader. Empty here: the
+ *  three upstream-excluded channels are restored on this branch. */
+export const EXCLUDED_CHANNELS = Object.freeze([])
+
+/** The channels this branch re-offers, named for the reader. */
+export const RESTORED_CHANNELS = Object.freeze([
   'WorkBuddy 国内版（workbuddy，亦称 CodeBuddy）',
   'WorkBuddy 国际版（workbuddy-ai）',
-  '华为云 Huawei Cloud MaaS（huaweicloud，含 Token Plan）',
+  '华为云 Huawei Cloud MaaS（huaweicloud，含 Token Plan）与 CodeArts（码道）',
 ])
 
 export const DISCLAIMER = Object.freeze({
   version: DISCLAIMER_VERSION,
   title: '使用须知与免责声明',
-  subtitle: '关于本插件未提供的渠道，以及你需要知道的责任边界',
+  subtitle: '关于本分支恢复提供的渠道，以及你需要知道的责任边界',
   intro: '本插件是一个个人学习与技术研究项目，用于学习模型网关、协议适配与本地路由的实现方式，按「现状」提供，不构成任何商业服务或产品承诺。',
   sections: Object.freeze([
     {
-      id: 'excluded',
-      heading: '本插件不提供这三个渠道',
-      body: '本插件不包含、也不提供 WorkBuddy 国内版（workbuddy，亦称 CodeBuddy）、WorkBuddy 国际版（workbuddy-ai）与华为云 Huawei Cloud MaaS（huaweicloud，含 Token Plan）。这三者在插件端与桌面端均被移除：渠道列表、预设、登录入口、插件市场与模型目录里都不会出现，也无法通过导入配置或安装第三方插件启用。目录中看不到它们不是故障，是本项目的明确取舍，后续更新不会重新引入。',
+      id: 'restored',
+      heading: '本分支重新提供这三个渠道',
+      body: '与上游不同，本分支重新提供 WorkBuddy 国内版（workbuddy，亦称 CodeBuddy）、WorkBuddy 国际版（workbuddy-ai）与华为云 Huawei Cloud MaaS（huaweicloud，含 Token Plan）及 CodeArts（码道）：渠道列表、预设、登录入口、插件市场与模型目录里都会出现，可以添加、登录和使用。上游之所以移除它们，是因为服务 WorkBuddy 的社区适配会以 WorkBuddy 自家桌面客户端的身份签名请求，上游不愿承担该风险；本分支把这一选择交回给你，也把这个风险一并交给你。',
     },
     {
       id: 'responsibility',
-      heading: '使用第三方渠道与我们无关',
-      body: '你若在本插件之外通过任何方式使用上述渠道或其他第三方服务，包括自行配置地址、导入凭据、安装第三方软件或登录他人账号，均属于你的个人行为，与本项目作者及团队无关。我们不参与、不背书、不提供支持，也不对其可用性、合规性或任何后果承担任何责任。',
+      heading: '使用这些渠道由你自己负责',
+      body: '你通过本插件或任何其他方式使用上述渠道或其他第三方服务，包括自行配置地址、导入凭据、安装第三方插件或登录他人账号，均属于你的个人行为，与本项目作者及团队无关。我们不参与、不背书、不提供支持，也不对其可用性、合规性或任何后果承担任何责任。',
     },
     {
       id: 'accounts',

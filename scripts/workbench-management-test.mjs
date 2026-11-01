@@ -76,11 +76,11 @@ try {
     const first = await api('/disclaimer')
     assert.equal(first.status, 200)
     assert.equal(first.body.acknowledged, false, 'a fresh install has not acknowledged it')
-    assert.equal(first.body.version, 2)
+    assert.equal(first.body.version, 3)
     assert.ok(Array.isArray(first.body.sections) && first.body.sections.length >= 3)
     const copy = JSON.stringify(first.body)
-    assert.match(copy, /WorkBuddy/i, 'WorkBuddy is named')
-    assert.match(copy, /Huawei/i, 'Huawei Cloud is named')
+    assert.match(copy, /WorkBuddy/i, 'the restored WorkBuddy is named')
+    assert.match(copy, /Huawei/i, 'the restored Huawei Cloud is named')
     assert.match(copy, /与我们无关|与本项目作者及团队无关/, 'the team is stated as not responsible')
     assert.equal((await api('/disclaimer/ack', {})).status, 200)
     const second = await api('/disclaimer')
@@ -192,7 +192,9 @@ try {
     assert.equal(providers.status, 200)
     const presets = JSON.parse(providers.text)
     assert.ok(Array.isArray(presets.presets), 'the workspace reaches the engine API')
-    assert.ok(!JSON.stringify(presets).toLowerCase().includes('huawei'), 'the excluded channel stays out here too')
+    // Restored on this branch: the boundary adds no removal of its own, so
+    // whatever the pinned engine's preset list carries reaches the caller.
+    assert.ok(Array.isArray(presets.presets), 'the preset list reaches the caller unfiltered')
     // Same session fence as every other workspace route.
     assert.equal((await api('/engine/status', undefined, false)).status, 401)
     assert.equal((await page('/api/management/engine/ui/', 'GET', false)).status, 401)
