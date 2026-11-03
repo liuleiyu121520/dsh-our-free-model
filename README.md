@@ -117,33 +117,35 @@ Chat Completions、Responses API，以及独立网页管理（模型、统计、
 
 ## 安装
 
-> **⚠️ 不要安装 npm 上那个裸名的 `dsh-our-free-model`。**
->
-> npm 上的 `dsh-our-free-model` 包**不是本仓库发布的**。它由第三方打包，内容与本仓库
-> 不一致：`index.js`、`client.js` 被改动，并额外包含本仓库从未有过的
-> `src/channel-visibility.js`。装到它得不到本项目审核过的构建，也拿不到本仓库的签名
-> 清单校验与应用内升级。
->
-> 本仓库自己发布的是带 scope 的 **`@ebony-vinyl/dsh-our-free-model`**，与 Release 的
-> `dsh-our-free-model-<版本>.tgz` 同源、同版本。只想走 npm 时可以装它：
->
-> ```
-> dsh plugin --profile web add @ebony-vinyl/dsh-our-free-model@2.8.0
-> ```
->
-> 注意它的包名带 scope，因此挂载条目是 `@ebony-vinyl/dsh-our-free-model`，与下文
-> 裸包名的本地安装方式不能混用（同一个 profile 里只选一种）。
->
-> 其它渠道出现的同名包一律以本仓库为准。
+### 一行安装（推荐）
 
-
-**命令行（纯 dsh web）**
+打开 **设置 → 插件 → 添加插件**，把下面**整行**粘进输入框，点「安装」，然后重启一次应用：
 
 ```
-dsh plugin --profile web add /绝对路径/dsh-our-free-model
+https://github.com/liuleiyu121520/dsh-our-free-model#v2.8.1
 ```
 
-安装完成后重启应用一次。`--profile` 填写实际使用的 profile 名称。
+这一行是**本 fork 的发布地址**（`#v2.8.1` 钉在发布 tag 上，装到的字节与 fork 自签的
+清单逐文件一致）。想跟着 main 走最新就把结尾改成 `#main`；日常使用建议保留 tag，
+可复现、也不会因为一次上游合并的中途状态装到半成品。
+
+> **⚠️ 别从 npm 装。** 本 fork **只在 GitHub 发布**，npm 上没有它的构建：
+>
+> - 裸名的 `dsh-our-free-model` 由第三方打包，内容与本仓库不一致（`index.js`、
+>   `client.js` 被改动，并多出本仓库从未有过的 `src/channel-visibility.js`）；
+> - 带 scope 的 `@ebony-vinyl/dsh-our-free-model` 是**上游**的构建——上游已移除
+>   WorkBuddy 国内版/国际版与华为云渠道，也带着会让 DSH 直连被 `11128` 拦下的
+>   旧内容风控处理。从 npm 装它会**丢掉本 fork 的这两项修复**，等于白装。
+>
+> 要这个 fork 的功能，就用上面那一行 GitHub 地址。
+
+### 命令行（纯 dsh web）
+
+```
+dsh plugin --profile web add https://github.com/liuleiyu121520/dsh-our-free-model#v2.8.1
+```
+
+`--profile` 填写实际使用的 profile 名称。安装完成后重启应用一次。
 
 **DSHEAC AIO / 桌面端：请先阅读本节**
 

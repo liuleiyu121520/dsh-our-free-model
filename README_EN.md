@@ -101,33 +101,37 @@ the picker by itself as soon as a probe gets through.
 
 ## Install
 
-> **⚠️ Do not install the bare `dsh-our-free-model` package from npm.**
+### One-line install (recommended)
+
+Open **Settings → Plugins → Add plugin**, paste this **single line** into the box,
+click Install, then restart the app once:
+
+```
+https://github.com/liuleiyu121520/dsh-our-free-model#v2.8.1
+```
+
+That is **this fork's publish address** — `#v2.8.1` pins it to the release tag, so
+the bytes you get match the fork's own signed manifest file for file. Change the
+suffix to `#main` to track the branch; keeping the tag is recommended, since it is
+reproducible and never catches a half-merged state.
+
+> **⚠️ Do not install from npm.** This fork **publishes on GitHub only**; there is
+> no npm build of it.
 >
-> The `dsh-our-free-model` package on npm **is not published by this repository.**
-> It is a third-party repackaging whose contents do not match this tree:
-> `index.js` and `client.js` were modified, and it ships a
-> `src/channel-visibility.js` that has never existed here. Installing it gets you
-> a build this project did not review, and you lose the signed-manifest
-> verification and in-app upgrades that this repository provides.
+> - The bare `dsh-our-free-model` on npm is a third-party repackaging whose contents
+>   do not match this tree (`index.js` and `client.js` modified, plus a
+>   `src/channel-visibility.js` that never existed here).
+> - The scoped `@ebony-vinyl/dsh-our-free-model` is **upstream's** build — upstream
+>   removed the WorkBuddy CN / international and Huawei Cloud channels, and it still
+>   carries the old content-风控 handling that gets a direct DSH call blocked with
+>   `11128`. Installing from npm **loses both of this fork's fixes**.
 >
-> This repository publishes the scoped **`@ebony-vinyl/dsh-our-free-model`**, built
-> from the same tree and version as the release `dsh-our-free-model-<version>.tgz`.
-> If you prefer npm:
->
-> ```
-> dsh plugin --profile web add @ebony-vinyl/dsh-our-free-model@2.8.0
-> ```
->
-> Its bundle id carries the scope (`@ebony-vinyl/dsh-our-free-model`), so it cannot
-> be mixed with the bare-name local install below in one profile — pick one.
->
-> For any same-named package from another channel,
-> this repository is the source of truth.
+> For this fork's behaviour, use the GitHub line above.
 
 ### Command line (plain `dsh web`)
 
 ```bash
-dsh plugin --profile web add /absolute/path/to/dsh-our-free-model
+dsh plugin --profile web add https://github.com/liuleiyu121520/dsh-our-free-model#v2.8.1
 ```
 
 Restart the app once. `--profile` should name the profile you actually use.
