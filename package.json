@@ -39,7 +39,8 @@
     "manifest:check": "node scripts/build-manifest.mjs --check",
     "selftest": "node scripts/host-selftest.mjs",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "build:legacy-payload": "node scripts/build-legacy-payload.mjs"
+    "build:legacy-payload": "node scripts/build-legacy-payload.mjs",
+    "pack:standalone-npm": "node scripts/pack-standalone-npm.mjs"
   },
   "files": [
     "index.js",
