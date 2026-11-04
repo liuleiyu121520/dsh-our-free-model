@@ -75,3 +75,68 @@ export const DISCLAIMER = Object.freeze({
 export function disclaimerAcknowledged(settings) {
   return Number(settings?.disclaimerAck) === DISCLAIMER_VERSION
 }
+
+/**
+ * ## 独立服务的免责声明（与插件版**不是**同一份）
+ *
+ * 上面那份 `DISCLAIMER` 是给 **DSH 插件**用的，讲的是「本分支与上游的差异」
+ * （恢复了哪些渠道、上游为什么移除）。独立服务（`packages/standalone`，即
+ * `npx` / 桌面端那个网页控制台）的用户根本没装 DSH、也没见过上游，把
+ * 「本分支重新提供这三个渠道」摆在他面前只会莫名其妙。
+ *
+ * 独立服务真正要回答的是另外三件事：
+ *
+ * 1. **不需要 DSH**：一个 Node 进程 + 一个网页控制台，一条命令直接起；
+ * 2. **数据只在本机**：凭据只写入本地数据目录，不读也不写 DSH 的任何东西；
+ * 3. **它只是网关，不是模型提供方**：额度与可用性由各渠道服务方决定。
+ *
+ * ⚠️ 版本号与插件版**独立**：`STANDALONE_DISCLAIMER_VERSION` 变动只让独立服务
+ * 的用户重新确认一次，不会波及 DSH 里已确认过的用户（两者各存各的 settings）。
+ */
+export const STANDALONE_DISCLAIMER_VERSION = 1
+
+export const STANDALONE_DISCLAIMER = Object.freeze({
+  version: STANDALONE_DISCLAIMER_VERSION,
+  title: '使用须知与免责声明',
+  subtitle: '这是一个在本机运行、自带网页控制台的模型网关，不是模型提供方',
+  intro: '本程序是一个个人学习与技术研究项目，用于在本机统一接入多家模型服务并提供 OpenAI 兼容的本地网关，按「现状」提供，不构成任何商业服务或产品承诺。',
+  sections: Object.freeze([
+    {
+      id: 'what',
+      heading: '它是什么：一个本地网关，与 DSH 无关',
+      body: '独立服务不需要安装 DSH，也不依赖任何宿主环境：一条命令启动一个本地进程，用浏览器打开它打印的管理链接即可操作。它与 DSH 插件是两套彼此独立的程序，互不读取对方的配置或凭据——你在插件里的账号不会自动出现在这里，反之亦然。',
+    },
+    {
+      id: 'upstream',
+      heading: '它不提供模型，只为你的凭据做转发与路由',
+      body: '本程序不含任何模型能力。所有回答都由你自行配置的第三方服务产生，能否使用、额度多少、是否收费、是否符合条款，全部由对应服务方决定；本程序只在你本机做协议适配与请求路由，不参与定价，也不对其可用性作出承诺。',
+    },
+    {
+      id: 'accounts',
+      heading: '账号与凭据只存在这台机器上',
+      body: '你主动导入或登录得到的凭据，只写入本机的数据目录，不会上传到本项目作者或任何第三方服务器。请确保你使用这些账号的方式符合对应服务商的条款与所在地法律；由此产生的封禁、扣费、数据风险或其他损失，由使用者自行承担。',
+    },
+    {
+      id: 'network',
+      heading: '默认只在本机监听',
+      body: '管理页面与 API 默认仅监听回环地址（127.0.0.1），只有本机能访问。如果你自行开启局域网转发或修改监听地址，等于把入口暴露给对应网络，请自行评估并承担由此带来的风险。',
+    },
+    {
+      id: 'no-warranty',
+      heading: '不提供任何担保',
+      body: '本项目不对正确性、稳定性、适销性或特定用途适用性作任何明示或默示担保。使用本程序造成的任何直接或间接损失，作者与团队均不承担责任。请自行评估风险，并优先遵守所在地区的法律法规与服务商协议。',
+    },
+    {
+      id: 'lawful',
+      heading: '请合法合规使用',
+      body: '本项目仅用于个人学习与技术研究。请勿将其用于违反服务商条款、规避授权限制、批量滥用额度或其他违法用途。因使用方式不当引发的争议、索赔或法律责任，均由使用者自行承担。',
+    },
+  ]),
+  accept: '我已阅读并了解',
+  reopen: '查看免责声明',
+})
+
+/** 独立服务的确认判据：同一套 settings 契约，各用各的版本号（见上）。 */
+export function standaloneDisclaimerAcknowledged(settings) {
+  return Number(settings?.disclaimerAck) === STANDALONE_DISCLAIMER_VERSION
+}

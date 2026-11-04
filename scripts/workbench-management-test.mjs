@@ -7,7 +7,7 @@ import { once } from 'node:events'
 import { startStandalone } from '../packages/standalone/service.mjs'
 import { pinnedEngineEntry } from './lib/engine-binary.mjs'
 
-const scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'ofm-workbench-http-'))
+const scratch = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'ofm-workbench-http-')))
 const upstream = http.createServer(async (req, res) => {
   const chunks = []
   for await (const chunk of req) chunks.push(chunk)
@@ -72,16 +72,22 @@ try {
     assert.equal((await fetch(service.url + '/v1/models', { headers: { authorization: `Bearer ${managementKey}` } })).status, 401)
     assert.equal(JSON.stringify((await api('/summary')).body).includes(managementKey), false)
   })
-  await check('the disclaimer reads once, acknowledges durably, and names both excluded channels', async () => {
+  // ⚠️ 独立服务用自己的免责声明（STANDALONE_DISCLAIMER），版本号与插件版独立。
+  // 它讲的是「不需要 DSH、只在本机、只是网关」，**不**讲分支与上游的渠道差异——
+  // 独立服务的用户没装 DSH、也没见过上游，那套文案对他是噪音。
+  await check('the standalone disclaimer reads once, acknowledges durably, and describes the local gateway', async () => {
     const first = await api('/disclaimer')
     assert.equal(first.status, 200)
     assert.equal(first.body.acknowledged, false, 'a fresh install has not acknowledged it')
-    assert.equal(first.body.version, 3)
+    assert.equal(first.body.version, 1, '独立服务的文案版本与插件版相互独立')
     assert.ok(Array.isArray(first.body.sections) && first.body.sections.length >= 3)
     const copy = JSON.stringify(first.body)
-    assert.match(copy, /WorkBuddy/i, 'the restored WorkBuddy is named')
-    assert.match(copy, /Huawei/i, 'the restored Huawei Cloud is named')
-    assert.match(copy, /与我们无关|与本项目作者及团队无关/, 'the team is stated as not responsible')
+    assert.match(copy, /不需要安装 DSH|与本机运行/, 'says it runs without DSH')
+    assert.match(copy, /不提供模型|不是模型提供方/, 'says it is a gateway, not a model provider')
+    assert.match(copy, /只写入本机|只存在这台机器上/, 'says credentials stay local')
+    assert.match(copy, /与本项目作者及团队无关|由使用者自行承担/, 'the team is stated as not responsible')
+    // 这一条是本次修订的目的：独立服务不再复述「本分支恢复了哪些渠道」。
+    assert.equal(/重新提供|本分支/.test(copy), false, '不出现插件版的分支/渠道差异叙述')
     assert.equal((await api('/disclaimer/ack', {})).status, 200)
     const second = await api('/disclaimer')
     assert.equal(second.body.acknowledged, true, 'the acknowledgement persists')

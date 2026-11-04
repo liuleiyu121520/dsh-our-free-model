@@ -12,7 +12,10 @@ import { createWorkbenchLibrary } from './library.mjs'
 import { createRoutingManagement } from './routing.mjs'
 import { createDesktopUpdater } from './desktop-update.mjs'
 import { detectDshChannels } from './dsh-import.mjs'
-import { DISCLAIMER, DISCLAIMER_VERSION, disclaimerAcknowledged } from '../../src/disclaimer.js'
+// ⚠️ 独立服务用**自己的**免责声明（STANDALONE_*）：插件那份讲的是「本分支与
+// 上游的差异」（恢复了哪些渠道），而独立服务的用户根本没装 DSH、也没见过上游，
+// 那份文案对他是噪音。两者的版本号独立，互不影响已确认状态。
+import { STANDALONE_DISCLAIMER, STANDALONE_DISCLAIMER_VERSION, standaloneDisclaimerAcknowledged } from '../../src/disclaimer.js'
 
 const PREFIX = '/api/management'
 const BOOTSTRAP_MS = 10 * 60_000
@@ -445,9 +448,9 @@ export function createManagement({ stores, runtime, channels, eac, subscriptions
       if (result.ok === false) throw fail(500, '无法移除本地授权')
       json(res, 200, result)
     } else if (method === 'GET' && pathname === `${PREFIX}/disclaimer`) {
-      json(res, 200, { ...DISCLAIMER, acknowledged: disclaimerAcknowledged(stores.settings.get()) })
+      json(res, 200, { ...STANDALONE_DISCLAIMER, acknowledged: standaloneDisclaimerAcknowledged(stores.settings.get()) })
     } else if (method === 'POST' && pathname === `${PREFIX}/disclaimer/ack`) {
-      persist({ disclaimerAck: DISCLAIMER_VERSION })
+      persist({ disclaimerAck: STANDALONE_DISCLAIMER_VERSION })
       json(res, 200, { ok: true, acknowledged: true })
     } else if (method === 'POST' && pathname === `${PREFIX}/settings`) {
       const patch = validateSettings(await readBody(req))

@@ -104,8 +104,8 @@
     },
     {
       "path": "src/disclaimer.js",
-      "size": 4851,
-      "sha256": "8376271e6783858db387bdba58f6e2518b173630e882386e37e479e2608a2235"
+      "size": 9087,
+      "sha256": "f553e216707d92a4f288b5c0ea1d8148af72120a2e70c06d9656c0f9d17c93b0"
     },
     {
       "path": "src/eac-login.js",
