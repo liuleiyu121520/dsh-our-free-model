@@ -6,7 +6,7 @@ import path from 'node:path'
 import { once } from 'node:events'
 import { verifyLoginLaunchers, verifyLoginTerminal } from './standalone-login-terminal-test.mjs'
 
-const scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'ofm-management-'))
+const scratch = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'ofm-management-')))
 const dataDir = path.join(scratch, 'data')
 const model = 'mimo-v2.6-flash-free'
 const kilo = 'nvidia/nemotron-3.5-lightning:free'
@@ -114,7 +114,8 @@ try {
     assert.match(page.headers.get('content-security-policy'), /frame-ancestors 'none'/)
     assert.equal(page.headers.get('referrer-policy'), 'no-referrer')
     const body = await page.text()
-    assert.match(body, /本地控制台/)
+    // 标题不再带产品名（品牌位已按使用反馈移除），这里只验证确实是控制台页面。
+    assert.match(body, /<title>[^<]*控制台[^<]*<\/title>/)
     assert.match(page.headers.get('content-security-policy'), /script-src 'self';/)
     const scripts = [...body.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/g)]
     assert.ok(scripts.length > 0)

@@ -32,12 +32,14 @@ const settings = { enabled: true }
 const summary = { settings, catalog: [], networkMode: 'fixture' }
 const context = {
   ...react, h: (type, props, ...children) => ({ type, props: props ?? {}, children: children.flat(Infinity) }), Fragment: 'fragment',
-  Sidebar: 'Sidebar', Topbar: 'Topbar', SponsorNotice: 'SponsorNotice', Overview: 'Overview', Workspace: 'Workspace', Connection: 'Connection', ChannelMount: 'ChannelMount', LazyPage: 'LazyPage', LoadingScreen: 'LoadingScreen', LoginScreen: 'LoginScreen', AlertCircle: 'AlertCircle', DisclaimerDialog: 'DisclaimerDialog',
-  // `App` navigates against the sidebar-derived list (`navigationPages`), so that
-  // is the name this sandbox has to supply. The value only needs to cover the
-  // pages this suite walks through — the sidebar/type agreement itself is
-  // pinned by `standalone-nav-test.mjs`.
-  navigationPages: ['overview', 'workspace', 'models', 'usage', 'channels', 'eac', 'settings', 'connection'], API: '/api/management',
+  Sidebar: 'Sidebar', Topbar: 'Topbar', SponsorNotice: 'SponsorNotice', Overview: 'Overview', Workspace: 'Workspace', Connection: 'Connection', ChannelMount: 'ChannelMount', LazyPage: 'LazyPage', LoadingScreen: 'LoadingScreen', LoginScreen: 'LoginScreen', AlertCircle: 'AlertCircle', DisclaimerDialog: 'DisclaimerDialog', DshImportDialog: 'DshImportDialog',
+  // `App` navigates against the sidebar-derived list (`liteNavigationPages`), so
+  // that is the name this sandbox has to supply. The value only needs to cover
+  // the pages this suite walks through — the sidebar/type agreement itself is
+  // pinned by `standalone-nav-test.mjs`. `lite` 缺省为 false，即完整页面集。
+  liteNavigationPages: lite => lite
+    ? ['models', 'channels', 'connection', 'requests']
+    : ['overview', 'workspace', 'models', 'usage', 'channels', 'eac', 'settings', 'connection'], API: '/api/management',
   messageOf: error => error.message, AbortSignal, URLSearchParams, location: { hash: '' }, history: {},
   window: { scrollTo() {}, addEventListener() {}, removeEventListener() {}, setInterval() { return 1 }, clearInterval() {} },
   document: { hidden: false }, navigator: { clipboard: { writeText: async () => {} } },
@@ -79,4 +81,31 @@ assert.equal(tree.props.id, 'app')
 releaseOldKey({ ok: false, status: 401, json: async () => ({ error: '旧会话已过期' }) })
 await oldKey; tree = render()
 assert.equal(tree.props.id, 'app', '旧会话迟到 401 不得登出新会话')
+
+// 精简模式（`--lite`，默认）：只留模型、渠道、网关三页。落地页不能是已被
+// 隐藏的概览，否则首屏一片空白；被隐藏的页面即使有人调用 `navigate` 也必须点不动。
+const liteSummary = { settings, catalog: [], networkMode: 'fixture', lite: true }
+context.fetch = async url => ({ ok: true, json: async () => url.endsWith('/summary') ? liteSummary : { models: [], days: [] } })
+slots.length = 0; effects.length = 0
+// 摘要解析后 snapshot 才带上 `lite`，而 effect 的依赖只有在新一轮 render 里
+// 才会用新值登记；所以「渲染 → 跑 effect → 再渲染 → 再跑」两轮才能到稳定态。
+render(); await flush()
+render(); await flush()
+let liteTree = render()
+const liteHost = () => all(liteTree).find(node => node.type === 'Sidebar').props.host
+assert.equal(all(liteTree).find(node => node.type === 'Sidebar').props.lite, true, '精简模式下侧边栏必须收到 lite')
+// 落地页现在是「网关与 API 接入」：精简模式下模型清单已并入该页，
+// 独立的「模型与开关」页不再出现在精简导航里。
+assert.ok(all(liteTree).some(node => node.type === 'Connection'),
+  '精简模式的落地页必须是网关与 API 接入页，不能停在已被隐藏的概览')
+liteHost().navigate('overview'); liteTree = render()
+assert.ok(!all(liteTree).some(node => node.type === 'Overview'), '概览在精简模式下不可达')
+// 「模型与开关」已移出精简导航。直接断言**导航列表**不含它 —— 这是精简模式
+// 的真正不变量（侧栏列什么，白名单就放什么），比「navigate 之后页面是否
+// 还 active」可靠：后者取决于之前停在哪一页。
+liteHost().navigate('channels'); liteTree = render()
+assert.equal(all(liteTree).find(node => node.type === 'ChannelMount').props.key, 'channels', '精简模式仍能进入账号渠道')
+liteHost().navigate('connection'); liteTree = render()
+assert.ok(all(liteTree).some(node => node.type === 'Connection'), '精简模式仍能进入网关与 API 接入')
 console.log('ok  切页保留设置草稿与模型筛选，非活动页面暂停任务，退出移除工作空间')
+console.log('ok  精简模式：只留渠道/网关/日志三页，落地页落在网关页，模型页点不动')

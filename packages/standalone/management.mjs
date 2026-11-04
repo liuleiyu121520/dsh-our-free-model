@@ -11,6 +11,7 @@ import { createProviderManagement } from './providers.mjs'
 import { createWorkbenchLibrary } from './library.mjs'
 import { createRoutingManagement } from './routing.mjs'
 import { createDesktopUpdater } from './desktop-update.mjs'
+import { detectDshChannels } from './dsh-import.mjs'
 import { DISCLAIMER, DISCLAIMER_VERSION, disclaimerAcknowledged } from '../../src/disclaimer.js'
 
 const PREFIX = '/api/management'
@@ -57,7 +58,7 @@ async function readBody(req, limit = MAX_BODY_BYTES) {
 
 function validateSettings(patch) {
   const visibility = validateModelVisibility(patch)
-  const booleans = new Set(['enabled', 'exposeRegionModels', 'streamRecovery', 'standaloneProbe', 'standaloneLanEnabled'])
+  const booleans = new Set(['enabled', 'exposeRegionModels', 'streamRecovery', 'standaloneProbe', 'standaloneLanEnabled', 'dshImportAsked'])
   const numbers = { probeIntervalMinutes: [1, 1440], defaultMaxTokens: [512, 131072], standaloneLanPort: [0, 65535] }
   const result = {}
   for (const [key, value] of Object.entries(patch)) {
@@ -82,13 +83,16 @@ export function managementSettings(value) {
     standaloneProbe: value.standaloneProbe === true,
     standaloneLanEnabled: value.standaloneLanEnabled === true,
     standaloneLanPort: value.standaloneLanPort ?? 0,
+    // 首次启动的「导入 DSH 账号」提示是否已问过：问过就不再打扰，
+    // 但用户仍可在渠道页手动触发导入。
+    dshImportAsked: value.dshImportAsked === true,
     probeIntervalMinutes: value.probeIntervalMinutes ?? 15,
     defaultMaxTokens: value.defaultMaxTokens ?? 32768,
   }
 }
 
 /** 管理读写要求鉴权；登录恢复仅允许同源页面触发固定本机动作。 */
-export function createManagement({ stores, runtime, channels, eac, subscriptions, workbenchOptions, magpieEngine, magpieModels, onEngineStarted, onSubscriptionsChanged, info, onSettingsChanged, loginTerminal = openLoginTerminal, desktopPlatform = process.platform, desktopArch = process.arch }) {
+export function createManagement({ stores, runtime, channels, eac, subscriptions, workbenchOptions, requestLog, magpieEngine, magpieModels, onEngineStarted, onSubscriptionsChanged, info, onSettingsChanged, loginTerminal = openLoginTerminal, desktopPlatform = process.platform, desktopArch = process.arch }) {
   // `desktopPlatform`/`desktopArch` are threaded from the caller instead of read
   // from `process` so the Windows-only update flow stays exercisable on a test
   // runner that is neither (`desktop-update.mjs` already takes them this way).
@@ -381,6 +385,48 @@ export function createManagement({ stores, runtime, channels, eac, subscriptions
         try { json(res, 200, await channels.rpc(body, controller.signal)) }
         finally { res.removeListener('close', abort) }
       }
+    } else if (method === 'GET' && pathname === `${PREFIX}/requests` && requestLog) {
+      const params = new URL(req.url, 'http://localhost').searchParams
+      const limit = params.get('limit')
+      json(res, 200, requestLog.list({ limit: limit === null ? 100 : Number(limit) }))
+    } else if (method === 'POST' && pathname === `${PREFIX}/requests/clear` && requestLog) {
+      await readBody(req)
+      json(res, 200, { ok: requestLog.clear() })
+    } else if (method === 'GET' && pathname === `${PREFIX}/dsh/import`) {
+      // 首次启动探测 DSH 插件侧的账号渠道。只读本地文件；未安装 DSH 属于
+      // 正常情形，返回 available:false。
+      //
+      // ⚠️ 只报计数，**不下发** backup 载荷：载荷里是明文凭据，把它随预览
+      // 一起回给浏览器，等于让凭据为了一次「看一眼有多少个账号」而多绕一圈
+      // （还会落在浏览器缓存/开发者工具里）。确认导入时由下面的 POST 分支
+      // 在服务端重新探测，凭据全程不经过客户端。
+      const detected = detectDshChannels()
+      // 本服务**已经有账号**时不再提示：导入是整体替换，会把用户现有的
+      // 登录状态冲掉。这条比「问过一次」更可靠 —— 用户点了「稍后」、
+      // 或换了台机器但没有账号时，仍应再次被问到。
+      let existing = 0
+      if (channels) {
+        try {
+          const status = await channels.rpc({ method: 'backup.status', payload: {} })
+          existing = Number(status?.value?.accounts ?? 0) || 0
+        } catch { /* 查不到就按「没有账号」处理，最多多问一次 */ }
+      }
+      json(res, 200, {
+        available: detected.available === true && existing === 0,
+        existing,
+        reason: detected.reason,
+        accounts: detected.accounts,
+        providers: detected.providers,
+        expired: detected.expired,
+        skipped: detected.skipped ?? 0,
+      })
+    } else if (method === 'POST' && pathname === `${PREFIX}/dsh/import` && channels) {
+      const body = await readBody(req, 8 * 1024 * 1024)
+      if (body?.confirm !== true) throw fail(400, '导入需要显式确认')
+      const detected = detectDshChannels()
+      if (!detected.available || !detected.payload) throw fail(409, '没有可导入的 DSH 账号渠道')
+      // 复用现成的 backup.import：整体替换，与网页导出导入走同一条路径。
+      json(res, 200, await channels.rpc({ method: 'backup.import', payload: { payload: detected.payload } }))
     } else if (eac && pathname.startsWith(`${PREFIX}/eac/`)) {
       const params = new URL(req.url, 'http://localhost').searchParams
       const route = pathname.slice(PREFIX.length)

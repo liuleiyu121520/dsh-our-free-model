@@ -44,7 +44,7 @@ export function Overview({ summary, stats, host }: Snapshot & { host: Host }) {
   }
 
   return <div className="dashboard" data-testid="overview-ready">
-    <header className="dashboard-heading"><div><div className="heading-eyebrow">WORKSPACE / OVERVIEW</div><h1>工作空间概览</h1><p>查看你的模型连接与运行情况。</p></div>
+    <header className="dashboard-heading"><div><h1>工作空间概览</h1><p>查看你的模型连接与运行情况。</p></div>
       <Button variant="outline" disabled={refreshing} onClick={() => {
         setRefreshing(true); void host.refresh().catch(host.error).finally(() => setRefreshing(false))
       }}><RefreshCw size={15} className={refreshing ? 'spinning' : ''} />{refreshing ? '正在更新' : '更新状态'}</Button></header>

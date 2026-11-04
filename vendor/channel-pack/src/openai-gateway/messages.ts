@@ -34,6 +34,10 @@ export interface OpenAiChatMessage {
   content?: unknown
   tool_calls?: unknown
   tool_call_id?: unknown
+  /** DeepSeek / Qoder 思考回传。思考模式的工具轮次缺了它，上游会 400。 */
+  reasoning_content?: unknown
+  /** Cline 等客户端用的另一个思考字段名。 */
+  reasoning?: unknown
 }
 
 /**
@@ -351,7 +355,14 @@ async function convertMessage(
   }
   if (role === 'assistant') {
     const text = textFromContent(value.content)
-    const content: Message['content'] = text.length > 0 ? [{ type: 'text', text }] : []
+    const content: Message['content'] = []
+    // 思考模式（DeepSeek V4 等）要求：带 tool_calls 的历史助手消息必须把
+    // 当时的 reasoning_content 原样带回。丢掉它，下一跳就是
+    // 「The reasoning_content in the thinking mode must be passed back」。
+    // 空串不算（上游把空串也当成没回传）；单个空格是客户端用来占位的合法值，保留。
+    const reasoning = inboundReasoning(value)
+    if (reasoning !== undefined) content.push({ type: 'reasoning', text: reasoning })
+    if (text.length > 0) content.push({ type: 'text', text })
     if (value.tool_calls !== undefined) content.push(...convertToolCalls(value.tool_calls))
     return createGatewayMessage('assistant', content, { kind: 'model', provider, model })
   }

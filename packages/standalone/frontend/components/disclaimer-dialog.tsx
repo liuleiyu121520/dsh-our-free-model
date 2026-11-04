@@ -37,7 +37,7 @@ export function DisclaimerDialog({ open, onClose }: { open: boolean; onClose(): 
     <dialog ref={dialog} className="ofm-disclaimer-dialog" aria-labelledby="ofm-disclaimer-title"
       onCancel={event => { event.preventDefault(); if (!busy) void dismiss() }}>
       <header>
-        <span className="ofm-disclaimer-eyebrow">OUR FREE MODEL</span>
+        <span className="ofm-disclaimer-eyebrow">使用须知</span>
         <h2 id="ofm-disclaimer-title">{DISCLAIMER.title}</h2>
         <p>{DISCLAIMER.subtitle}</p>
       </header>

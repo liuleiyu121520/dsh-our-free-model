@@ -9,6 +9,7 @@ import { isLoopbackHost } from '../../src/trust.js'
 import { createManagement } from './management.mjs'
 import { createStandaloneEac } from './eac.mjs'
 import { createChannelRuntime } from './channels/runtime.mjs'
+import { createRequestLog } from './request-log.mjs'
 import { createSubscriptions } from '../../src/subscriptions.js'
 import { createSubscriptionRuntime } from '../../src/subscription-completion.js'
 import { createMagpieEngine } from '../../src/magpie-engine.js'
@@ -111,6 +112,9 @@ async function acquireServiceLock(dataDir) {
 export async function startStandalone({
   dataDir = resolveStandaloneDataDir(), host = '127.0.0.1', port,
   logger = console, refresh = true, probe, lanEnabled, lanPort,
+  // 精简页面：只把模型、渠道与网关三页交给网页，其余页面仍在后端可用，
+  // 用 `--full` 启动即可回到完整控制台。这里是页面可见性，不是功能裁剪。
+  lite = false,
   startRelay = startLanRelay,
   workbenchOptions, subscriptionOptions,
   // The desktop updater judges the host it runs on (`win32` + `x64` only). It
@@ -141,6 +145,7 @@ export async function startStandalone({
   let magpieEngine
   let magpieModels
   let eac
+  let requestLog
   let timer
   let refreshInFlight
   let closing
@@ -263,6 +268,7 @@ export async function startStandalone({
       onChanged: () => runtime?.syncAggregateCatalog?.(),
     })
     const combinedSubscriptionRuntime = combineSubscriptionRuntimes(magpieModels, subscriptionRuntime)
+    requestLog = createRequestLog({ dataDir, logger })
     runtime = createModelRuntime({
       ...stores, logger, attributionUserAgent: `${PRODUCT}/${VERSION}`,
       sealedCredential: eac.credential,
@@ -277,7 +283,37 @@ export async function startStandalone({
       get catalog() { return [...core.catalog, ...channels.publicModelRows().map(row => ({ ...row, contextWindow: row.context_window, maxOutput: row.max_tokens }))] },
       state: () => ({ ...core.state(), catalog: [...core.catalog, ...channels.publicModelRows()] }),
       publicModelRows: () => [...core.publicModelRows(), ...channels.publicModelRows()],
-      complete: (request, onChunk) => channels.handles(request.model) ? channels.complete(request, onChunk) : core.complete(request, onChunk),
+      // 请求日志在 service 层观测：插件侧的 src/core 与渠道包保持逐字节不变
+      // （它们的 sha256 在签名清单里），独立端要记日志只需包一层。
+      complete: async (request, onChunk) => {
+        const started = Date.now()
+        let first = 0
+        const tracked = onChunk === undefined ? undefined : chunk => { if (!first) first = Date.now(); onChunk(chunk) }
+        let outcome
+        try {
+          outcome = channels.handles(request.model)
+            ? await channels.complete(request, tracked)
+            : await core.complete(request, tracked)
+        } catch (error) {
+          requestLog?.append({
+            at: started, model: request.model, ok: false,
+            elapsedMs: Date.now() - started,
+            error: String(error?.message ?? error).slice(0, 200),
+          })
+          throw error
+        }
+        const usage = outcome?.usage
+        requestLog?.append({
+          at: started, model: request.model, ok: outcome?.error === undefined,
+          input: usage?.prompt_tokens ?? 0, output: usage?.completion_tokens ?? 0,
+          reasoning: usage?.completion_tokens_details?.reasoning_tokens ?? 0,
+          cacheRead: usage?.prompt_tokens_details?.cached_tokens ?? 0,
+          ttftMs: first ? first - started : undefined,
+          elapsedMs: Date.now() - started,
+          ...outcome?.error === undefined ? {} : { error: String(outcome.error).slice(0, 200) },
+        })
+        return outcome
+      },
       async refreshCatalog(options) {
         if (stopped) return
         const [result, channelResult] = await Promise.all([core.refreshCatalog(options), channels.refresh(options).catch(error => { if (!stopped) throw error })])
@@ -285,7 +321,7 @@ export async function startStandalone({
       },
     }
     management = createManagement({
-      stores, runtime, channels, eac, subscriptions, workbenchOptions,
+      stores, runtime, channels, eac, subscriptions, workbenchOptions, requestLog,
       magpieEngine, magpieModels,
       desktopPlatform, desktopArch,
       onEngineStarted: () => { settings.update({ magpieEnabled: true }); settings.flush() },
@@ -294,6 +330,7 @@ export async function startStandalone({
         product: PRODUCT, version: VERSION, dataDir,
         baseUrl: `http://${host === '::1' ? '[::1]' : host}:${listener?.port ?? requestedPort}`,
         automaticRefresh: refresh,
+        lite,
         networkMode: process.env.OFM_TEST_UPSTREAM ? 'fixture' : 'live',
         capabilities: { anonymous: true, kilo: true, eac: true, accountChannels: true, webUi: true, lan: true, modelWorkspace: true },
         lan: lanState(),

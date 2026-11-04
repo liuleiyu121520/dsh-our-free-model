@@ -62,6 +62,26 @@ for (const rule of themedShellChild) {
 }
 assert.ok(/::view-transition-new\(root\)/.test(sheet), '主题切换必须有新主题的扩散层')
 assert.ok(/clip-path:\s*circle\(/.test(sheet), '扩散必须用圆形 clip-path')
+// 浮层（首次启动的 DSH 导入弹窗）必须是 fixed。
+//
+// 页面上有一条 `.sidebar,.topbar,main,.app-shell>*{z-index:1;position:relative}`，
+// 特异性与 `.dsh-import-backdrop{position:fixed}` 相同、位置更靠后。少了 `!important`
+// 时 fixed 会被覆盖成 relative —— 弹窗随即退出浮层语义、变成 flex 容器里的普通子项，
+// 独自占满一行宽度，把 `<main>` 压成 0：整页只剩侧栏，模型表宽度归零、下拉缩到 46px。
+// 这条断言盯的就是那个 cover 掉 fixed 的写法。
+const overlay = rules.find(rule => rule.selectors === '.dsh-import-backdrop')
+assert.ok(overlay, '导入弹窗底座必须有样式定义')
+assert.match(overlay.body, /position\s*:\s*fixed\s*!important/,
+  '导入弹窗底座必须是 position: fixed !important，否则会被 .app-shell>* 的 relative 覆盖')
+// 原生 <dialog> 的居中来自 UA 的 `margin: auto`。页面上有全局重置规则会把它清零，
+// 弹窗就贴到视口左上角（实测偏中心 192px / 56px），看起来像"没对齐"。
+// 唯一可靠的写法是自己声明 inset:0 + margin:auto。
+const disclaimer = rules.find(rule => rule.selectors === '.ofm-disclaimer-dialog')
+assert.ok(disclaimer, '免责声明弹窗必须有样式定义')
+assert.match(disclaimer.body, /margin\s*:\s*auto/,
+  '免责声明弹窗必须自己声明 margin: auto，不能依赖 UA 默认值（会被全局重置清零）')
+assert.match(disclaimer.body, /inset\s*:\s*0/,
+  '免责声明弹窗必须声明 inset: 0 —— 与 margin:auto 配合才是原生 dialog 的居中式')
 assert.ok(!html.includes('channels-'), '渠道不应在登录首屏预加载')
 assert.ok(!html.includes('models-'), '模型页面不应在登录首屏预加载')
 assert.ok(!html.includes('usage-'), '用量页面不应在登录首屏预加载')
@@ -207,4 +227,24 @@ assert.deepEqual(savedSettings, {
 await verifySettingsHost()
 await verifyModelOperation()
 verifyChannelFilters()
-console.log('standalone-frontend: 资源登记、四页面分包、模型筛选、统计日期分页、设置校验与草稿同步、迟到摘要及退出保存检查通过')
+// 网关页的模型选择器：收起只占一行，展开悬浮展示。
+// 1) 收起态不得把 36 个模型全铺在页面上；
+// 2) 面板使用 absolute 绝对定位悬浮展开，不撑开卡片，由外层 overflow: visible 保证不被裁掉。
+const connection = fs.readFileSync(new URL('../packages/standalone/frontend/connection.tsx', import.meta.url), 'utf8')
+const picker = fs.readFileSync(new URL('../packages/standalone/frontend/components/model-picker.tsx', import.meta.url), 'utf8')
+assert.ok(connection.includes('ModelPicker'), '网关页必须用 ModelPicker，而不是自己平铺模型列表')
+assert.ok(!/cx-models|cx-model\b/.test(connection), '网关页不得残留旧的平铺模型卡片')
+assert.match(picker, /aria-haspopup="listbox"/, '选择器必须是可展开的下拉（listbox）')
+assert.match(picker, /aria-expanded=\{open\}/, '展开状态必须回传 aria-expanded')
+assert.ok(picker.includes("event.key === 'Escape'"), 'Esc 必须能收起面板')
+const pickerPanel = [...sheet.matchAll(/([^{}@]+)\{([^{}]*)\}/g)]
+  .map(([, sel, body]) => ({ sel: sel.trim(), body }))
+  .find(rule => rule.sel === '.cx-picker-panel')
+assert.ok(pickerPanel, '面板必须有样式定义')
+assert.match(pickerPanel.body, /position\s*:\s*absolute/, '面板必须使用 absolute 定位悬浮，不撑开卡片布局')
+// 页载入动画不得以 opacity:0 开头：浏览器在标签页不可见时会冻结动画时间线，
+// 元素就会永久停在首帧，页面看起来是空的。
+assert.ok(!/@keyframes\s+settingsIn\s*\{\s*(?:from|0%)[^}]*opacity\s*:\s*0/.test(sheet),
+  'settingsIn 首帧不得是 opacity:0（隐藏标签页会让动画冻结在透明首帧）')
+assert.ok(!/@keyframes\s+cp5-boot-in/.test(sheet), '内容可见性不应依赖页载入动画')
+console.log('standalone-frontend: 资源登记、四页面分包、模型筛选、统计日期分页、设置校验与草稿同步、迟到摘要、退出保存与网关模型选择器检查通过')

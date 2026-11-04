@@ -84,7 +84,7 @@ export function Settings({ summary, host, active }: { summary: Summary; host: Ho
   if (!active) return null
   const statusClass = saving ? 'settings-status-saving' : dirty ? 'settings-status-dirty' : message ? 'settings-status-saved' : ''
   return <div className="settings-browser" data-testid="settings-ready">
-    <header className="dashboard-heading"><div><div className="heading-eyebrow">MANAGEMENT / SETTINGS</div>
+    <header className="dashboard-heading"><div>
       <h1>服务设置</h1><p>调整本机推理与模型刷新，保存后生效。</p></div>
       <Badge tone={summary.settings.enabled ? 'success' : 'warning'}>{summary.settings.enabled ? '推理服务已启用' : '推理服务已暂停'}</Badge>
     </header>

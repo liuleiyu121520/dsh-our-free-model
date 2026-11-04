@@ -479,15 +479,19 @@ try {
     const source = fs.readFileSync(new URL('../packages/standalone/cli.mjs', import.meta.url), 'utf8')
       .replace(/^#![^\n]*\n/, '').replace(/^import .+\r?\n/gm, '')
     for (const [flags, expected] of [
-      [[], {}],
-      [['--lan', '--lan-port', '18901'], { lanEnabled: true, lanPort: 18901 }],
-      [['--no-lan', '--lan-port', '0'], { lanEnabled: false, lanPort: 0 }],
-      [['--lan-port', '18901'], { lanPort: 18901 }],
+      // 默认是精简页面 + 自动开浏览器；`--full` / `--no-open` 是关掉它们的唯一开关。
+      [[], { lite: true, open: true }],
+      [['--full', '--no-open'], { lite: false, open: false }],
+      [['--lan', '--lan-port', '18901'], { lite: true, open: true, lanEnabled: true, lanPort: 18901 }],
+      [['--no-lan', '--lan-port', '0'], { lite: true, open: true, lanEnabled: false, lanPort: 0 }],
+      [['--lan-port', '18901'], { lite: true, open: true, lanPort: 18901 }],
     ]) {
       let received
       let output = ''
       vm.runInNewContext(source, {
         path,
+        // `openExternal` 是 CLI 的导入项；测试里替换成空实现，避免真的拉起浏览器。
+        openExternal: async () => false,
         startStandalone: async value => {
           received = value
           return { product: 'fixture', version: 'fixture', url: 'http://127.0.0.1:1', managementUrl: 'http://127.0.0.1:1/#login=fixture', keyFile: 'fixture/settings.json', lan: {} }

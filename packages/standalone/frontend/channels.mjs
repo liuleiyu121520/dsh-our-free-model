@@ -1,8 +1,10 @@
 import * as React from 'react'
 import { createRoot } from 'react-dom/client'
+import { Layers, Activity, ScrollText, Database } from 'lucide-react'
 import { shared } from 'ofm-shared-client'
 import { ChannelBrowser } from './components/channel-browser'
 import 'ofm-shared-styles.css'
+import './channels.css'
 
 const { EacAuth, useEacLogin, DICT, Tank, usePool, poolReading, capacityText, CHANNEL_PROVIDERS, LedgerPage, LogsPage } = shared
 const h = React.createElement
@@ -88,16 +90,16 @@ function ChannelTools({ summary }) {
     if (!window.confirm('导入会合并备份中的账号凭据、模型开关和积分锁定设置，确认继续吗？')) return
     await run(async () => { await rpc('backup.import', { payload: JSON.parse(await selected.text()) }) })
   }
-  return h('section', { className: 'ofm_hero', 'aria-label': '供应商与数据管理' },
+  return h('section', { className: 'channel-tools-card', 'aria-label': '供应商与数据管理' },
     h('h3', null, '供应商与数据管理'),
-    h('div', { className: 'ofm_row' },
+    h('div', { className: 'channel-tool-row' },
       h('label', null, '供应商 ', h('select', { value: provider, disabled: busy, onChange: event => setProvider(event.target.value) },
         CHANNEL_PROVIDERS.map(row => h('option', { value: row.id, key: row.id }, row.name)))),
       h('button', { className: 'ofm_btn', disabled: busy || !status, onClick: () => run(() => rpc('provider.setEnabled', { provider, enabled: status.closed === true })) },
         status?.closed ? '启用供应商' : '关闭供应商'),
       lock ? h('label', null, h('input', { type: 'checkbox', checked: lock.locked === true, disabled: busy, onChange: event => run(() => rpc('credits.permanentLock', { provider, locked: event.target.checked })) }), ' 锁定永久积分') : null),
     lock ? h('p', { className: 'ofm_note' }, lock.windowDays ? `锁定后仅使用 ${lock.windowDays} 天内到期的积分；免费模型沿用原有豁免规则。` : '锁定后按原渠道规则保护永久积分。') : null,
-    h('div', { className: 'ofm_row' },
+    h('div', { className: 'channel-tool-row' },
       h('label', null, '账号 ', h('select', { value: account, disabled: busy, onChange: event => { setAccount(event.target.value); setNickname(accounts.find(row => row.id === event.target.value)?.nickname ?? '') } },
         h('option', { value: '' }, '选择账号'),
         accounts.map(row => h('option', { value: row.id, key: row.id }, row.nickname ?? row.id)))),
@@ -105,7 +107,7 @@ function ChannelTools({ summary }) {
       h('button', { className: 'ofm_btn', disabled: !account || busy, onClick: () => run(() => rpc('account.update', { accountId: account, patch: { nickname } })) }, '保存昵称'),
       h('button', { className: 'ofm_btn', disabled: !account || busy, onClick: () => run(() => rpc('account.reorder', { provider, orderedIds: [account, ...accounts.filter(row => row.id !== account).map(row => row.id)] })) }, '优先使用'),
       h('button', { className: 'ofm_btn', disabled: !account || busy, onClick: () => run(() => rpc('account.reset', { accountId: account })) }, '重置限流标记')),
-    h('div', { className: 'ofm_row ofm_acts' },
+    h('div', { className: 'channel-tool-row ofm_acts' },
       h('button', { className: 'ofm_btn', disabled: busy, onClick: () => run(backup) }, '导出账号备份'),
       h('button', { className: 'ofm_btn', disabled: busy, onClick: () => file.current.click() }, '导入账号备份'),
       h('input', { ref: file, type: 'file', hidden: true, accept: '.json,application/json', onChange: importFile })),
@@ -115,13 +117,28 @@ function ChannelTools({ summary }) {
 
 function ChannelConsole({ summary }) {
   const [page, setPage] = React.useState('accounts')
+  const tabs = [
+    ['accounts', '登录与账号池', Layers],
+    ['ledger', '渠道用量', Activity],
+    ['logs', '请求日志', ScrollText],
+    ['tools', '供应商与备份', Database],
+  ]
   return h(React.Fragment, null,
-    h('header', { className: 'dashboard-heading' },
-      h('div', null, h('div', { className: 'heading-eyebrow' }, 'WORKSPACE / CHANNELS'),
-        h('h1', null, 'EAC router'), h('p', null, '连接你的账号，把各家的免费额度汇集到一个 API。'))),
-    h('div', { className: 'ofm_seg', role: 'tablist', 'aria-label': '渠道管理页面' },
-      [['accounts', '登录与账号池'], ['ledger', '渠道用量'], ['logs', '请求日志'], ['tools', '供应商与备份']].map(([id, name]) =>
-        h('button', { key: id, role: 'tab', 'aria-selected': page === id, onClick: () => setPage(id) }, name))),
+    h('header', { className: 'dashboard-heading channel-console-header' },
+      h('div', null,
+        h('h1', null, 'EAC router'),
+        h('p', null, '连接你的账号，把各家的免费额度汇集到一个 API。'))),
+    h('nav', { className: 'channel-console-tabs', role: 'tablist', 'aria-label': '渠道管理页面' },
+      tabs.map(([id, name, Icon]) =>
+        h('button', {
+          key: id,
+          role: 'tab',
+          'aria-selected': page === id ? 'true' : 'false',
+          onClick: () => setPage(id),
+          className: `channel-console-tab${page === id ? ' is-active' : ''}`,
+        },
+          h(Icon, { size: 14, className: 'channel-tab-icon', 'aria-hidden': 'true' }),
+          name))),
     page === 'accounts' ? h(ChannelBrowser, { rpc, summary })
       : page === 'ledger' ? h(LedgerPage, { t, ctx, summary })
         : page === 'logs' ? h(LogsPage, { t, ctx, summary })
@@ -135,9 +152,10 @@ function EacPage({ summary }) {
   const reading = pool == null ? null : poolReading(pool)
   React.useEffect(() => { login.refresh() }, [login.refresh])
   return h(React.Fragment, null,
-    h('header', { className: 'dashboard-heading' },
-      h('div', null, h('div', { className: 'heading-eyebrow' }, 'WORKSPACE / EAC'),
-        h('h1', null, 'EAC 协付渠道'), h('p', null, '使用本机独立授权，连接共享资源池。'))),
+    h('header', { className: 'dashboard-heading channel-console-header' },
+      h('div', null,
+        h('h1', null, 'EAC 协付渠道'),
+        h('p', null, '使用本机独立授权，连接共享资源池。'))),
     h(EacAuth, { t, auth, eacLogin: login }),
     h('div', { className: 'ofm_hero' },
       h('h3', null, 'EAC 实时资源池'),

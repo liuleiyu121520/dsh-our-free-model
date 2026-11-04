@@ -143,7 +143,7 @@ export function Models({ summary, host, active }: { summary: Summary; host: Host
   const routable = summary.catalog.filter(model => model.routable).length
   return <div className="model-browser" data-testid="models-ready">
     <header className="dashboard-heading">
-      <div><div className="heading-eyebrow">WORKSPACE / MODELS</div><h1>模型清单</h1>
+      <div><h1>模型清单</h1>
         <p>{number(summary.catalog.length)} 个模型 · {number(routable)} 个可接入</p></div>
       <div className="actions">
         <Button variant="outline" disabled={!!operation} onClick={() => { void run('refresh') }}>
@@ -177,19 +177,20 @@ export function Models({ summary, host, active }: { summary: Summary; host: Host
         <option value="all">全部状态</option>{Object.entries(availabilityNames).map(([id, name]) => <option value={id} key={id}>{name}</option>)}
       </select>
     </div>
+    {/* 一行装下「公开范围筛选 + 推理总开关 + 结果计数」。
+        此前是三个独立的 model-list-toolbar，每行各自 100% 宽、各自上下留白，
+        在窄一点的面板上把模型表挤得只剩一条缝。 */}
     <div className="model-list-toolbar">
       <div className="channel-filters" role="group" aria-label="筛选公开范围">
         {([['all', '全部模型'], ['routable', '可接入'], ['hidden', '未公开']] as const).map(([id, name]) =>
           <button key={id} aria-pressed={filters.access === id} onClick={() => changeFilters({ access: id })}>{name}</button>)}
       </div>
+      {/* 只保留推理总开关：分组可见性（隐藏匿名/Kilo、隐藏 EAC）已按使用反馈移除，
+          精简页面收起服务设置页时这里仍然够用。 */}
+      <label className="model-enable-switch"><input type="checkbox" role="switch" checked={summary.settings.enabled !== false}
+        disabled={visibilitySaving} onChange={event => { void saveVisibility({ enabled: event.target.checked }) }} /> 启用推理服务</label>
       <span role="status" data-testid="model-result-count">{number(models.length)} / {number(summary.catalog.length)} 个模型</span>
       {filtered && <Button variant="ghost" onClick={() => changeFilters(initialFilters)}><X size={14} />清空筛选</Button>}
-    </div>
-    <div className="model-list-toolbar">
-      <label><input type="checkbox" role="switch" checked={summary.settings.hideFreeModels === true}
-        disabled={visibilitySaving} onChange={event => { void saveVisibility({ hideFreeModels: event.target.checked }) }} /> {visibility.hideFree}</label>
-      <label><input type="checkbox" role="switch" checked={summary.settings.hideEacModels === true}
-        disabled={visibilitySaving} onChange={event => { void saveVisibility({ hideEacModels: event.target.checked }) }} /> {visibility.hideEac}</label>
     </div>
     {test && <section className={`model-test-result model-test-${test.state}`} aria-label="模型测试结果" aria-live="polite">
       <div className="model-test-heading"><div><strong>

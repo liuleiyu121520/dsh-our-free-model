@@ -61,7 +61,7 @@ export function DesktopUpdate() {
   const busy = requesting || installing || status?.phase === 'checking' || status?.phase === 'downloading'
   const percentage = status?.total ? Math.min(100, Math.round(status.received / status.total * 100)) : 0
   return <div className="settings-browser desktop-update-browser" data-testid="desktop-update-ready">
-    <header className="dashboard-heading"><div><div className="heading-eyebrow">MANAGEMENT / UPDATES</div>
+    <header className="dashboard-heading"><div>
       <h1>应用更新</h1><p>保持桌面客户端为最新版本，配置与账号保留。</p></div>
       <Badge tone={status?.phase === 'ready' ? 'success' : 'neutral'}>{status?.phase === 'ready' ? '已校验，待安装' : '桌面客户端'}</Badge></header>
     <Card className="settings-card"><div className="settings-card-heading"><RefreshCw size={16} /><div><h2>版本与更新</h2><p>检查本项目正式发布的桌面安装包。</p></div></div>

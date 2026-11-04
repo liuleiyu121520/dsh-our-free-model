@@ -1,0 +1,627 @@
+/* ── channels.css: EAC Router & Channels Console Styles ── */
+
+/* ── 1. Page Header & Sub-Tabs ── */
+.channel-console-header {
+  margin-bottom: 20px;
+}
+.channel-console-header h1 {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  margin: 0 0 6px 0;
+  text-transform: none !important;
+}
+.channel-console-header h1::before {
+  display: none !important;
+}
+.channel-console-header p {
+  font-size: 13px;
+  color: var(--muted);
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* Tab Bar */
+.channel-console-tabs {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  background: var(--surface-2, rgba(0, 0, 0, 0.04));
+  border: 1px solid var(--line, rgba(0, 0, 0, 0.08));
+  border-radius: 12px;
+  margin-bottom: 24px;
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.channel-console-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+[data-theme="dark"] .channel-console-tabs {
+  background: rgba(15, 20, 30, 0.85);
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+.channel-console-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--muted, #64748b);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  cursor: pointer;
+  white-space: nowrap;
+  line-height: 1.2;
+  transition: color 180ms ease, background 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+  user-select: none;
+}
+.channel-console-tab:hover {
+  color: var(--ink, #0f172a);
+  background: rgba(0, 0, 0, 0.04);
+}
+.channel-console-tab[aria-selected="true"],
+.channel-console-tab.is-active {
+  color: var(--ink, #0f172a);
+  background: var(--surface, #ffffff);
+  border-color: var(--line, rgba(0, 0, 0, 0.1));
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06), 0 2px 8px -2px rgba(0, 0, 0, 0.08);
+  font-weight: 600;
+}
+
+[data-theme="dark"] .channel-console-tab {
+  color: #94a3b8;
+}
+[data-theme="dark"] .channel-console-tab:hover {
+  color: #f1f5f9;
+  background: rgba(255, 255, 255, 0.05);
+}
+[data-theme="dark"] .channel-console-tab[aria-selected="true"],
+[data-theme="dark"] .channel-console-tab.is-active {
+  color: #3ecfa0;
+  background: rgba(0, 208, 192, 0.12);
+  border-color: rgba(0, 208, 192, 0.32);
+  box-shadow: 0 2px 12px -2px rgba(0, 208, 192, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.channel-tab-icon {
+  flex-shrink: 0;
+  opacity: 0.75;
+  transition: opacity 180ms ease;
+}
+.channel-console-tab[aria-selected="true"] .channel-tab-icon,
+.channel-console-tab.is-active .channel-tab-icon {
+  opacity: 1;
+}
+
+/* ── 2. Page Hero & Pagehead Polish ── */
+.ofm_root .ofm_hero {
+  position: relative;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  padding: 20px 24px;
+  margin-bottom: 24px;
+  box-shadow: var(--shadow-sm);
+  transition: border-color 200ms ease, box-shadow 200ms ease;
+}
+[data-theme="dark"] .ofm_root .ofm_hero {
+  background: #0f141d;
+  border-color: rgba(255, 255, 255, 0.07);
+  box-shadow: 0 4px 20px -4px rgba(0, 0, 0, 0.5);
+}
+
+.ofm_root .ofm_pagehead {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 16px !important;
+  flex-wrap: wrap !important;
+  width: 100%;
+}
+.ofm_root .ofm_pagetitle {
+  flex: 1 1 320px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.ofm_root .ofm_pagetitle h2 {
+  font-size: 19px !important;
+  font-weight: 700 !important;
+  margin: 0 !important;
+  letter-spacing: -0.02em !important;
+  color: var(--ink) !important;
+  background: none !important;
+  -webkit-text-fill-color: initial !important;
+  line-height: 1.3 !important;
+}
+[data-theme="dark"] .ofm_root .ofm_pagetitle h2 {
+  color: #f1f5f9 !important;
+}
+
+.ofm_root .ofm_pagesub {
+  font-size: 12.5px;
+  color: var(--muted);
+  margin: 0;
+  line-height: 1.5;
+  max-width: 65ch;
+}
+[data-theme="dark"] .ofm_root .ofm_pagesub {
+  color: #94a3b8;
+}
+
+/* ── 3. Pagehead Controls & Segmented Pill Controls ── */
+/* Ensure the controls row after title is aligned cleanly */
+.ofm_root .ofm_pagehead > :not(.ofm_pagetitle) {
+  flex-shrink: 0;
+}
+
+/* Segmented Buttons in PageHead (e.g. 10 20 50 100 or 今天 全部) */
+.ofm_root .ofm_hero .ofm_seg,
+.ofm_root .ofm_pagehead .ofm_seg,
+.ofm_root .ofm_page .ofm_seg {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 2px !important;
+  padding: 3px !important;
+  border: 1px solid var(--line) !important;
+  border-radius: 9px !important;
+  background: var(--surface-2, rgba(0, 0, 0, 0.04)) !important;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+  margin: 0 !important;
+  flex-wrap: nowrap !important;
+}
+
+[data-theme="dark"] .ofm_root .ofm_hero .ofm_seg,
+[data-theme="dark"] .ofm_root .ofm_pagehead .ofm_seg,
+[data-theme="dark"] .ofm_root .ofm_page .ofm_seg {
+  background: rgba(18, 24, 34, 0.9) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.4) !important;
+}
+
+.ofm_root .ofm_hero .ofm_seg button,
+.ofm_root .ofm_pagehead .ofm_seg button,
+.ofm_root .ofm_page .ofm_seg button {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 5px 12px !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  font-variant-numeric: tabular-nums !important;
+  color: var(--muted) !important;
+  background: transparent !important;
+  border: none !important;
+  border-radius: 7px !important;
+  cursor: pointer !important;
+  line-height: 1.2 !important;
+  transition: all 160ms ease !important;
+}
+
+.ofm_root .ofm_hero .ofm_seg button:hover,
+.ofm_root .ofm_pagehead .ofm_seg button:hover,
+.ofm_root .ofm_page .ofm_seg button:hover {
+  color: var(--ink) !important;
+  background: rgba(0, 0, 0, 0.04) !important;
+}
+[data-theme="dark"] .ofm_root .ofm_hero .ofm_seg button:hover,
+[data-theme="dark"] .ofm_root .ofm_pagehead .ofm_seg button:hover,
+[data-theme="dark"] .ofm_root .ofm_page .ofm_seg button:hover {
+  color: #f1f5f9 !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+}
+
+.ofm_root .ofm_hero .ofm_seg button[aria-pressed="true"],
+.ofm_root .ofm_pagehead .ofm_seg button[aria-pressed="true"],
+.ofm_root .ofm_page .ofm_seg button[aria-pressed="true"] {
+  background: var(--surface, #ffffff) !important;
+  color: var(--ink, #0f172a) !important;
+  font-weight: 600 !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
+  border-bottom: none !important;
+}
+
+[data-theme="dark"] .ofm_root .ofm_hero .ofm_seg button[aria-pressed="true"],
+[data-theme="dark"] .ofm_root .ofm_pagehead .ofm_seg button[aria-pressed="true"],
+[data-theme="dark"] .ofm_root .ofm_page .ofm_seg button[aria-pressed="true"] {
+  background: rgba(0, 208, 192, 0.16) !important;
+  color: #7ff5ea !important;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+  border-bottom: none !important;
+}
+
+/* Switch */
+.ofm_root .ofm_pagehead .ofm_switch {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  font-size: 12.5px !important;
+  color: var(--muted) !important;
+  cursor: pointer !important;
+  user-select: none !important;
+  padding: 4px 6px !important;
+  border-radius: 8px !important;
+}
+[data-theme="dark"] .ofm_root .ofm_pagehead .ofm_switch {
+  color: #94a3b8 !important;
+}
+
+.ofm_root .ofm_pagehead .ofm_switch i {
+  width: 34px !important;
+  height: 20px !important;
+  border-radius: 999px !important;
+  background: rgba(0, 0, 0, 0.08) !important;
+  border: 1px solid var(--line) !important;
+  position: relative !important;
+  transition: all 200ms ease !important;
+  flex-shrink: 0 !important;
+}
+[data-theme="dark"] .ofm_root .ofm_pagehead .ofm_switch i {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+.ofm_root .ofm_pagehead .ofm_switch i::after {
+  content: "" !important;
+  position: absolute !important;
+  top: 2px !important;
+  left: 2px !important;
+  width: 14px !important;
+  height: 14px !important;
+  border-radius: 50% !important;
+  background: #94a3b8 !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2) !important;
+  transition: transform 220ms cubic-bezier(.34, 1.3, .64, 1), background 180ms ease !important;
+}
+.ofm_root .ofm_pagehead .ofm_switch[aria-checked="true"] i {
+  background: #00d0c0 !important;
+  border-color: #00d0c0 !important;
+}
+.ofm_root .ofm_pagehead .ofm_switch[aria-checked="true"] i::after {
+  transform: translateX(14px) !important;
+  background: #ffffff !important;
+}
+
+/* Button in Pagehead */
+.ofm_root .ofm_pagehead button.ofm_btn,
+.ofm_root .ofm_hero button.ofm_btn,
+.ofm_root button.ofm_btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  padding: 6px 14px !important;
+  font-size: 12.5px !important;
+  font-weight: 500 !important;
+  border-radius: 8px !important;
+  border: 1px solid var(--line) !important;
+  background: var(--surface) !important;
+  color: var(--ink) !important;
+  cursor: pointer !important;
+  line-height: 1.3 !important;
+  transition: all 160ms ease !important;
+  box-shadow: var(--shadow-sm) !important;
+}
+.ofm_root button.ofm_btn:hover:not(:disabled) {
+  background: var(--surface-2, rgba(0, 0, 0, 0.04)) !important;
+  border-color: var(--muted) !important;
+}
+[data-theme="dark"] .ofm_root button.ofm_btn {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  color: #e2e8f0 !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3) !important;
+}
+[data-theme="dark"] .ofm_root button.ofm_btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1) !important;
+  border-color: rgba(255, 255, 255, 0.22) !important;
+  color: #ffffff !important;
+}
+
+/* ── 4. Table & Log List Styles ── */
+.ofm_root .ofm_tablewrap {
+  overflow-x: auto;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+  margin-top: 16px;
+  -webkit-overflow-scrolling: touch;
+}
+[data-theme="dark"] .ofm_root .ofm_tablewrap {
+  background: #0d1117;
+  border-color: rgba(255, 255, 255, 0.07);
+  box-shadow: 0 4px 20px -4px rgba(0, 0, 0, 0.5);
+}
+
+.ofm_root .ofm_table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 12px;
+  text-align: left;
+}
+.ofm_root .ofm_table thead th {
+  padding: 11px 14px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--muted);
+  background: var(--surface-2, rgba(0, 0, 0, 0.02));
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+  text-transform: none !important;
+}
+[data-theme="dark"] .ofm_root .ofm_table thead th {
+  background: #111622 !important;
+  color: #94a3b8 !important;
+  border-bottom-color: rgba(255, 255, 255, 0.07) !important;
+}
+
+.ofm_root .ofm_table tbody td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--line);
+  color: var(--ink);
+  vertical-align: middle;
+  transition: background 120ms ease;
+  white-space: nowrap;
+}
+[data-theme="dark"] .ofm_root .ofm_table tbody td {
+  border-bottom-color: rgba(255, 255, 255, 0.04);
+  color: #e2e8f0;
+}
+.ofm_root .ofm_table tbody tr:last-child td {
+  border-bottom: none;
+}
+.ofm_root .ofm_table tbody tr:hover td {
+  background: rgba(0, 0, 0, 0.02);
+}
+[data-theme="dark"] .ofm_root .ofm_table tbody tr:hover td {
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.ofm_root .ofm_num {
+  font-variant-numeric: tabular-nums;
+  font-family: var(--mono-font, ui-monospace, monospace);
+  font-size: 11.5px;
+}
+
+/* Badges */
+.ofm_root .ofm_badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+.ofm_root .ofm_badge.available {
+  background: rgba(16, 185, 129, 0.12);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.25);
+}
+[data-theme="dark"] .ofm_root .ofm_badge.available {
+  background: rgba(0, 208, 192, 0.12);
+  color: #3ecfa0;
+  border-color: rgba(0, 208, 192, 0.3);
+}
+.ofm_root .ofm_badge.unavailable,
+.ofm_root .ofm_badge.throttled {
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.25);
+}
+[data-theme="dark"] .ofm_root .ofm_badge.unavailable,
+[data-theme="dark"] .ofm_root .ofm_badge.throttled {
+  background: rgba(244, 63, 94, 0.15);
+  color: #fb7185;
+  border-color: rgba(244, 63, 94, 0.3);
+}
+
+.ofm_root tr.ofm_logfailed td {
+  color: #ef4444;
+}
+[data-theme="dark"] .ofm_root tr.ofm_logfailed td {
+  color: #fb7185;
+  background: rgba(244, 63, 94, 0.04);
+}
+
+/* ── 5. KPI Cards (渠道用量 / Ledger) ── */
+.ofm_root .ofm_kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 14px;
+  margin-bottom: 24px;
+}
+.ofm_root .ofm_kpi {
+  padding: 16px 18px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  box-shadow: var(--shadow-sm);
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+.ofm_root .ofm_kpi:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+[data-theme="dark"] .ofm_root .ofm_kpi {
+  background: #0f141d;
+  border-color: rgba(255, 255, 255, 0.07);
+  box-shadow: 0 4px 16px -4px rgba(0, 0, 0, 0.4);
+}
+
+.ofm_root .ofm_kpilabel {
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--muted);
+}
+[data-theme="dark"] .ofm_root .ofm_kpilabel {
+  color: #94a3b8;
+}
+.ofm_root .ofm_kpivalue {
+  font-size: 22px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+  letter-spacing: -0.02em;
+}
+[data-theme="dark"] .ofm_root .ofm_kpivalue {
+  color: #f1f5f9;
+}
+.ofm_root .ofm_kpisub {
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.4;
+}
+[data-theme="dark"] .ofm_root .ofm_kpisub {
+  color: #64748b;
+}
+
+/* ── 6. Section & Note Polish ── */
+.ofm_root .ofm_sechead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 14px;
+}
+.ofm_root .ofm_sec_title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+}
+[data-theme="dark"] .ofm_root .ofm_sec_title {
+  color: #f1f5f9;
+}
+.ofm_root .ofm_sec_hint {
+  font-size: 12px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+[data-theme="dark"] .ofm_root .ofm_sec_hint {
+  color: #94a3b8;
+}
+.ofm_root .ofm_note {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.6;
+  margin: 10px 0;
+}
+[data-theme="dark"] .ofm_root .ofm_note {
+  color: #7e8ba1;
+}
+
+/* ── 7. Channel Tools Section (供应商与备份) ── */
+.channel-tools-card {
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  padding: 24px;
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 20px;
+}
+[data-theme="dark"] .channel-tools-card {
+  background: #0f141d;
+  border-color: rgba(255, 255, 255, 0.07);
+}
+.channel-tools-card h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ink);
+  margin: 0 0 16px 0;
+}
+[data-theme="dark"] .channel-tools-card h3 {
+  color: #f1f5f9;
+}
+
+.channel-tool-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 12px 14px;
+  background: var(--surface-2, rgba(0, 0, 0, 0.02));
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  margin-bottom: 12px;
+}
+[data-theme="dark"] .channel-tool-row {
+  background: rgba(255, 255, 255, 0.025);
+  border-color: rgba(255, 255, 255, 0.06);
+}
+
+.channel-tool-row label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink);
+}
+[data-theme="dark"] .channel-tool-row label {
+  color: #e2e8f0;
+}
+
+.channel-tool-row select,
+.channel-tool-row input {
+  padding: 6px 12px;
+  font-size: 12.5px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  outline: none;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+[data-theme="dark"] .channel-tool-row select,
+[data-theme="dark"] .channel-tool-row input {
+  background: #141a24;
+  border-color: rgba(255, 255, 255, 0.1);
+  color: #f1f5f9;
+}
+.channel-tool-row select:focus,
+.channel-tool-row input:focus {
+  border-color: #00d0c0;
+  box-shadow: 0 0 0 3px rgba(0, 208, 192, 0.15);
+}
+
+/* ── 8. Responsive Adaptations ── */
+@media (max-width: 768px) {
+  .ofm_root .ofm_pagehead {
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 12px !important;
+  }
+  .ofm_root .ofm_pagetitle {
+    flex: 1 1 100%;
+  }
+  .ofm_root .ofm_hero .ofm_seg,
+  .ofm_root .ofm_pagehead .ofm_seg {
+    width: 100%;
+    justify-content: stretch;
+  }
+  .ofm_root .ofm_hero .ofm_seg button,
+  .ofm_root .ofm_pagehead .ofm_seg button {
+    flex: 1;
+  }
+  .channel-console-tabs {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}

@@ -1,4 +1,4 @@
-export type Page = 'overview' | 'workspace' | 'agents' | 'providers' | 'library' | 'routing' | 'models' | 'usage' | 'channels' | 'eac' | 'settings' | 'updates' | 'connection' | 'sponsor'
+export type Page = 'overview' | 'workspace' | 'agents' | 'providers' | 'library' | 'routing' | 'models' | 'usage' | 'channels' | 'eac' | 'settings' | 'updates' | 'connection' | 'requests'
 export interface Model {
   id: string
   name: string
@@ -28,6 +28,8 @@ export interface ServiceSettings {
   standaloneProbe: boolean
   probeIntervalMinutes: number
   defaultMaxTokens: number
+  /** 首次启动的「导入 DSH 账号」提示是否已问过。 */
+  dshImportAsked?: boolean
 }
 export interface Summary {
   version: string
@@ -35,6 +37,8 @@ export interface Summary {
   dataDir: string
   networkMode: string
   automaticRefresh: boolean
+  /** 精简页面：只显示模型、渠道与网关三页。缺省视为 false。 */
+  lite?: boolean
   catalogSyncedAt: number
   settings: ServiceSettings
   channels: { state: string; error?: string }

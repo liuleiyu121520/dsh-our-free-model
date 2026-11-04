@@ -65,12 +65,27 @@ const app = read('app.tsx')
 
 check('App navigates against the sidebar-derived list', () => {
   assert.match(app, /from '\.\/components\/shell'/, 'app.tsx must import from the shell')
-  assert.match(app, /\bnavigationPages\b/, 'app.tsx must use `navigationPages`')
+  // 白名单可以按 `lite` 收窄，但必须是侧边栏的函数：`liteNavigationPages`
+  // 仍从 `navigation` 推导，`app.tsx` 自己不维护名单。
+  assert.match(app, /\bliteNavigationPages\b/, 'app.tsx must use `liteNavigationPages`')
   assert.doesNotMatch(app, /\bpageNames\b/, 'app.tsx must not keep its own page-name list')
 })
 
 check('and shell.tsx actually exports it', () => {
   assert.match(shell, /export const navigationPages: Page\[\] = navigation\.flatMap\(/, 'shell.tsx must export `navigationPages` derived from `navigation`')
+  assert.match(shell, /export const liteNavigationPages = \(lite: boolean\): Page\[\] =>\s*\n?\s*lite \? navigationPages\.filter/, '`liteNavigationPages` must filter `navigationPages`, never a new list')
+})
+
+// ── 精简导航的页面集合 ──────────────────────────────────────────────────────
+// 精简模式只剩「账号渠道 / 网关与 API 接入 / 请求日志」三页：模型清单已并入
+// 网关页（在那里选模型看示例），独立的「模型与开关」页不再需要。
+check('the lite navigation drops 模型与开关 but keeps the other three', () => {
+  const lite = /const LITE_PAGES: ReadonlySet<string> = new Set\(\[([^\]]*)\]\)/.exec(shell)
+  assert.ok(lite, 'shell.tsx must declare LITE_PAGES')
+  const ids = [...lite[1].matchAll(/'([a-z-]+)'/g)].map(([, id]) => id)
+  assert.deepEqual(ids.sort(), ['channels', 'connection', 'requests'],
+    `精简导航只应有账号渠道/网关/请求日志，实际：${ids.join(', ')}`)
+  assert.ok(!ids.includes('models'), '「模型与开关」不得出现在精简导航里')
 })
 
 console.log(`\nok ${checks}/${checks} navigation invariants hold`)

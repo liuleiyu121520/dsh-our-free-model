@@ -2,6 +2,13 @@
 .ofm-disclaimer-dialog {
   width: min(640px, calc(100vw - 48px));
   max-height: min(84vh, 720px);
+  /* ⚠️ 居中必须自己声明，不能指望 UA 的 `dialog { margin: auto }`。
+     页面上有全局的 `* { margin: 0 }` 一类重置（且特异性更高），会把 UA 的
+     margin:auto 清成 0 —— 弹窗随即贴到视口左上角（实测偏中心 192px / 56px），
+     看起来像"没对齐"。inset:0 + margin:auto 才是原生 dialog 的正确居中方式。 */
+  position: fixed;
+  inset: 0;
+  margin: auto !important;
   padding: 0;
   border: 1px solid var(--line, #e3e3e8);
   border-radius: 14px;

@@ -2,9 +2,31 @@
 
 这是独立产品的源码入口，不需要 DSH、Cordis、DSH profile 或宿主凭据库。
 已提供独立 HTTP 服务、网页管理、EAC 和十个账号渠道；独立安装制品尚未发布。
-本阶段从完整仓库运行，暂不能仅复制本目录或将它单独作为 npm 包安装。
 
-## 启动
+## 一条命令启动（推荐）
+
+在一台**没有装 DSH**的机器上，只要满足 `engines` 要求的 Node.js，就可以直接跑：
+
+```powershell
+npx our-free-model-standalone
+```
+
+这条命令会启动本机服务、打印一次性管理链接，并**尝试自动打开浏览器**。
+网页默认是精简版，只保留三件新机器上真正要做的事：
+
+- **账号渠道**：登录免费账号渠道、导入备份；
+- **网关与 API 接入**：列出全部可接入模型、选中即更新下方的调用示例，并复制 Base URL 与 API Key；
+- **请求日志**：逐条查看经过本机网关的推理请求。
+
+模型清单不再单开一页 —— 它就在网关页里，选哪个模型，下面的示例就跟着换。
+
+想回到完整控制台（概览、用量、订阅、工作台等）就加 `--full`；
+只是不想自动开浏览器就加 `--no-open`。
+
+`npx` 包由仓库脚本生成、体积约 1.6 MiB，运行时**零 npm 依赖**（只用 Node 内置模块）。
+打通流程见下文「打包成 npx 包」。
+
+## 从源码启动
 
 需要符合仓库 `engines` 要求的 Node.js。在仓库根目录执行：
 
@@ -19,10 +41,32 @@ npm run start:standalone -- --port 18900 --data-dir F:\ofm-data
 ```
 
 启动打印管理页面的一次性登录链接、实际 API 地址与密钥文件位置，不打印 API Key。
-在浏览器打开管理链接即可使用控制台，链接 10 分钟内有效且仅能兑换一次。
+在浏览器管理链接即可使用控制台，链接 10 分钟内有效且仅能兑换一次；
+默认会自动打开浏览器，`--no-open` 可关闭。
 默认端口是 `18900`；
 端口被占用时沿用共享监听器的自动选端口逻辑。后续启动优先使用本产品上次保存的端口；
 `--port` 可以覆盖，`0` 表示由系统分配。
+
+## 打包成 npx 包
+
+```powershell
+node scripts/pack-standalone-npm.mjs
+```
+
+产物是 `dist/our-free-model-standalone-<版本>-dev-<源码摘要>.tgz`。
+它是本地验证包：不 bump 版本、不签名、不发布，`package.json` 里也没有仓库地址或发布凭证。
+包内保留仓库的相对布局（`packages/standalone/` + `src/` + `vendor/`），
+所以 `bin` 直接指向 `packages/standalone/cli.mjs`，运行时不需要改任何路径。
+
+装到干净目录验证：
+
+```powershell
+npm install /绝对路径/our-free-model-standalone-*.tgz
+node_modules/.bin/our-free-model-standalone --no-open --no-refresh
+```
+
+要真正 `npx` 分发，需要把该 tarball 发布到 npm（或私有 registry），
+这一步需要发布凭证，仓库内不代做。
 
 ## 数据与鉴权
 

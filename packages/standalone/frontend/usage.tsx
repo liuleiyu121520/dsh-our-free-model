@@ -63,7 +63,7 @@ export function Usage({ stats, host, active }: { stats: Stats; host: Host; activ
   }
   if (!active) return null
   return <div className="usage-browser" data-testid="usage-ready">
-    <header className="dashboard-heading"><div><div className="heading-eyebrow">WORKSPACE / USAGE</div>
+    <header className="dashboard-heading"><div>
       <h1>用量统计</h1><p>查看本机累计用量与每日趋势。</p></div>
       <Button variant="outline" disabled={refreshing} onClick={() => { void refresh() }}>
         <RefreshCw size={15} className={refreshing ? 'spinning' : ''} />{refreshing ? '正在更新' : '更新统计'}

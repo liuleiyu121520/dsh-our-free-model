@@ -19,10 +19,16 @@
 
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
-import { registerHooks, stripTypeScriptTypes } from 'node:module'
+import { registerHooks } from 'node:module'
 import { fileURLToPath } from 'node:url'
 import { CLIENT_TOOL_PREFIX, clientToolWireName } from '../src/o2a/tool-renames.js'
 import { V2_OFFICIAL_TOOL_ORDER } from '../src/o2a/official-tools.js'
+const ts = (await import('typescript')).default
+const transpile = (source, url) => ts.transpileModule(source, {
+  compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022, verbatimModuleSyntax: false },
+  fileName: url,
+}).outputText
+
 
 /** Order-insensitive stringify: the two copies render schemas in their own key orders. */
 const canonical = value => JSON.stringify(value, (key, val) => (val && typeof val === 'object' && !Array.isArray(val) ? Object.fromEntries(Object.entries(val).sort()) : val))
@@ -43,7 +49,7 @@ const hooks = registerHooks({
   load(url, context, nextLoad) {
     if (url.startsWith(sourceRoot) && url.endsWith('.ts')) return {
       format: 'module', shortCircuit: true,
-      source: stripTypeScriptTypes(fs.readFileSync(fileURLToPath(url), 'utf8'), { mode: 'transform', sourceUrl: url }),
+      source: transpile(fs.readFileSync(fileURLToPath(url), 'utf8'), url),
     }
     return nextLoad(url, context)
   },

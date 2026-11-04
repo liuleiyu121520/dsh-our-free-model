@@ -24,6 +24,8 @@ const sourceFiles = [
   'packages/standalone/management.mjs',
   'packages/standalone/desktop-update.mjs',
   'packages/standalone/login-terminal.mjs',
+  'packages/standalone/dsh-import.mjs',
+  'packages/standalone/request-log.mjs',
   'packages/standalone/open-external.mjs',
   'packages/standalone/eac.mjs',
   'packages/standalone/workbench.mjs',

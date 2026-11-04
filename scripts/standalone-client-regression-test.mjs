@@ -234,21 +234,20 @@ nodes(standaloneTree).find(node => node.props['aria-label'] === 'Hide model：fr
 await new Promise(resolve => setImmediate(resolve))
 assert.deepEqual(savedPatches.pop(), { hiddenModelIds: ['free'] })
 standaloneTree = render(context.Page, standaloneProps)
-const group = nodes(standaloneTree).find(node => node.type === 'input' && node.props.role === 'switch')
-group.props.onChange({ target: { checked: true } })
-await new Promise(resolve => setImmediate(resolve))
-assert.deepEqual(savedPatches.pop(), { hideFreeModels: true })
+// 分组可见性开关（隐藏匿名/Kilo、隐藏 EAC）已按使用反馈移除：页面上只剩
+// 一个 switch，就是推理总开关。这条钉住「不再有分组开关回潮」。
+const switches = nodes(standaloneTree).filter(node => node.type === 'input' && node.props.role === 'switch')
+assert.equal(switches.length, 1, '模型页只保留推理总开关，不应再有分组可见性开关')
+assert.equal(savedPatches.some(patch => 'hideFreeModels' in patch || 'hideEacModels' in patch), false,
+  '页面不得再提交分组可见性字段')
 standaloneTree = render(context.Page, standaloneProps)
-assert.equal(nodes(standaloneTree).find(node => node.props['aria-label'] === 'Show model：free').props.disabled, true)
+assert.equal(nodes(standaloneTree).find(node => node.props['aria-label'] === 'Show model：free').props.disabled, false,
+  '行级隐藏不受删除分组开关影响')
 assert.equal(nodes(standaloneTree).some(node => /(?:Hide|Show) model：account/.test(node.props['aria-label'] ?? '')), false)
-nodes(standaloneTree).find(node => node.type === 'input' && node.props.role === 'switch').props.onChange({ target: { checked: false } })
-await new Promise(resolve => setImmediate(resolve))
-assert.deepEqual(Array.from(standaloneSummary.settings.hiddenModelIds), ['free'], 'group restore preserves individual choices')
-standaloneTree = render(context.Page, standaloneProps)
 nodes(standaloneTree).find(node => node.props['aria-label'] === 'Show model：free').props.onClick()
 await new Promise(resolve => setImmediate(resolve))
 assert.deepEqual(savedPatches.pop(), { hiddenModelIds: [] })
-console.log('ok  standalone actual model-row and group controls save preferences and isolate account channels')
+console.log('ok  standalone model-row controls save preferences and isolate account channels; only the reasoning switch remains')
 } else {
   console.log('ok  standalone TSX visibility controls skipped: esbuild is not installed')
 }
