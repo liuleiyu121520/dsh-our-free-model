@@ -61,22 +61,17 @@ export function buildNpmStandalonePackage({ name = 'our-free-model-standalone', 
       // 后端只用 node: 内置模块；这里留空是为了让 `npx` 明确不拉任何运行时依赖。
       dependencies: {},
     }))
-    fs.writeFileSync(path.join(root, 'README.md'), `# Our Free Model 独立本地服务（npx 包）
-
-一条命令启动，浏览器里设置免费模型与网关，不需要安装 DSH。
-
-\`\`\`
-npx ${name}          # 或短名 npx ofm
-npm i -g ${name}
-ofm                  # 全局安装后的日常命令（等价于 ${name}）
-\`\`\`
-
-启动后终端会打印一次性管理链接并尝试自动打开浏览器；链接 10 分钟内有效、只能兑换一次。
-数据默认保存在 \`~/.our-free-model\`，用 \`--data-dir\` 或 \`OFM_HOME\` 覆盖。
-精简页面只显示模型、账号渠道与网关；\`--full\` 可回到完整控制台。
-
-需要 Node.js ${standalonePackage.engines?.node ?? '^22.19.0 || >=24.0.0'}。
-`)
+    // npm 页面显示的就是发布包根目录的 README。内容维护在
+    // `packages/standalone/NPM-README.md`：它有仓库地址、上游署名和界面截图，
+    // 这些都只在**发布视图**里需要（源码目录里那份讲的是怎么从源码跑）。
+    // 图片用 raw.githubusercontent 的绝对地址，npm 页面才能显示出来 ——
+    // 相对路径在 npmjs.com 上是坏的。
+    const npmReadme = path.join(repositoryRoot, 'packages/standalone/NPM-README.md')
+    if (!fs.existsSync(npmReadme)) throw new Error('缺少 packages/standalone/NPM-README.md（npm 页面用的 README）')
+    let readme = fs.readFileSync(npmReadme, 'utf8')
+    // 版本与命令名以构建时为准，避免 README 与包内容漂移。
+    readme = readme.replace(/\b1\.0\.0\b(?=\s*\n|\s*`|\s*$)/gm, standalonePackage.version)
+    fs.writeFileSync(path.join(root, 'README.md'), readme)
     const manifest = {
       format: 'ofm-npm-package/v1',
       purpose: 'local-validation-only',
