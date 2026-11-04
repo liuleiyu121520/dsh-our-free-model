@@ -1,184 +1,60 @@
 <div align="center">
-  <img src="https://raw.githubusercontent.com/liuleiyu121520/dsh-our-free-model/main/docs/images/standalone-gateway.png" alt="Our Free Model 命令行控制台" width="820">
 
 # Our Free Model
 
-### 命令行模型网关 · `ofm`
-
-**一条命令，在你自己机器上跑起一个带网页控制台的模型网关。**
-
-命令行工具：`npx` 即用、装完即用，运行时零 npm 依赖。
+**命令行模型网关 —— 一条命令，在你自己机器上跑起一个带网页控制台的 OpenAI 兼容网关。**
 
 [![npm](https://img.shields.io/npm/v/our-free-model-standalone?style=flat-square&color=2f6f4f)](https://www.npmjs.com/package/our-free-model-standalone)
-[![license](https://img.shields.io/npm/l/our-free-model-standalone?style=flat-square&color=263146)](./LICENSE)
 [![node](https://img.shields.io/node/v/our-free-model-standalone?style=flat-square&color=4b6fff)](https://nodejs.org)
-[![deps](https://img.shields.io/badge/dependencies-0-7da1de?style=flat-square)](./package.json)
+[![deps](https://img.shields.io/badge/dependencies-0-7da1de?style=flat-square)](https://www.npmjs.com/package/our-free-model-standalone)
+[![license](https://img.shields.io/npm/l/our-free-model-standalone?style=flat-square&color=263146)](https://github.com/liuleiyu121520/dsh-our-free-model/blob/main/LICENSE)
 
 </div>
 
----
-
-## 这是什么
-
-**一个命令行工具**：在本机拉起一个 OpenAI 兼容的模型网关，把各家的免费模型额度
-与你自己登录的账号渠道汇集成统一的 `/v1` 接口，供 IDE、命令行和脚本调用。
-
-- **一条命令启动**——`npx our-free-model-standalone` 或装好后 `ofm`；
-- **自带网页控制台**——终端打印一次性管理链接，浏览器打开即可操作，不需要另装界面；
-- **零运行时依赖**——只用 Node 内置模块，装完不会拖进一棵依赖树；
-- **默认只监听 `127.0.0.1`**——只有本机能访问；
-- **凭据只落在本机数据目录**，不上传任何服务器。
-
-> 本项目是个人学习与技术研究项目，按「现状」提供。**它不是模型提供方**：
-> 所有回答都由你配置的第三方服务产生，额度、收费与可用性由对应服务方决定。
-
-## 安装
+## 安装并启动
 
 ```bash
-npm install -g our-free-model-standalone
-```
-
-或者不安装，直接跑：
-
-```bash
-npx our-free-model-standalone
-```
-
-## 📷 界面
-
-**网关与 API 接入**——选中模型，下方的调用示例即时跟着换；Base URL 与 API Key 一键复制。
-
-![网关与 API 接入](https://raw.githubusercontent.com/liuleiyu121520/dsh-our-free-model/main/docs/images/standalone-gateway.png)
-
-**账号渠道**——13 个渠道统一管理：登录、账号池、每日签到、用量与备份。
-
-![账号渠道](https://raw.githubusercontent.com/liuleiyu121520/dsh-our-free-model/main/docs/images/standalone-channels.png)
-
-## 快速开始
-
-```bash
-# 1. 启动（会打印一次性管理链接，并尝试自动打开浏览器）
+npm i -g our-free-model-standalone
 ofm
-
-# 2. 终端里会看到类似这样的输出：
-#    本地模型网关 1.0.0
-#    管理页面（10 分钟内一次性登录）：http://127.0.0.1:18900/#login=xxxxx
-#    API：http://127.0.0.1:18900/v1
-#    API Key 保存在：~/.our-free-model/settings.json
-
-# 3. 浏览器打开管理链接 → 进入控制台 →「账号渠道」登录你想要的渠道
-
-# 4. 把下面两样填进你的客户端
-#    Base URL : http://127.0.0.1:18900/v1
-#    API Key  : 在「网关与 API 接入」页点「查看密钥」
 ```
 
-调用任何 OpenAI 兼容客户端都可以：
+不安装也可以：`npx our-free-model-standalone`
+
+启动后终端打印一次性管理链接（10 分钟内有效），浏览器打开即可。API 地址是
+`http://127.0.0.1:18900/v1`，API Key 在控制台「网关与 API 接入」页查看。
+
+![控制台](https://raw.githubusercontent.com/liuleiyu121520/dsh-our-free-model/main/docs/images/standalone-gateway.png)
+
+## 它做什么
+
+把各家免费模型额度与你登录的账号渠道，汇集成一个 `/v1` 接口，供 IDE、命令行和脚本调用。
+
+- **13 个账号渠道**统一管理：登录、账号池、每日签到、用量与备份
+- **OpenAI 兼容**：`/v1/chat/completions`、`/v1/responses`，任何兼容客户端直接接
+- **自带网页控制台**，不需要另装界面
+- **零运行时依赖**，只用 Node 内置模块
+- **默认只监听 `127.0.0.1`**，凭据只落在本机数据目录
+
+## 常用参数
 
 ```bash
-curl -X POST http://127.0.0.1:18900/v1/chat/completions \
-  -H "Authorization: Bearer YOUR_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "mimo-v2.6-flash-free",
-    "messages": [{ "role": "user", "content": "你好" }]
-  }'
+ofm --port 18900            # 指定端口（占用时自动换）
+ofm --data-dir ~/ofm-data   # 数据目录，默认 ~/.our-free-model
+ofm --no-refresh            # 不自动刷新模型清单
+ofm --help                  # 全部选项
 ```
-
-## 命令与参数
-
-安装后有**两个等价命令**：`our-free-model-standalone`（完整名）与 **`ofm`**（日常用这个）。
-
-| 参数 | 作用 |
-|---|---|
-| `--port <端口>` | 监听端口，默认 `18900`；被占用时自动选可用端口 |
-| `--data-dir <目录>` | 数据目录，默认 `OFM_HOME` 或 `~/.our-free-model` |
-| `--no-refresh` | 跳过启动与周期的模型清单刷新 |
-| `--lan` / `--no-lan` | 开启/关闭局域网推理中继（管理页仍仅限本机） |
-| `--lan-port <端口>` | 局域网中继端口 |
-| `--help` | 显示全部选项 |
-
-## 数据与鉴权
-
-| 项 | 说明 |
-|---|---|
-| 数据目录 | 默认 `~/.our-free-model`，可用 `--data-dir` 或 `OFM_HOME` 覆盖 |
-| 管理登录 | 一次性链接（10 分钟内有效、只能兑换一次），或使用本机保存的管理令牌 |
-| API 鉴权 | `Authorization: Bearer <API Key>`；Key 保存在数据目录的 `settings.json` |
-| 监听地址 | 默认仅回环地址，不对外暴露 |
-
-> ⚠️ 若把数据目录指向**符号链接路径**（例如 macOS 的 `/tmp` 实为 `/private/tmp`），
-> 服务会拒绝启动并报 `Symlinks are not allowed in managed storage`。请使用真实路径。
-
-## 第一次打开时会发生什么
-
-1. **使用须知与免责声明**——读一次即可，之后从侧边栏可随时重看；
-2. **渠道登录**——在「账号渠道」里登录你要用的渠道，或导入已有的备份。
-
-> 只有在**本机恰好装过 DSH 插件**时，还会额外问一次是否导入那边的账号（整体替换，
-> 只问一次，点「稍后」不再打扰）。本产品本身不依赖 DSH，不装就没有这一步。
-
-## 常见问题
-
-**Q：这是 DSH 的插件吗？**
-不是。**本包是一个独立的命令行工具**，与 DSH 无关：不读它的配置、不依赖它运行。
-（如果你要的是 DSH 插件，见文末「相关项目」。）
-
-**Q：需要自己填 API Key 吗？**
-不需要。它聚合各渠道的免费额度，以及你自己登录的账号渠道。具体能用哪些模型，见控制台「网关与 API 接入」页。
-
-**Q：端口被占用？**
-默认会自动挑选可用端口；也可以 `--port 指定`。
-
-**Q：数据在哪、怎么备份？**
-`~/.our-free-model`。控制台「账号渠道 → 供应商与备份」里可以导出/导入备份。
 
 ## 仓库
 
-| | |
-|---|---|
-| **本包仓库** | https://github.com/liuleiyu121520/dsh-our-free-model |
-| **命令行工具源码** | [`packages/standalone`](https://github.com/liuleiyu121520/dsh-our-free-model/tree/main/packages/standalone) |
-| **问题反馈** | https://github.com/liuleiyu121520/dsh-our-free-model/issues |
+- **源码**：[liuleiyu121520/dsh-our-free-model](https://github.com/liuleiyu121520/dsh-our-free-model)（命令行工具在 [`packages/standalone`](https://github.com/liuleiyu121520/dsh-our-free-model/tree/main/packages/standalone)）
+- **问题反馈**：[Issues](https://github.com/liuleiyu121520/dsh-our-free-model/issues)
+- **DSH 插件入口**（可选，独立产品）：[Ebony-Vinyl/dsh-our-free-model](https://github.com/Ebony-Vinyl/dsh-our-free-model)
 
-## 相关项目（可选）
+> 与上游的关系：源自 [Ebony-Vinyl/dsh-our-free-model](https://github.com/Ebony-Vinyl/dsh-our-free-model)（MIT，版权声明保留、未重新授权），
+> 差异仅在渠道取舍——恢复了上游移除的 WorkBuddy 国内版/国际版与华为云渠道，风险由使用者承担。
+> 完整说明见[仓库 README](https://github.com/liuleiyu121520/dsh-our-free-model#readme)。
 
-**本包不需要 DSH。** 如果你确实想在 DSH 里用同一个模型网关，那边有一个**独立的插件形态**，
-入口在上游仓库：
+## 免责
 
-> **DSH 插件入口** → [Ebony-Vinyl/dsh-our-free-model](https://github.com/Ebony-Vinyl/dsh-our-free-model)
-
-两者是各自独立的产品：命令行工具（本包）不读 DSH 的配置与凭据；反过来也一样。
-装哪个都不影响另一个。
-
-### 与上游的关系
-
-本包同样源自上游 [Ebony-Vinyl/dsh-our-free-model](https://github.com/Ebony-Vinyl/dsh-our-free-model)（MIT），
-在本 fork 中维护。**差异仅在于渠道的取舍**：上游移除了 WorkBuddy 国内版、WorkBuddy 国际版与
-华为云（Huawei Cloud MaaS / CodeArts）渠道，本 fork 把它们恢复为可用。
-
-上游移除的原因是该适配会以对应桌面客户端的身份签名请求，上游不愿承担此风险；
-本 fork 把这一选择交回给使用者——**相应风险同样由使用者承担**。
-
-除渠道取舍外，本 fork 另含两处上游尚未合并的修复：腾讯系内容级风控（`11128`）的 system
-提示词等义改写，以及 Gemini 工具参数 schema 的 `items` 收敛。
-
-**版权与许可**：MIT，原作者版权声明保留在 [LICENSE](./LICENSE) 中，未重新授权。
-第三方组件与渠道包来源见包内 `scripts/standalone-third-party.txt` 与
-`vendor/channel-pack/NOTICE.md`。
-
-## 免责声明
-
-使用本程序即表示你理解并同意：
-
-- 本程序**不含任何模型能力**，只是在你本机做协议适配与请求路由；
-- 模型额度、可用性、是否收费、是否符合服务商条款，全部由对应服务方决定；
-- 你主动导入或登录得到的凭据只写入本机数据目录，不会上传；
-- 请确保你的使用方式符合对应服务的条款与所在地法律，由此产生的封禁、扣费或其他损失由使用者自行承担；
-- 本项目不对正确性、稳定性或特定用途适用性作任何担保。
-
-完整条款见控制台内「使用须知与免责声明」。
-
-## License
-
-[MIT](./LICENSE) · Copyright (c) 2026 Ebony-Vinyl
+个人学习与技术研究项目，按「现状」提供，**不是模型提供方**：所有回答由你配置的第三方服务产生，
+额度与可用性由对应服务方决定。使用时请遵守各地法律与服务商条款，风险自负。
