@@ -57706,6 +57706,13 @@ var GEMINI_SCHEMA_KEYS = /* @__PURE__ */ new Set([
   "minimum",
   "maximum"
 ]);
+var COLLAPSED_TYPE_PRIORITY = ["array", "object", "string", "number", "integer", "boolean"];
+function pickCollapsedType(types) {
+  for (const preferred of COLLAPSED_TYPE_PRIORITY) {
+    if (types.includes(preferred)) return preferred;
+  }
+  return types[0];
+}
 function sanitizeGeminiSchema(schema) {
   const out = {};
   for (const [key, value] of Object.entries(schema)) {
@@ -57743,7 +57750,7 @@ function sanitizeGeminiSchema(schema) {
       if (Array.isArray(value)) {
         const types = value.filter((item) => typeof item === "string");
         const nonNull = types.filter((item) => item !== "null");
-        if (nonNull.length > 0) out.type = nonNull[0];
+        if (nonNull.length > 0) out.type = pickCollapsedType(nonNull);
         if (nonNull.length !== types.length) out.nullable = true;
       }
       continue;
@@ -57756,6 +57763,33 @@ function sanitizeGeminiSchema(schema) {
     }
     out[key] = value;
   }
+  return normalizeItemsShape(out);
+}
+function normalizeItemsShape(schema) {
+  const out = { ...schema };
+  if (out.properties !== void 0 && typeof out.properties === "object" && out.properties !== null) {
+    const properties = {};
+    for (const [name2, child] of Object.entries(out.properties)) {
+      properties[name2] = typeof child === "object" && child !== null && !Array.isArray(child) ? normalizeItemsShape(child) : child;
+    }
+    out.properties = properties;
+  }
+  if (out.anyOf !== void 0 && Array.isArray(out.anyOf)) {
+    out.anyOf = out.anyOf.map((item2) => typeof item2 === "object" && item2 !== null && !Array.isArray(item2) ? normalizeItemsShape(item2) : item2);
+  }
+  if (out.items === void 0) return out;
+  if (out.type !== "array") {
+    delete out.items;
+    return out;
+  }
+  const item = out.items;
+  if (typeof item !== "object" || item === null || Array.isArray(item)) {
+    out.items = { type: "string" };
+    return out;
+  }
+  const normalized = normalizeItemsShape(item);
+  if (normalized.type === void 0) normalized.type = "string";
+  out.items = normalized;
   return out;
 }
 var GEMINI_MAX_IMAGE_BYTES_INLINE = 10 * 1024 * 1024;

@@ -58,6 +58,7 @@ const suites = [
   ['reload', 'reload-test.mjs', []],
   ['forward', 'forward-test.mjs', []],
   ['gemini-gateway', 'gemini-gateway-test.mjs', []],
+  ['gemini-schema', 'gemini-schema-test.mjs', []],
   ['private-file', 'private-file-permissions-test.mjs', []],
   ['subscriptions', 'subscriptions-test.mjs', []],
   ['subscription-completion', 'subscription-completion-test.mjs', []],

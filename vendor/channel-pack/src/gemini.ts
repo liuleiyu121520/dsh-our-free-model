@@ -603,6 +603,38 @@ export const GEMINI_SCHEMA_KEYS: ReadonlySet<string> = new Set([
 ])
 
 /**
+ * 从 union `type` 里挑一个收敛结果（Gemini 的 `type` 只能是单值）。
+ *
+ * ## 为什么不能像原来那样「取第一个非 null」
+ *
+ * DSH 的 MCP / REA 工具把「任意 JSON 值数组」声明成
+ * `["null","boolean","object","array","number","string"]`。按原顺序取会得到
+ * `boolean` —— 对于 `source_paths`（一堆路径）这种参数，模型收到「布尔数组」
+ * 的声明就会照着传 `true/false`，工具必然报参数非法。**400 消失但功能还是坏的。**
+ *
+ * 所以按「哪个类型最可能承载真实调用」排序挑，而不是按书写顺序：
+ * `array` > `object` > `string` > `number` > `boolean`。
+ *
+ * - `array` 优先：union 里出现 `array` 通常正是「值列表」（`source_paths`、
+ *   `allowed_origins`、`functions`），这也是用户这次踩到的三个参数；
+ * - `string` 排在 `number`/`boolean` 前：路径、名称、枚举这类自由文本远比数字多；
+ * - `boolean` 垫底：它是这批 union 里最不可能是真实意图的那个（排在首位纯属
+ *   书写顺序）。
+ *
+ * 收敛本身仍然丢信息（JSON Schema 的 union 在 Gemini 没有等价物），所以这是
+ * 「选一个最不坏的」：至少让模型拿到能用的类型，而不是被首位词误导。
+ */
+const COLLAPSED_TYPE_PRIORITY: readonly string[] = ['array', 'object', 'string', 'number', 'integer', 'boolean']
+
+function pickCollapsedType(types: readonly string[]): string {
+  for (const preferred of COLLAPSED_TYPE_PRIORITY) {
+    if (types.includes(preferred)) return preferred
+  }
+  // 非标准类型（上游自定义扩展）：保持原顺序，避免凭空发明类型。
+  return types[0] as string
+}
+
+/**
  * 递归清洗工具参数 schema（原版 `SanitizeGeminiSchema`）。
  *
  * 三条规则：
@@ -611,6 +643,9 @@ export const GEMINI_SCHEMA_KEYS: ReadonlySet<string> = new Set([
  * 3. `type` 为数组形态（如 `['string','null']`）时收敛成单个 type 并补
  *    `nullable: true`；`enum` 只要含**任何非字符串**值就整删（Gemini 只接受
  *    字符串枚举）。
+ *
+ * 清洗完还要过 {@link normalizeItemsShape}：把 `items` 收敛成上游真正接受的形态
+ * （2026-11-04 的 `items.items` 400 就出在这里）。
  */
 export function sanitizeGeminiSchema(schema: Record<string, unknown>): Record<string, unknown> {
   const out: Record<string, unknown> = {}
@@ -661,7 +696,7 @@ export function sanitizeGeminiSchema(schema: Record<string, unknown>): Record<st
       if (Array.isArray(value)) {
         const types = value.filter((item): item is string => typeof item === 'string')
         const nonNull = types.filter((item) => item !== 'null')
-        if (nonNull.length > 0) out.type = nonNull[0]
+        if (nonNull.length > 0) out.type = pickCollapsedType(nonNull)
         // 出现 'null' ⇒ 该字段可空。原版用 nullable 表达。
         if (nonNull.length !== types.length) out.nullable = true
       }
@@ -677,6 +712,88 @@ export function sanitizeGeminiSchema(schema: Record<string, unknown>): Record<st
 
     out[key] = value
   }
+  return normalizeItemsShape(out)
+}
+
+/**
+ * 把 `items` 收敛成 Gemini 接受的样子（`sanitizeGeminiSchema` 的最后一步）。
+ *
+ * ## 为什么必须有这一步（2026-11-04 实测 400）
+ *
+ * DSH 的 MCP / REA 工具里有「任意 JSON 数组」参数，schema 长这样：
+ *
+ * ```json
+ * { "type": ["null","array"],
+ *   "items": { "type": ["null","boolean","object","array","number","string"] } }
+ * ```
+ *
+ * 上面那步 `type` 数组收敛只取**第一个非 null** 项（这里是 `boolean`），而
+ * `items` 被原样保留，于是发出去的是：
+ *
+ * ```json
+ * { "type": "array", "nullable": true,
+ *   "items": { "type": "boolean", "items": {}, "nullable": true } }
+ * ```
+ *
+ * 外层 `type` 仍是 `array` 所以外层过；**内层** `type` 已收敛成 `boolean`
+ * 却还挂着 `items`，上游逐个校验时直接拒绝整轮请求：
+ *
+ * ```
+ * GenerateContentRequest.tools[0].function_declarations[20]
+ *   .parameters.properties[source_paths].items.items:
+ *   field predicate failed: $type == Type.ARRAY
+ * ```
+ *
+ * 也就是说：**`items` 只能出现在 `type === 'array'` 的 schema 上**。两条规则：
+ *
+ * 1. `type` 不是 `array`（被收敛成了别的标量）⇒ **删掉 `items`**。原 schema 的
+ *    元素类型是 union（`["null","boolean","object","array","number","string"]`），
+ *    JSON Schema 的 union 在 Gemini 里没有等价物，收敛只保留了第一个非 null 项；
+ *    把一个并不成立的 `items` 一起发上去只会让整轮 400，删掉更诚实。
+ * 2. `type` 是 `array` ⇒ 元素 schema 必须存在且**带确定类型**。空 `{}` 或无
+ *    `type` 的纯描述性 schema 上游同样拒绝，补成 `{ type: 'string' }`
+ *    （Gemini 的元素类型无法留空；字符串是最宽的、不改变调用方取值自由度的选择）。
+ *
+ * 属性递归同样处理，所以嵌套几十层的工具 schema 也被覆盖到。
+ */
+function normalizeItemsShape(schema: Record<string, unknown>): Record<string, unknown> {
+  const out: Record<string, unknown> = { ...schema }
+
+  if (out.properties !== undefined && typeof out.properties === 'object' && out.properties !== null) {
+    const properties: Record<string, unknown> = {}
+    for (const [name, child] of Object.entries(out.properties as Record<string, unknown>)) {
+      properties[name] = (typeof child === 'object' && child !== null && !Array.isArray(child))
+        ? normalizeItemsShape(child as Record<string, unknown>)
+        : child
+    }
+    out.properties = properties
+  }
+
+  if (out.anyOf !== undefined && Array.isArray(out.anyOf)) {
+    out.anyOf = out.anyOf.map((item) => (
+      typeof item === 'object' && item !== null && !Array.isArray(item)
+        ? normalizeItemsShape(item as Record<string, unknown>)
+        : item
+    ))
+  }
+
+  if (out.items === undefined) return out
+
+  // 规则 1：items 只能长在 array 上。
+  if (out.type !== 'array') {
+    delete out.items
+    return out
+  }
+
+  // 规则 2：array 的元素必须有确定类型。
+  const item = out.items
+  if (typeof item !== 'object' || item === null || Array.isArray(item)) {
+    out.items = { type: 'string' }
+    return out
+  }
+  const normalized = normalizeItemsShape(item as Record<string, unknown>)
+  if (normalized.type === undefined) normalized.type = 'string'
+  out.items = normalized
   return out
 }
 
