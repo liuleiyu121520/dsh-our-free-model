@@ -49,7 +49,12 @@ export function buildNpmStandalonePackage({ name = 'our-free-model-standalone', 
       private: false,
       type: 'module',
       description: 'Our Free Model 独立本地服务：一条命令启动，网页里设置免费模型与网关，无需安装 DSH',
-      bin: { [name]: './packages/standalone/cli.mjs' },
+      // 两个命令名指向同一个入口：完整名便于「看名字就知道是什么」，
+      // `ofm` 是日常敲的那个。npm 会把 bin 里的每个键都建成可执行链接。
+      bin: {
+        [name]: './packages/standalone/cli.mjs',
+        ofm: './packages/standalone/cli.mjs',
+      },
       files: shipped,
       engines: standalonePackage.engines,
       license: 'MIT',
@@ -61,7 +66,9 @@ export function buildNpmStandalonePackage({ name = 'our-free-model-standalone', 
 一条命令启动，浏览器里设置免费模型与网关，不需要安装 DSH。
 
 \`\`\`
-npx ${name}
+npx ${name}          # 或短名 npx ofm
+npm i -g ${name}
+ofm                  # 全局安装后的日常命令（等价于 ${name}）
 \`\`\`
 
 启动后终端会打印一次性管理链接并尝试自动打开浏览器；链接 10 分钟内有效、只能兑换一次。
