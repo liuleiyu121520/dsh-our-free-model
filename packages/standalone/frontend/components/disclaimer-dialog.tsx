@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { DISCLAIMER, DISCLAIMER_VERSION } from '../../../../src/disclaimer.js'
+// ⚠️ 独立服务用**自己的**免责声明（STANDALONE_*），不是插件那份。
+// 插件版讲的是「本分支恢复了哪些渠道、上游为什么移除」——独立服务的用户根本
+// 没装 DSH、也没见过上游，那套文案与他无关。两者版本号独立，互不影响确认状态。
+import { STANDALONE_DISCLAIMER as DISCLAIMER, STANDALONE_DISCLAIMER_VERSION as DISCLAIMER_VERSION } from '../../../../src/disclaimer.js'
 import { management } from '../management'
 import '../disclaimer.css'
 
@@ -9,8 +12,10 @@ import '../disclaimer.css'
  * sidebar afterwards.
  *
  * It is not a gate: acknowledging writes a settings key, and the model lanes
- * work whether or not it has been read. The copy itself lives in
- * `src/disclaimer.js` so the plugin's settings page says exactly the same thing.
+ * work whether or not it has been read. The copy lives in `src/disclaimer.js`,
+ * but the console renders `STANDALONE_DISCLAIMER` — the standalone product has
+ * its own story to tell (no DSH, local only, a gateway rather than a provider)
+ * and must not repeat the plugin's branch-vs-upstream explanation.
  */
 export function DisclaimerDialog({ open, onClose }: { open: boolean; onClose(): void }) {
   const [busy, setBusy] = useState(false)

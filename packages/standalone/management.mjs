@@ -407,6 +407,8 @@ export function createManagement({ stores, runtime, channels, eac, subscriptions
       // 本服务**已经有账号**时不再提示：导入是整体替换，会把用户现有的
       // 登录状态冲掉。这条比「问过一次」更可靠 —— 用户点了「稍后」、
       // 或换了台机器但没有账号时，仍应再次被问到。
+      // 「问过没有」只用于**自动弹窗**的判据；手动导入不受影响。
+      const asked = stores.settings.get().dshImportAsked === true
       let existing = 0
       if (channels) {
         try {
@@ -415,7 +417,12 @@ export function createManagement({ stores, runtime, channels, eac, subscriptions
         } catch { /* 查不到就按「没有账号」处理，最多多问一次 */ }
       }
       json(res, 200, {
-        available: detected.available === true && existing === 0,
+        // ⚠️ 只在「**首次**且没有绑定任何账号」时提示（2026-11-04 修订）。
+        // 原判据只有 `existing === 0`，于是用户点「稍后」之后，只要本服务仍
+        // 没有账号，**每次打开控制台都会再弹一次** —— 那是个骚扰，不是提示。
+        // 现在把 `dshImportAsked` 一并纳入：问过一次（点稍后或导完）就不再自动
+        // 弹，用户想导入可去渠道页手动触发。
+        available: detected.available === true && existing === 0 && asked !== true,
         existing,
         reason: detected.reason,
         accounts: detected.accounts,

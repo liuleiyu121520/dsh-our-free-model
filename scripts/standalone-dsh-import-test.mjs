@@ -109,29 +109,34 @@ try {
   // available 恒为 false，否则用户每次打开都会被问要不要整体替换自己的账号。
   check('本服务已有账号时探测结果必须不可导入（避免二次弹窗）', () => {
     // 复刻 management.mjs 里的判据：available = 探测到 && existing === 0
-    const decide = (probeAvailable, existing) => probeAvailable === true && existing === 0
-    assert.equal(decide(true, 0), true, '探测到且本服务无账号 → 应该问')
-    assert.equal(decide(true, 22), false, '本服务已有 22 个账号 → 不该再问')
-    assert.equal(decide(false, 0), false, '没有可导入账号 → 不问')
-    assert.equal(decide(false, 22), false, '两样都不成立 → 不问')
+    // ⚠️ 2026-11-04 修订：判据加入 `asked`。原实现只按 `existing === 0`，
+    // 于是用户点「稍后」之后，只要本服务一直没账号，**每次打开控制台都会再弹**
+    // ——用户实测反馈「怎么每次都会弹窗」。现在只在**首次且从未问过**时提示。
+    const decide = (probeAvailable, existing, asked) => probeAvailable === true && existing === 0 && asked !== true
+    assert.equal(decide(true, 0, false), true, '探测到、本服务无账号、且没问过 → 应该问')
+    assert.equal(decide(true, 0, true), false, '已经问过（点过稍后）→ 不再自动弹')
+    assert.equal(decide(true, 22, false), false, '本服务已有账账号 → 不该问')
+    assert.equal(decide(false, 0, false), false, '没有可导入账号 → 不问')
+    assert.equal(decide(false, 22, true), false, '两样都不成立 → 不问')
   })
 
-  // 前端不得再用 `dshImportAsked` 提前短路：那个设置位会让「删光账号后想再导入」
-  // 永久失效，也会让换数据目录的机器永远等不到提示。
-  check('导入弹窗不靠设置位短路口，且「稍后」不写设置位', () => {
+  check('导入弹窗只在首次提示：「稍后」与「导入」都记录已问过', () => {
     const source = fs.readFileSync(new URL('../packages/standalone/frontend/components/dsh-import-dialog.tsx', import.meta.url), 'utf8')
-    assert.ok(!/if \(summary\.settings\.dshImportAsked === true\) return/.test(source),
-      '不得用 dshImportAsked 提前 return')
     assert.ok(/if \(value\.available\) setOpen\(true\)/.test(source),
-      '是否弹窗必须只看后端给出的 available')
-    // 「稍后」分支里不该再写 dshImportAsked
+      '是否弹窗看后端给出的 available（后端已并入 asked 与 existing）')
+    // 「稍后」现在也必须记下来，否则同一台机器每次打开都弹。
     const finish = source.slice(source.indexOf('const finish'), source.indexOf('const importNow'))
-    assert.ok(!/dshImportAsked: true/.test(finish),
-      '「稍后」不应把提示标成已问过，否则下次不再提示')
-    // 「一键导入」成功后仍然写一次，避免导入完又被问
+    assert.ok(/dshImportAsked: true/.test(finish),
+      '「稍后」应记录已问过，避免每次开控制台都弹')
     const importNow = source.slice(source.indexOf('const importNow'))
     assert.ok(/dshImportAsked: true/.test(importNow),
       '导入成功后应记录，避免重复提示')
+  })
+
+  check('后端 available 把 asked 并入判据', () => {
+    const source = fs.readFileSync(new URL('../packages/standalone/management.mjs', import.meta.url), 'utf8')
+    assert.ok(/available: detected\.available === true && existing === 0 && asked !== true/.test(source),
+      '缺少 asked 判据会让「稍后」之后每次都弹')
   })
 
   check('state.json 损坏时报 unreadable，不带路径或凭据', () => {

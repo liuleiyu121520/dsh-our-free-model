@@ -69,10 +69,13 @@ export function DshImportDialog({ request, onDone }: {
   const providers = Object.entries(detected.providers).sort((left, right) => right[1] - left[1])
 
   const finish = async () => {
-    // 只是这一次不导：不写 `dshImportAsked`，下次启动（本服务仍无账号时）
-    // 还会再问一次。用户真想永久跳过，渠道页不再提示即可 —— 与其悄悄
-    // 把提示关掉，不如让「有账号可导」这件事保持可见。
+    // ⚠️ 「稍后」也要记下来（2026-11-04 修订）。原实现故意不写 `dshImportAsked`，
+    // 想着「用户可能下次想导」，结果在**本服务一直没有账号**的机器上变成每次
+    // 打开控制台都弹一次 —— 那不是提示，是骚扰。
+    // 现在：问过一次就不再自动弹；想导入的人随时可以去渠道页手动触发
+    // （手动导入不经过这个自动提示，不受 `dshImportAsked` 影响）。
     setOpen(false)
+    await request('/settings', { dshImportAsked: true }).catch(() => {})
     onDone()
   }
   const importNow = async () => {
