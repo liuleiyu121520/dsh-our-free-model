@@ -94,6 +94,18 @@ export function managementSettings(value) {
   }
 }
 
+/**
+ * 连接是否来自本机回环地址。
+ *
+ * 只看 `req.socket.remoteAddress`（TCP 层事实），**不看 `Host` 头**——后者可伪造。
+ * IPv4-mapped IPv6（`::ffff:127.0.0.1`）在双栈监听下很常见，必须一并认。
+ */
+export function isLoopbackAddress(address) {
+  if (typeof address !== 'string') return false
+  const value = address.toLowerCase()
+  return value === '127.0.0.1' || value === '::1' || value === '::ffff:127.0.0.1'
+}
+
 /** 管理读写要求鉴权；登录恢复仅允许同源页面触发固定本机动作。 */
 export function createManagement({ stores, runtime, channels, eac, subscriptions, workbenchOptions, requestLog, magpieEngine, magpieModels, onEngineStarted, onSubscriptionsChanged, info, onSettingsChanged, loginTerminal = openLoginTerminal, desktopPlatform = process.platform, desktopArch = process.arch }) {
   // `desktopPlatform`/`desktopArch` are threaded from the caller instead of read
@@ -138,13 +150,50 @@ export function createManagement({ stores, runtime, channels, eac, subscriptions
       privilegedSessions.delete(id)
     }
   }
+  /**
+   * 本机直连（回环地址）且没开 LAN 时视为已登录。
+   *
+   * 这个页面本来就跑在用户自己的机器上、只监听回环地址，让用户再从
+   * `settings.json` 里翻一个令牌贴进来，只是**一层没有防护价值的摩擦**：
+   * 能打开这个端口的人本来就已经在这台机器上（或已能读那份文件）。
+   *
+   * ⚠️ 三条边界必须同时成立才免登录，缺一不可：
+   * 1. **请求来自回环地址**（`127.0.0.1` / `::1` / IPv4-mapped），外部地址不放行；
+   * 2. **没有开启 LAN 暴露**（`standaloneLanEnabled !== true`）—— 一旦监听 0.0.0.0，
+   *    同网段的任何人都能访问，此时必须回到令牌鉴权，否则等于把账号操作敞开；
+   * 3. 仍然是**同源页面**发起的请求（下面 `route()` 里已有的 Origin / Sec-Fetch-Site 校验）。
+   *
+   * 注意 `Host` 头不可作为判据 —— 它可以被伪造；这里看的是**连接来源地址**
+   * （`req.socket.remoteAddress`），那是 TCP 层的事实。
+   */
+  /**
+   * 是否走「本机直连」这条免登录路径。
+   *
+   * ⚠️ 只在请求**没有携带任何显式凭证**时成立。带了 `Authorization: Bearer …` 或
+   * 会话 cookie 的请求，必须按它自己那份凭证去校验 —— 否则「推理密钥」或一个
+   * 已过期的会话 cookie 都会因为「反正来自本机」而被当成管理员，
+   * 那等于把特权路由的鉴权整个抹掉（workbench / providers / library 等）。
+   */
+  const hasExplicitCredential = req => {
+    if (typeof req.headers.authorization === 'string' && req.headers.authorization !== '') return true
+    return typeof cookie(req) === 'string' && cookie(req) !== ''
+  }
+  const localDirectAllowed = req => {
+    if (stores.settings.get().standaloneLanEnabled === true) return false
+    if (hasExplicitCredential(req)) return false
+    return isLoopbackAddress(req.socket?.remoteAddress)
+  }
   const authenticated = req => {
     const bearer = /^Bearer (.+)$/i.exec(String(req.headers.authorization ?? ''))?.[1]
     if (matches(bearer, stores.settings.get().forwardKey)) return true
+    if (localDirectAllowed(req)) return true
     pruneSessions()
     return sessions.has(cookie(req))
   }
   const sessionAuthenticated = req => {
+    // 本机直连已经在 `authenticated` 里放行，特权操作不必再要走一遍登录流程；
+    // 非回环（或已开 LAN）时仍必须持有**特权会话**。
+    if (localDirectAllowed(req)) return true
     pruneSessions()
     return sessions.has(cookie(req)) && privilegedSessions.has(cookie(req))
   }

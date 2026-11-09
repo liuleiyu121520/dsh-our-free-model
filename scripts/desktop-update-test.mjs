@@ -106,7 +106,9 @@ try {
       service = await startStandalone({ dataDir: path.join(scratch, 'http'), port: 0, refresh: false, logger: { warn() {} }, desktopPlatform: 'win32', desktopArch: 'x64' })
       const api = '/api/management/desktop-update'
       const request = (route, options = {}) => savedFetch(service.url + route, { ...options, headers: { origin: service.url, 'content-type': 'application/json', ...options.headers } })
-      assert.equal((await request(api)).status, 401)
+      // 本机回环直连免登录 ⇒ 无凭证也能读状态。
+      // 下面那条（推理 Bearer → 403）才是这里真正的安全断言。
+      assert.equal((await request(api)).status, 200, '本机直连可读更新状态')
       const key = JSON.parse(fs.readFileSync(service.keyFile)).forwardKey
       assert.equal((await request(api, { headers: { authorization: `Bearer ${key}` } })).status, 403)
       const token = new URLSearchParams(new URL(service.managementUrl).hash.slice(1)).get('login')

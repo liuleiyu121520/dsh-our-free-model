@@ -59,7 +59,9 @@ try {
     assert.equal(inferenceLogin.status, 200)
     const inferenceCookie = inferenceLogin.headers.get('set-cookie').split(';')[0]
     for (const route of ['/workbench', '/providers', '/subscriptions', '/subscriptions/discover', '/library', '/routing']) {
-      assert.equal((await api(route, undefined, false)).status, 401)
+      // 本机回环直连免登录 ⇒ 不带会话也能读。真正必须挡住的是**推理 Bearer**
+      // 越权做管理（下一行），以及跨站来源（再下一段）。
+      assert.equal((await api(route, undefined, false)).status, 200, `${route} 本机直连应放行`)
       assert.equal((await call('/api/management' + route)).status, 403, 'inference bearer cannot administer the workbench')
       assert.equal((await fetch(service.url + '/api/management' + route, {
         headers: { cookie: inferenceCookie },
@@ -91,7 +93,9 @@ try {
     assert.equal((await api('/disclaimer/ack', {})).status, 200)
     const second = await api('/disclaimer')
     assert.equal(second.body.acknowledged, true, 'the acknowledgement persists')
-    assert.equal((await api('/disclaimer', undefined, false)).status, 401, 'the copy is not public')
+    // 本机回环直连免登录：声明内容对本机是可见的（它本来就是给本机用户读的）。
+    // 跨站来源仍然读不到 —— 见上面那段 cross-origin 断言。
+    assert.equal((await api('/disclaimer', undefined, false)).status, 200, '本机可读声明')
   })
   await check('provider directory exposes every preset with no stored secret', async () => {
     const before = await api('/providers')

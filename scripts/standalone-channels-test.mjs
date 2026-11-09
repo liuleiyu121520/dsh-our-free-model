@@ -240,11 +240,21 @@ try {
     assert.equal(requests.length, before, '未知渠道请求不得触达任何上游端点')
     assertUnsupportedDataPreserved()
   })
-  await check('同源鉴权覆盖渠道与 EAC 操作，跨域和无密钥访问失败', async () => {
+  await check('同源鉴权覆盖渠道与 EAC 操作，跨域访问失败、本机直连放行', async () => {
+    // 本机回环 + 未开 LAN：不再要求令牌（该页面只监听本机）。
+    // 本机直连可达（不再 401）。这两个端点对空载荷各自有正常响应，
+    // 所以这里只断言「不是鉴权失败」，不规定具体业务码。
     for (const endpoint of ['/api/management/eac/status', '/api/management/channels/rpc']) {
-      const noAuth = await fetch(service.url + endpoint, { method: endpoint.endsWith('rpc') ? 'POST' : 'GET', headers: { 'content-type': 'application/json' }, ...endpoint.endsWith('rpc') ? { body: '{}' } : {} })
-      assert.equal(noAuth.status, 401)
+      const direct = await fetch(service.url + endpoint, { method: endpoint.endsWith('rpc') ? 'POST' : 'GET', headers: { 'content-type': 'application/json' }, ...endpoint.endsWith('rpc') ? { body: '{}' } : {} })
+      assert.notEqual(direct.status, 401, `${endpoint} 本机直连不应要求登录`)
     }
+    // 跨站来源必须被拒 —— 这是免登录之后真正的安全边界。
+    const crossSite = await fetch(service.url + '/api/management/channels/rpc', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', origin: 'http://evil.invalid', 'sec-fetch-site': 'cross-site' },
+      body: JSON.stringify({ method: 'gateway.getEnabled', payload: {} }),
+    })
+    assert.equal(crossSite.status, 403, '跨站渠道操作必须被拒')
     assert.equal((await api('/api/management/channels/rpc', { method: 'account.list', payload: { provider: 'cline' } }, { origin: 'http://evil.invalid' })).response.status, 403)
     assert.equal((await api('/api/management/channels/rpc', { method: 'gateway.getEnabled', payload: {} })).value.value.apiKey.value, key)
   })

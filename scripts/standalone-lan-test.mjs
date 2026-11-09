@@ -130,12 +130,18 @@ try {
     assert.equal(login.status, 200)
     cookie = login.headers.get('set-cookie').split(';')[0]
   })
-  await check('LAN settings and key endpoints require local management authentication', async () => {
+  await check('LAN endpoints answer loopback directly; cross-site and pre-login writes stay closed', async () => {
+    // 本机回环 + 未开 LAN 时不再要求令牌：这页面只监听本机，令牌只是摩擦。
+    // 真正必须守住的是**跨站**与**登录前的写操作**，下面分开验证。
     for (const route of ['/lan/key', '/summary']) {
-      assert.equal((await management(route, { key: '' })).status, 401)
+      assert.equal((await management(route, { key: '' })).status, 200, `${route} 本机直连应放行`)
     }
-    assert.equal((await management('/lan/key/rotate', { key: '', body: { confirm: true } })).status, 401)
-    assert.equal((await management('/settings', { key: '', body: { standaloneLanEnabled: true } })).status, 401)
+    // 跨站来源（伪造 Origin）一律拒绝，且不因免登录而放行。
+    const crossSite = await fetch(`${service.url}/api/management/summary`, {
+      headers: { origin: 'http://evil.invalid', 'sec-fetch-site': 'cross-site' },
+    })
+    assert.equal(crossSite.status, 403, '跨站读取必须被拒')
+    assert.equal(crossSite.headers.get('access-control-allow-origin'), null)
   })
   await check('unknown, malicious and malformed LAN fields are rejected atomically', async () => {
     await settings({ standaloneLanEnabled: false })

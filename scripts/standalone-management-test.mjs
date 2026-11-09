@@ -142,13 +142,22 @@ try {
     assert.equal(health.product, 'standalone')
     assert.equal(health.capabilities.webUi, true)
   })
-  await check('所有管理数据和操作要求登录，OPTIONS 不放行跨域', async () => {
-    for (const route of ['summary', 'stats', 'key']) assert.equal((await request(`/api/management/${route}`, { cookie: '' })).status, 401)
-    for (const route of ['settings', 'key/rotate', 'models/refresh', 'models/test']) {
-      assert.equal((await request(`/api/management/${route}`, { body: {}, cookie: '' })).status, 401)
+  await check('本机回环直连免登录；非回环来源与开启 LAN 后仍必须鉴权', async () => {
+    // 这页面本来就只监听回环，本机用户不该再去 settings.json 里翻令牌。
+    const { isLoopbackAddress } = await import('../packages/standalone/management.mjs')
+    for (const address of ['127.0.0.1', '::1', '::ffff:127.0.0.1', '::FFFF:127.0.0.1']) {
+      assert.equal(isLoopbackAddress(address), true, `${address} 必须认作本机`)
     }
+    for (const address of ['192.168.1.3', '10.0.0.2', '::ffff:192.168.1.3', '', undefined, null, 'localhost', 'evil.test']) {
+      assert.equal(isLoopbackAddress(address), false, `${String(address)} 不得认作本机`)
+    }
+    // 本机直连：不带头也不带 cookie 就能读管理数据。
+    for (const route of ['summary', 'stats', 'key']) {
+      assert.equal((await request(`/api/management/${route}`, { cookie: '' })).status, 200, `${route} 本机应放行`)
+    }
+    // OPTIONS 仍然不放行跨域预检（这条与登录无关，是 CORS 边界）。
     const response = await request('/api/management/settings', { cookie: '', method: 'OPTIONS' })
-    assert.equal(response.status, 401)
+    assert.notEqual(response.status, 200)
     assert.equal(response.headers.get('access-control-allow-origin'), null)
   })
   await check('一次性链接只兑换一次，错误凭证不消耗有效凭证', async () => {
@@ -424,8 +433,14 @@ try {
     const nextKey = (await rotated.json()).key
     assert.notEqual(nextKey, key)
     assert.equal(getKey(), nextKey)
-    assert.equal((await request('/api/management/summary', { cookie: other })).status, 401)
+    // 本机直连始终可用（新语义：回环 + 未开 LAN 不需要会话），
+    // 真正该失效的是**旧密钥**与旧会话自身的特权，下面两行覆盖后者。
     assert.equal((await request('/api/management/summary')).status, 200)
+    // ⚠️ 带着**显式会话 cookie** 的请求必须按那份 cookie 校验：
+    // 轮换后旧会话失效，所以这里仍是 401。免登录只覆盖「没带凭证」的请求，
+    // 否则一个过期的 cookie 会被当成管理员（那是特权路由的鉴权漏洞）。
+    assert.equal((await request('/api/management/summary', { cookie: other })).status, 401,
+      '轮换后旧会话的显式 cookie 必须失效')
     assert.equal((await request('/v1/models', { headers: { authorization: `Bearer ${key}` } })).status, 401)
     assert.equal((await request('/v1/models', { headers: { authorization: `Bearer ${nextKey}` } })).status, 200)
     assert.equal((await request('/api/management/session', { cookie: '', body: { key } })).status, 401)
@@ -436,13 +451,19 @@ try {
     const started = nativeNow()
     try {
       Date.now = () => started + 8 * 60 * 60_000 + 1000
+      // 带**显式会话 cookie** 时按该会话校验：过期后必须失效。
+      // （免登录只覆盖「没带凭证」的请求。）
       assert.equal((await request('/api/management/summary')).status, 401)
+      // 不带凭证：本机直连仍可用。
+      assert.equal((await request('/api/management/summary', { cookie: '' })).status, 200)
     } finally { Date.now = nativeNow }
     cookie = await login({ key })
     const response = await request('/api/management/logout', { body: {} })
     assert.equal(response.status, 200)
     assert.match(response.headers.get('set-cookie'), /Max-Age=0/)
+    // 登出清掉的是会话：继续带旧 cookie 必须失效；不带凭证则是本机直连。
     assert.equal((await request('/api/management/summary')).status, 401)
+    assert.equal((await request('/api/management/summary', { cookie: '' })).status, 200)
     cookie = await login({ key })
   })
   await check('重启保留设置与密钥但清除会话，新的登录链接独立生成', async () => {
@@ -458,7 +479,9 @@ try {
     assert.deepEqual(service.runtime.state().settings.hiddenModelIds, [model])
     assert.equal(service.runtime.state().settings.hideEacModels, true)
     assert.equal(service.runtime.state().settings.hideFreeModels, false)
+    // 重启清掉的是**会话**：带旧 cookie 必须 401；不带凭证走本机直连，仍可用。
     assert.equal((await request('/api/management/summary')).status, 401)
+    assert.equal((await request('/api/management/summary', { cookie: '' })).status, 200)
     const token = new URLSearchParams(new URL(service.managementUrl).hash.slice(1)).get('login')
     const nativeNow = Date.now
     const started = nativeNow()

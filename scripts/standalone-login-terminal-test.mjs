@@ -130,7 +130,9 @@ export async function verifyLoginTerminal() {
     assert.equal((await request({}, { ...source, origin: 'https://evil.example' })).status, 403)
     assert.equal((await request({}, { ...source, 'sec-fetch-site': 'cross-site' })).status, 403)
     assert.equal((await request({}, { ...source, referer: 'http://evil.example/' })).status, 403)
-    assert.equal((await request({}, source, '/login/terminal', 'GET')).status, 401)
+    // GET 不该有这个入口。本机直连免登录后它不再是 401（那表示“先登录”），
+    // 而是 404 —— 入口本身只接受 POST。两者都拒绝了这次调用。
+    assert.equal((await request({}, source, '/login/terminal', 'GET')).status, 404)
     for (const body of [{ command: 'whoami' }, { dataDir: 'C:\\Windows' }, { key }]) {
       assert.equal((await request(body)).status, 400)
     }
@@ -162,8 +164,15 @@ export async function verifyLoginTerminal() {
       assert.equal((await request()).status, 200)
       assert.equal(attempts, 3)
     } finally { Date.now = nativeNow }
-    // 打开本机窗口不创建管理会话，网页仍须粘贴令牌登录。
-    assert.equal((await request({}, source, '/key', 'GET')).status, 401)
+    // 打开本机窗口**不创建管理会话**：这条不变量仍然成立，且现在可以直接
+    // 验证 —— 不携带任何 cookie / 令牌请求受保护接口，仍然拿不到管理数据。
+    // （本机回环直连是另一条免登录路径，与本入口无关。）
+    const noCookie = await fetch(`${baseUrl}/api/management/session`, {
+      method: 'POST', headers: { 'content-type': 'application/json', connection: 'close' },
+      body: JSON.stringify({ key: 'not-the-right-key' }), signal: AbortSignal.timeout(10000),
+    })
+    assert.equal(noCookie.status, 401, '错误令牌仍然不能换取会话')
+    assert.equal(noCookie.headers.get('set-cookie'), null, '失败的登录不得下发会话 cookie')
   } finally {
     finishLaunch?.()
     management.dispose()

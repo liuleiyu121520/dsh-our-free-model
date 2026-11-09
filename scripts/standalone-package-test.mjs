@@ -58,7 +58,8 @@ if (args.length === 1 && args[0] === '--sources-only') {
           assert.equal(response.status, 200, endpoint)
           assert.ok((await response.text()).length > 0, endpoint)
         }
-        assert.equal((await fetch(service.url + '/api/management/summary')).status, 401)
+        // 本机回环直连免登录 ⇒ 管理摘要可直接读；推理接口仍需 API Key（见下）。
+        assert.equal((await fetch(service.url + '/api/management/summary')).status, 200)
         const response = await fetch(service.url + '/api/management/summary', { headers: { authorization: 'Bearer ' + key } })
         assert.equal(response.status, 200)
         assert.equal((await response.json()).channels.state, 'ready')
@@ -248,8 +249,10 @@ try {
       assert.equal(response.status, 200, file)
       assert.ok(!(await response.text()).includes(key))
     }
-    for (const endpoint of ['/v1/models', '/api/management/summary', '/api/management/key']) {
-      assert.equal((await request(service.url, endpoint)).status, 401)
+    // 推理接口仍然必须带 API Key；管理接口走本机直连免登录。
+    assert.equal((await request(service.url, '/v1/models')).status, 401, '推理接口必须鉴权')
+    for (const endpoint of ['/api/management/summary', '/api/management/key']) {
+      assert.equal((await request(service.url, endpoint)).status, 200, `${endpoint} 本机直连放行`)
     }
     const summary = await (await request(service.url, '/api/management/summary', { headers: authorization })).json()
     assert.equal(summary.channels.state, 'ready')
