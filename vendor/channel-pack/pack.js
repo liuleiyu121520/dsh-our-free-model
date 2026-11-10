@@ -60924,6 +60924,7 @@ function utc8DateString(nowMs = Date.now()) {
 }
 var DSH_CHANNEL_PACK_AUTO_CHECKIN_DELAY_MS = "DSH_CHANNEL_PACK_AUTO_CHECKIN_DELAY_MS";
 var AUTO_CHECKIN_DELAY_MS = 3e4;
+var AUTO_CHECKIN_INTERVAL_MS = 36e5;
 function autoCheckinDelayMs(env = process.env) {
   const raw = env[DSH_CHANNEL_PACK_AUTO_CHECKIN_DELAY_MS];
   if (typeof raw !== "string" || raw.trim().length === 0) return AUTO_CHECKIN_DELAY_MS;
@@ -61138,18 +61139,31 @@ function createAutoCheckin(deps) {
       if (enabled) void runIfDue();
       return state();
     },
+    /**
+     * 启动自动签到。
+     *
+     * ⚠️ 这里以前是**一次性**的 `setTimeout(fire, 30s)`：进程起来 30 秒后跑一次，
+     * 之后永久沉默。表现就是「自动签到明明是开的，却从来不签到」，只有手动
+     * 关掉再打开（`setEnabled(true)` 会立刻 `runIfDue()`）才有动作 —— 真实报障。
+     *
+     * 现在改成**周期检查**：先按启动延时跑第一轮，之后每 60 分钟再调一次
+     * `runIfDue()`。它内部本来就有 `lastDate === today()` 的跳过判据，所以
+     * 当天签到过之后其余轮次都是空转；跨天、或某天失败没记入时，下一轮自动补上。
+     */
     start() {
       if (pending !== null) return;
-      const ms = deps.delayMs ?? autoCheckinDelayMs();
-      const fire = () => {
-        pending = null;
+      const interval = deps.intervalMs ?? AUTO_CHECKIN_INTERVAL_MS;
+      const tick = () => {
         void runIfDue();
+        pending = (deps.schedule ?? defaultSchedule)(tick, interval);
       };
-      if (ms <= 0) {
-        fire();
+      const first = deps.delayMs ?? autoCheckinDelayMs();
+      if (first <= 0) {
+        pending = null;
+        tick();
         return;
       }
-      pending = (deps.schedule ?? defaultSchedule)(fire, ms);
+      pending = (deps.schedule ?? defaultSchedule)(tick, first);
     },
     runIfDue,
     async dismiss() {

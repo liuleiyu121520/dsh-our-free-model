@@ -1,7 +1,7 @@
 {
-  "version": "2.8.2",
+  "version": "2.8.3",
   "base": "../",
-  "publishedAt": "2026-11-04T08:40:06.376Z",
+  "publishedAt": "2026-11-10T12:52:53.872Z",
   "notes": "",
   "files": [
     {
@@ -52,7 +52,7 @@
     {
       "path": "package.json",
       "size": 5243,
-      "sha256": "769e23c9c362f4ca745650a17bbff35adcf81860c76efd40fc2cd93cc56c6f6c"
+      "sha256": "3cf2ad084041c0567351d2d7b36e641b95a0f5050f1ec2287068d7c47ff9f5fe"
     },
     {
       "path": "src/adapter.js",
@@ -366,8 +366,8 @@
     },
     {
       "path": "vendor/channel-pack/pack.js",
-      "size": 2940089,
-      "sha256": "0c26e8c30fa496e2047d6fbe8dd13484504a67f1e3433a4775de8b649bcc5b35"
+      "size": 2940968,
+      "sha256": "14ff5178af703ff8372b170f913e9b5a3e6455e38d0635bd68cc4a9f356fdd30"
     },
     {
       "path": "vendor/channel-pack/qoder-auth-wasm.wasm",
@@ -390,5 +390,5 @@
       "sha256": "579832a2d994b73f0431e062c93d9358550e00701acf7f58c6fa5d3293551a11"
     }
   ],
-  "signature": "3vo1rf3vPd9zPV5Dx+cmL3LtbPChQ5irRQRsoZxuQpM6w4XggLEoFYddFfQoD3GQT2LYYyFXvutvMXLWlxckAw=="
+  "signature": "3lWG7RLe5qNxXlTuZsfFZM1RyB9O44ipZNmNGlPnhjugdOdcJXXAGMLLL3SU7j/IoxFFW5rOeLwTPr/aauW3AA=="
 }

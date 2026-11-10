@@ -1,12 +1,18 @@
 /**
- * 「每日首次启动自动签到」—— 开关、当日记录与执行体。
+ * 「每日自动签到」—— 开关、当日记录与执行体。
  *
  * ## 它做什么
  *
- * DSH 启动后延迟一小段（默认 30 秒，见下），若这个开关开着、且**今天（UTC+8）
- * 还没跑过**，就串行遍历「账号池里真的有账号的渠道」，逐个调内部
+ * DSH 启动后延迟一小段（默认 30 秒，见下）跑**第一轮**，之后**每 60 分钟**再
+ * 检查一次（`AUTO_CHECKIN_INTERVAL_MS`）。每一轮都先看「今天（UTC+8）跑过没有」：
+ * 跑过就跳过，没跑过才串行遍历「账号池里真的有账号的渠道」，逐个调内部
  * `credits.claimAll`；跑完把日期与**逐渠道结果**写进文档 ⇒ **当天不再触发**。
  * 用户手动点「全部渠道签到」不受此限（那是显式操作，永远放行）。
+ *
+ * ⚠️ **为什么是周期检查而不是一次性定时器**：签到按天结算，需要的是「每天保证
+ * 跑一次」。只挂一个启动定时器时，进程若在启动 30 秒后一直活着，第二天就再也
+ * 不会跑 —— 用户看到「已开启」却整天没签到（真实报障）。周期检查 + 当日跳过，
+ * 既保证跨天自动补上，又不会重复打上游。
  *
  * ⚠️ **开关默认打开**（用户 2026-10-02 明确要求：「自动签到默认保持打开状态」）。
  * 这与「这是代用户打上游的写操作」相权：该特性本身是用户要的，默认开启才符合
@@ -25,6 +31,8 @@
  * 一道保险**：整轮跑完**没有任何一条能证明「今天已被处理」**时**不记日期**，
  * 下次启动会重试（见 `shouldMarkToday`）。延迟可用
  * `DSH_CHANNEL_PACK_AUTO_CHECKIN_DELAY_MS` 覆盖，`0` 合法（表示立刻跑，单测用它）。
+ * 首轮之后的周期由 `intervalMs`（默认 60 分钟）决定，只影响「多久看一次」，
+ * 不影响「当天跑过就不再跑」这条判据。
  *
  * ## 什么算「今天已被处理」
  *
@@ -182,6 +190,15 @@ export const DSH_CHANNEL_PACK_AUTO_CHECKIN_DELAY_MS = 'DSH_CHANNEL_PACK_AUTO_CHE
 
 /** 默认延迟（毫秒）。理由见文件头「为什么延迟 30 秒」。 */
 export const AUTO_CHECKIN_DELAY_MS = 30_000
+
+/**
+ * 首轮之后的检查周期：60 分钟。
+ *
+ * 签到是**按天**结算的，所以真正需要的语义是「每天保证跑一次」，
+ * 而不是「启动后跑一次」。周期检查 + `runIfDue()` 内部那句
+ * `lastDate === today()` 跳过，正好等于「整点前后每小时看一眼，今天跑过就不动」。
+ */
+export const AUTO_CHECKIN_INTERVAL_MS = 3_600_000
 
 /**
  * 读延迟配置。
@@ -454,8 +471,10 @@ export interface AutoCheckinDeps {
    */
   claim(provider: string): Promise<BadgeRpcResult<RpcCreditsClaimAllResponse>>
   now?(): number
-  /** 延迟毫秒数；默认读环境变量。 */
+  /** 首轮延迟毫秒数；默认读环境变量。 */
   delayMs?: number
+  /** 首轮之后的重复周期；默认 {@link AUTO_CHECKIN_INTERVAL_MS}（60 分钟）。 */
+  intervalMs?: number
   /** 排定延迟执行（注入以便单测零等待）。返回值交给 `stop()` 取消。 */
   schedule?(fn: () => void, ms: number): { cancel(): void }
   warn?(message: string): void
@@ -626,19 +645,33 @@ export function createAutoCheckin(deps: AutoCheckinDeps): AutoCheckin {
       if (enabled) void runIfDue()
       return state()
     },
+    /**
+     * 启动自动签到。
+     *
+     * ⚠️ 这里以前是**一次性**的 `setTimeout(fire, 30s)`：进程起来 30 秒后跑一次，
+     * 之后永久沉默。表现就是「自动签到明明是开的，却从来不签到」，只有手动
+     * 关掉再打开（`setEnabled(true)` 会立刻 `runIfDue()`）才有动作 —— 真实报障。
+     *
+     * 现在改成**周期检查**：先按启动延时跑第一轮，之后每 60 分钟再调一次
+     * `runIfDue()`。它内部本来就有 `lastDate === today()` 的跳过判据，所以
+     * 当天签到过之后其余轮次都是空转；跨天、或某天失败没记入时，下一轮自动补上。
+     */
     start() {
       if (pending !== null) return
-      const ms = deps.delayMs ?? autoCheckinDelayMs()
-      const fire = (): void => {
-        pending = null
+      const interval = deps.intervalMs ?? AUTO_CHECKIN_INTERVAL_MS
+      const tick = (): void => {
         void runIfDue()
+        // 每轮都重新登记下一轮；`defaultSchedule` 的定时器已 unref，不拖住进程退出。
+        pending = (deps.schedule ?? defaultSchedule)(tick, interval)
       }
-      // 延迟为 0 = 立刻跑（单测的默认形态，也是用户把环境变量设成 0 时的语义）。
-      if (ms <= 0) {
-        fire()
+      const first = deps.delayMs ?? autoCheckinDelayMs()
+      // 首轮延迟为 0 = 立刻跑（单测的默认形态，也是环境变量设成 0 时的语义）。
+      if (first <= 0) {
+        pending = null
+        tick()
         return
       }
-      pending = (deps.schedule ?? defaultSchedule)(fire, ms)
+      pending = (deps.schedule ?? defaultSchedule)(tick, first)
     },
     runIfDue,
     async dismiss() {
