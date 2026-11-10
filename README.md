@@ -122,7 +122,7 @@ Chat Completions、Responses API，以及独立网页管理（模型、统计、
 打开 **设置 → 插件 → 添加插件**，把下面**整行**粘进输入框，点「安装」，然后重启一次应用：
 
 ```
-https://github.com/liuleiyu121520/dsh-our-free-model#v2.8.2
+https://github.com/liuleiyu121520/dsh-our-free-model#v2.8.3
 ```
 
 这一行是**本 fork 的发布地址**（`#v2.8.2` 钉在发布 tag 上，装到的字节与 fork 自签的
@@ -142,7 +142,7 @@ https://github.com/liuleiyu121520/dsh-our-free-model#v2.8.2
 ### 命令行（纯 dsh web）
 
 ```
-dsh plugin --profile web add https://github.com/liuleiyu121520/dsh-our-free-model#v2.8.2
+dsh plugin --profile web add https://github.com/liuleiyu121520/dsh-our-free-model#v2.8.3
 ```
 
 `--profile` 填写实际使用的 profile 名称。安装完成后重启应用一次。

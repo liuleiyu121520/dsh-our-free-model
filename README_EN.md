@@ -107,7 +107,7 @@ Open **Settings → Plugins → Add plugin**, paste this **single line** into th
 click Install, then restart the app once:
 
 ```
-https://github.com/liuleiyu121520/dsh-our-free-model#v2.8.2
+https://github.com/liuleiyu121520/dsh-our-free-model#v2.8.3
 ```
 
 That is **this fork's publish address** — `#v2.8.2` pins it to the release tag, so
@@ -131,7 +131,7 @@ reproducible and never catches a half-merged state.
 ### Command line (plain `dsh web`)
 
 ```bash
-dsh plugin --profile web add https://github.com/liuleiyu121520/dsh-our-free-model#v2.8.2
+dsh plugin --profile web add https://github.com/liuleiyu121520/dsh-our-free-model#v2.8.3
 ```
 
 Restart the app once. `--profile` should name the profile you actually use.
