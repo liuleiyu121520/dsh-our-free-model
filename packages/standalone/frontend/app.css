@@ -3616,12 +3616,13 @@ input:disabled, select:disabled, textarea:disabled, .ui-input:disabled {
 :root:not([data-theme="dark"]) .dashboard-heading, :root:not([data-theme="dark"]) .page-heading { border-bottom: 1px dashed #d8cdb9 !important; padding-bottom: 10px !important; }
 
 /* ---- 2. 输入框与聚焦（墨环） ---- */
-:root:not([data-theme="dark"]) input, :root:not([data-theme="dark"]) textarea, :root:not([data-theme="dark"]) select, :root:not([data-theme="dark"]) .ui-input { background: #fdfcf9 !important;
-/* S9 终验：昼 checked 开关轨道实底绿（压过上方纸白输入槽 !important；对齐 channels 昼） */
+:root:not([data-theme="dark"]) input, :root:not([data-theme="dark"]) textarea, :root:not([data-theme="dark"]) select, :root:not([data-theme="dark"]) .ui-input { background: #fdfcf9 !important; border: 1px solid #ddd3c2 !important; border-radius: 6px !important; box-shadow: inset 0 1px 2px rgba(86,52,10,0.04) !important; transition: border-color 280ms cubic-bezier(0.32,0.72,0,1), box-shadow 280ms cubic-bezier(0.32,0.72,0,1) !important; }
+
+/* S9 终验：昼 checked 开关轨道实底绿（压过上方纸白输入槽 !important；对齐 channels 昼）——独立规则，勿并入上方块 */
 :root:not([data-theme="dark"]) input[type="checkbox"].settings-toggle:checked {
   background: var(--green-ink) !important;
   border-color: var(--green-ink) !important;
-} border: 1px solid #ddd3c2 !important; border-radius: 6px !important; box-shadow: inset 0 1px 2px rgba(86,52,10,0.04) !important; transition: border-color 280ms cubic-bezier(0.32,0.72,0,1), box-shadow 280ms cubic-bezier(0.32,0.72,0,1) !important; }
+}
 :root:not([data-theme="dark"]) .channel-search input:focus { border-color: #0E9F6E !important; box-shadow: 0 0 0 3px rgba(14,159,110,0.14), 0 0 14px -6px rgba(14,159,110,0.35) !important; }
 :root:not([data-theme="dark"]) .channel-search input:hover:not(:focus) { border-color: #a9d8c2 !important; }
 

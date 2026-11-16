@@ -100,6 +100,8 @@ export function Calendar({ stats, host, active }: { summary?: unknown; stats: St
     const date = new Date(Number(key.slice(0, 4)), Number(key.slice(5, 7)) - 1, Number(key.slice(8, 10)) + deltaDays)
     const next = dayKeyOf(date)
     if (next.slice(0, 7) !== `${viewMonth.getFullYear()}-${pad2(viewMonth.getMonth() + 1)}`) return
+    // 目标为未来格（不可聚焦）时拦停：保持 rovingDay 与焦点都在当前格，网格不失去 tabIndex=0 入口
+    if (next > todayKey) { focusCell(key); return }
     focusCell(next)
   }
   const onCellKeyDown = (key: string) => (event: React.KeyboardEvent) => {
