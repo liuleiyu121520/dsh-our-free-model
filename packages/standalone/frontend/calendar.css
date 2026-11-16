@@ -1,0 +1,82 @@
+/* 用量日历（calendar）—— Buffer 2026 月视图。
+   纪律：只引用全局 token（var(--…)），不写任何硬编码色值；昼夜主题自动适配。 */
+
+.calendar-browser { display: flex; flex-direction: column; gap: 18px; }
+.calendar-header { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.calendar-header-main h1 { display: flex; align-items: center; gap: 9px; font-size: 24px; font-weight: 600; letter-spacing: -0.02em; }
+.calendar-title-icon { color: var(--green-ink); }
+.calendar-header-sub { margin-top: 4px; font-size: 13px; line-height: 1.6; color: var(--muted); max-width: 640px; }
+.calendar-month-nav { display: flex; align-items: center; gap: 6px; }
+.calendar-month-label { min-width: 108px; text-align: center; font-size: 14px; font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
+.calendar-loading { margin: 0; color: var(--muted); font-size: 12.5px; }
+
+.calendar-card { padding: 16px; }
+.calendar-week-labels, .calendar-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
+.calendar-week-labels { margin-bottom: 6px; }
+.calendar-week-label { text-align: center; font-size: 11px; color: var(--dsw-alias-label-tertiary); padding-bottom: 2px; }
+.calendar-week-label.is-weekend { color: var(--ink-faint); }
+
+.calendar-cell { position: relative; min-height: 84px; display: flex; flex-direction: column; align-items: flex-start; gap: 3px; padding: 8px 9px; border: 1px solid var(--line-soft); border-radius: var(--radius-control); background: var(--surface); overflow: visible; transition: border-color 150ms var(--ease-out-expo), background 150ms var(--ease-out-expo); }
+.calendar-cell.is-blank { background: transparent; border-color: transparent; }
+.calendar-cell.is-weekend { background: var(--surface-hover); }
+.calendar-cell.has-data { border-color: var(--accent-line); }
+.calendar-cell.is-today { box-shadow: inset 0 0 0 2px var(--accent-line); }
+.calendar-cell.is-today .calendar-cell-day { color: var(--green-ink); font-weight: 600; }
+.calendar-cell:not(.is-future):not(.is-blank) { cursor: pointer; }
+.calendar-cell:not(.is-future):not(.is-blank):hover, .calendar-cell:not(.is-future):not(.is-blank):focus-visible { border-color: var(--green); outline: none; background: var(--accent-soft); }
+.calendar-cell.is-future { opacity: 0.55; background: var(--hover); border-style: dashed; }
+.calendar-cell.is-selected { border-color: var(--green); box-shadow: 0 0 0 1px var(--green), var(--shadow-sm); }
+
+.calendar-cell-day { font-size: 13px; font-weight: 550; color: var(--ink); font-variant-numeric: tabular-nums; line-height: 1.2; }
+.calendar-cell-tokens { font-size: 15px; font-weight: 600; color: var(--green-ink); font-variant-numeric: tabular-nums; line-height: 1.2; }
+.calendar-cell-models { font-size: 11px; color: var(--ink-faint); }
+.calendar-cell-claims { margin-top: auto; font-size: 11px; padding: 2px 7px; border-radius: 999px; white-space: nowrap; }
+.calendar-cell-claims.is-data { color: var(--success-ink); background: var(--success-soft); border: 1px solid var(--success-line); }
+.calendar-cell-claims.is-zero { color: var(--ink-faint); background: var(--hover); border: 1px solid transparent; }
+.calendar-cell-claims.is-unknown { color: var(--ink-faint); background: transparent; border: 1px dashed var(--dsw-alias-border-l2); }
+
+/* 悬停明细卡：纯前端渲染，锚定在格子内部，左右边缘列翻转对齐避免溢出。 */
+.calendar-cell:nth-child(7n + 1) .calendar-hover-card { left: 0; transform: none; }
+.calendar-cell:nth-child(7n) .calendar-hover-card { left: auto; right: 0; transform: none; }
+.calendar-hover-card { position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%); z-index: 30; width: 236px; padding: 10px 12px; border: 1px solid var(--accent-line); border-radius: var(--radius-control); background: var(--surface); box-shadow: var(--shadow-md); display: flex; flex-direction: column; gap: 3px; pointer-events: none; }
+.calendar-hover-card strong { font-size: 12px; color: var(--ink); }
+.calendar-hover-line { font-size: 11.5px; line-height: 1.55; color: var(--ink-soft); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.calendar-hover-sep { height: 1px; background: var(--line-soft); margin: 3px 0; }
+.calendar-hover-hint { font-size: 10.5px; color: var(--ink-faint); margin-top: 2px; }
+
+.calendar-legend { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin: 12px 0 0; font-size: 11.5px; color: var(--muted); }
+.calendar-legend > span { display: inline-flex; align-items: center; gap: 6px; }
+.calendar-dot { width: 8px; height: 8px; border-radius: 50%; }
+.calendar-dot.is-tokens { background: var(--green); }
+.calendar-dot.is-claims { background: var(--success); }
+
+/* 当日详情抽屉：Buffer 草稿侧栏式右滑。 */
+.calendar-drawer-root { position: fixed; inset: 0; z-index: 60; }
+.calendar-drawer-backdrop { position: absolute; inset: 0; background: color-mix(in srgb, var(--ink) 32%, transparent); }
+.calendar-drawer { position: absolute; top: 0; right: 0; bottom: 0; width: min(400px, 92vw); background: var(--surface); border-left: 1px solid var(--line); box-shadow: var(--shadow-lg); display: flex; flex-direction: column; animation: calendar-drawer-in 220ms var(--ease-out-expo); }
+@keyframes calendar-drawer-in { from { transform: translateX(24px); opacity: 0; } to { transform: none; opacity: 1; } }
+.calendar-drawer-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border-bottom: 1px solid var(--line-soft); }
+.calendar-drawer-head h2 { font-size: 15px; font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
+.calendar-drawer-body { flex: 1; overflow-y: auto; padding: 14px 16px; display: flex; flex-direction: column; gap: 18px; }
+.calendar-drawer-section h3 { font-size: 13px; font-weight: 600; color: var(--ink); margin-bottom: 8px; }
+.calendar-drawer-empty { margin: 0; font-size: 12.5px; line-height: 1.7; color: var(--muted); }
+.calendar-model-rows, .calendar-claim-rows { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.calendar-model-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 10px; border: 1px solid var(--line-soft); border-radius: var(--radius-control); background: var(--surface); }
+.calendar-model-id { flex: 1; min-width: 0; font-family: var(--mono-font, monospace); font-size: 12px; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.calendar-model-nums { display: flex; align-items: baseline; gap: 8px; flex-shrink: 0; font-size: 12px; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+.calendar-model-calls { font-size: 11px; color: var(--ink-faint); }
+.calendar-sum-row { display: flex; align-items: center; justify-content: space-between; margin-top: 10px; padding: 9px 10px; border-radius: var(--radius-control); background: var(--accent-soft); border: 1px solid var(--accent-line); font-size: 12px; color: var(--ink); font-variant-numeric: tabular-nums; }
+.calendar-claim-row { display: flex; flex-direction: column; gap: 3px; padding: 8px 10px; border: 1px solid var(--line-soft); border-radius: var(--radius-control); background: var(--surface); }
+.calendar-claim-provider { font-size: 12px; font-weight: 600; color: var(--ink); }
+.calendar-claim-text { font-size: 12px; line-height: 1.6; color: var(--ink-soft); }
+.calendar-claim-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.calendar-claim-tag { font-size: 10.5px; padding: 1px 7px; border-radius: 999px; }
+.calendar-claim-tag.is-auto { color: var(--ink-faint); background: var(--hover); border: 1px solid var(--dsw-alias-border-l2); }
+.calendar-claim-tag.is-manual { color: var(--green-ink); background: var(--accent-soft); border: 1px solid var(--accent-line); }
+.calendar-claim-amount { font-size: 11.5px; color: var(--success-ink); font-variant-numeric: tabular-nums; }
+.calendar-claim-time { font-size: 11px; color: var(--ink-faint); font-variant-numeric: tabular-nums; }
+
+@media (prefers-reduced-motion: reduce) {
+  .calendar-drawer { animation: none; }
+  .calendar-cell { transition: none; }
+}

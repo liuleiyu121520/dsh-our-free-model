@@ -1,4 +1,4 @@
-export type Page = 'overview' | 'workspace' | 'agents' | 'providers' | 'library' | 'routing' | 'models' | 'usage' | 'channels' | 'eac' | 'settings' | 'updates' | 'connection' | 'requests' | 'smart'
+export type Page = 'overview' | 'workspace' | 'agents' | 'providers' | 'library' | 'routing' | 'models' | 'usage' | 'channels' | 'eac' | 'settings' | 'updates' | 'connection' | 'requests' | 'smart' | 'calendar'
 export interface Model {
   id: string
   name: string
@@ -84,6 +84,19 @@ export interface SmartState {
   statuses: SmartStatus[]
   candidates: SmartCandidate[]
 }
+/** 领取历史：单条事件（GET /claims/history）。 */
+export interface ClaimsEvent {
+  at: number
+  provider: string
+  text: string
+  kind: string
+  source: 'manual' | 'auto'
+  amount?: number
+  unit?: string
+}
+/** 领取历史：按日聚合（providers=触达渠道、claimedCount=领取成功渠道数）。 */
+export interface ClaimsDay { providers: string[]; claimedCount: number; events: ClaimsEvent[] }
+export interface ClaimsQuery { schema: string; since: string | null; days: Record<string, ClaimsDay> }
 export interface UsageModel {
   model: string
   name: string
@@ -114,4 +127,6 @@ export interface Host {
   smartState(): Promise<SmartState>
   /** 智能调度：保存调度池（校验在服务端），返回保存后的最新状态。 */
   saveSmartPool(models: string[]): Promise<SmartState>
+  /** 领取历史：按可视月份一次拉取整月（AC-19）。 */
+  claimsHistory(from: string, to: string): Promise<ClaimsQuery>
 }

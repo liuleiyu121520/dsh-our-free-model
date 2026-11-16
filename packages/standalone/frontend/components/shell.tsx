@@ -1,4 +1,4 @@
-import { Activity, Boxes, Cable, ChevronRight, Handshake, LayoutDashboard, LogOut, Moon, Network, Settings2, ShieldCheck, Sparkles, Sun, Monitor, PanelsTopLeft, LibraryBig, Route, RotateCw } from 'lucide-react'
+import { Activity, Boxes, CalendarDays, Cable, ChevronRight, Handshake, LayoutDashboard, LogOut, Moon, Network, Settings2, ShieldCheck, Sparkles, Sun, Monitor, PanelsTopLeft, LibraryBig, Route, RotateCw } from 'lucide-react'
 import { useState } from 'react'
 import { flushSync } from 'react-dom'
 import { Badge, Button } from './ui'
@@ -18,6 +18,7 @@ const navigation = [
     { id: 'workspace', name: '模型工作台', icon: PanelsTopLeft },
     { id: 'agents', name: '客户端与订阅', icon: Monitor },
     { id: 'usage', name: '用量统计', icon: Activity },
+    { id: 'calendar', name: '用量日历', icon: CalendarDays },
     { id: 'library', name: '资源库', icon: LibraryBig },
   ] },
   { label: '渠道与连接', items: [
@@ -105,7 +106,7 @@ export const pageNames: Record<Page, string> = {
   overview: '概览', workspace: '模型工作台', models: '模型与开关', usage: '用量统计',
   channels: '账号渠道', agents: '客户端与订阅', providers: '聚合渠道', library: '资源库', routing: '路由组',
   eac: 'EAC 协付渠道', settings: '服务设置', updates: '应用更新', connection: '网关与 API 接入', requests: '请求日志',
-  smart: '智能调度',
+  smart: '智能调度', calendar: '用量日历',
 }
 
 /** 徽标计数（FR-2.2）：模型与开关=目录数；智能调度=池内当前可用模型数（0 也如实显示）。 */
