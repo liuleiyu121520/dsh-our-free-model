@@ -338,14 +338,21 @@ ctx.__services.connection.admit = () => { throw new Error('exception-secret') }
 const sensitiveHeaders = {
   ...desktopHeaders, cookie: 'cookie-secret', authorization: 'Bearer auth-secret',
 }
-const unavailable = await callRoute(api(), 'GET', '/api/our-free-model/summary?token=query-secret', undefined, sensitiveHeaders)
-check('a failed Host admission returns 503 rather than bypassing authentication', unavailable.status, 503)
-check('the JSON error does not mislabel a Host failure as forbidden', unavailable.json.error, 'admission unavailable')
-check('events report the same Host failure',
-  (await callRoute(events, 'GET', '/api/our-free-model/events?token=query-secret', undefined, sensitiveHeaders)).status, 503)
-check('both route logs identify the Host admission failure',
+// dsh 0.2.2-rc.2 起，路由自己声明 auth 策略：anonymous 路由在「无人作出准入
+// 决策」（provider 抛错，宿主 authenticate 返回 503）时允许访问，来源检查仍
+// 适用。旧断言把这种情况整体 503，等于给匿名路由强加 required 语义——真实
+// 宿主升级后设置页因此全部 admission unavailable。
+const undecided = await callRoute(api(), 'GET', '/api/our-free-model/summary?token=query-secret', undefined, sensitiveHeaders)
+check('an undecided (throwing) Host admission still serves the anonymous route', undecided.status, 200)
+const rebound = await callRoute(api(), 'GET', '/api/our-free-model/summary', undefined,
+  { ...sensitiveHeaders, host: 'rebind.example:3000' })
+check('and the structural fence still decides under an undecided Host', rebound.status, 403)
+check('events keep the same fallback',
+  (await callRoute(events, 'GET', '/api/our-free-model/events', undefined,
+    { ...sensitiveHeaders, host: 'rebind.example:3000' })).status, 403)
+check('both route logs identify the structural fence while the Host is undecided',
   ['settings API', 'events'].every(surface => ctx.__logs.some(line =>
-    line.includes(`${surface} admission rejected status=503 source=connection reason=admission-error`))), true)
+    line.includes(`${surface} admission rejected status=403 source=structural reason=host-not-loopback`))), true)
 check('admission logs contain no sensitive request or exception strings',
   ctx.__logs.filter(line => line.includes('admission rejected'))
     .every(line => !/cookie-secret|auth-secret|query-secret|exception-secret|rebind\.example|dsh-app:/.test(line)), true)

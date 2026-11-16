@@ -88,14 +88,25 @@ check('a mounted connection service decides', () => {
   assert.equal(rejectionFor(req({ host: '127.0.0.1:8080' }), { admit: () => ({ rejection: 401 }) }), 401)
   assert.equal(rejectionFor(req({ host: '127.0.0.1:8080' }), { admit: () => ({ rejection: 403 }) }), 403)
 })
-check('a throwing connection service never bypasses Host authentication', () => {
+check('a throwing connection service is no decision, not a deny', () => {
   const connection = { admit: () => { throw new Error('bug') } }
-  assert.equal(rejectionFor(req({ host: '127.0.0.1:8080' }), connection), 503)
-  assert.equal(rejectionFor(req({ host: 'evil.example' }), connection), 503)
-  assert.equal(rejectionFor(req({ host: '127.0.0.1:8080', referer: 'dsh-app://app/' }), connection), 503)
+  assert.equal(rejectionFor(req({ host: '127.0.0.1:8080' }), connection), undefined)
+  assert.equal(rejectionFor(req({ host: 'evil.example' }), connection), 403)
+  assert.equal(rejectionFor(req({ host: '127.0.0.1:8080', referer: 'dsh-app://app/' }), connection), undefined)
   assert.equal(rejectionFor(req({ host: '127.0.0.1:8080' }), {
     get admit() { throw new Error('service lookup failed') },
-  }), 503)
+  }), undefined)
+})
+// dsh 0.2.2-rc.2 admission 语义：路由声明 auth 后，「无人作出准入决策」对
+// anonymous 路由意味着允许（来源检查仍适用）。connection 咨询的 503 正是
+// 「无决策」—— 旧实现把它整体 503，等于给匿名路由强加 required 语义，
+// 桌面端设置页因此全部 admission unavailable（真实报障）。
+check('an undecided (503) connection admission falls back to the structural fence', () => {
+  const connection = { admit: () => ({ rejection: 503 }) }
+  assert.equal(rejectionFor(req({ host: '127.0.0.1:8080' }), connection), undefined)
+  assert.equal(rejectionFor(req({ host: '127.0.0.1:8080', referer: 'dsh-app://app/' }), connection), undefined)
+  assert.equal(rejectionFor(req({ host: 'evil.example' }), connection), 403)
+  assert.equal(rejectionFor(req({ host: '127.0.0.1:8080', origin: 'http://evil.example:8080' }), connection), 403)
 })
 check('no connection service means fence only', () => {
   assert.equal(rejectionFor(req({ host: '127.0.0.1:8080' }), undefined), undefined)
@@ -117,9 +128,15 @@ check('admit still outranks requestRejection when both exist', () => {
   }
   assert.equal(rejectionFor(req({ host: '127.0.0.1:8080' }), connection), 401)
 })
-check('a throwing requestRejection never bypasses Host authentication', () => {
+check('a throwing requestRejection is no decision, not a deny', () => {
   const connection = { requestRejection: () => { throw new Error('bug') } }
-  assert.equal(rejectionFor(req({ host: '127.0.0.1:8080' }), connection), 503)
+  assert.equal(rejectionFor(req({ host: '127.0.0.1:8080' }), connection), undefined)
+  assert.equal(rejectionFor(req({ host: 'evil.example' }), connection), 403)
+})
+check('an undecided (503) requestRejection falls back to the structural fence', () => {
+  const connection = { requestRejection: () => 503 }
+  assert.equal(rejectionFor(req({ host: '127.0.0.1:8080' }), connection), undefined)
+  assert.equal(rejectionFor(req({ host: 'evil.example' }), connection), 403)
 })
 check('a desktop request still respects Host 401/403', () => {
   const desktop = req({ host: '127.0.0.1:8080', referer: 'dsh-app://app/' })
@@ -136,20 +153,24 @@ check('rejection diagnostics contain fixed reason fields only', () => {
   })
   assert.equal(rejectionFor(request, undefined, record), 403)
   assert.equal(rejectionFor(request, { admit: () => ({ rejection: 401 }) }, record), 401)
-  assert.equal(rejectionFor(request, { admit: () => { throw new Error('exception-secret') } }, record), 503)
+  assert.equal(rejectionFor(request, { admit: () => { throw new Error('exception-secret') } }, record), 403)
+  assert.equal(rejectionFor(request, { admit: () => ({ rejection: 503 }) }, record), 403)
   assert.deepEqual(decisions, [
     { status: 403, source: 'structural', reason: 'origin-mismatch' },
     { status: 401, source: 'connection', reason: 'host-rejected' },
-    { status: 503, source: 'connection', reason: 'admission-error' },
+    { status: 403, source: 'structural', reason: 'origin-mismatch' },
+    { status: 403, source: 'structural', reason: 'origin-mismatch' },
   ])
   assert.equal(rejectionFor(req({ host: 'localhost:8080' }), undefined, record), undefined)
-  assert.equal(decisions.length, 3, 'successful requests do not emit diagnostics')
+  assert.equal(rejectionFor(req({ host: 'localhost:8080' }), { admit: () => ({ rejection: 503 }) }, record), undefined)
+  assert.equal(rejectionFor(req({ host: 'localhost:8080' }), { admit: () => { throw new Error('service failed') } }, record), undefined)
+  assert.equal(decisions.length, 4, 'successful requests do not emit diagnostics')
 })
 check('a diagnostic callback failure cannot change the rejection', () => {
   const brokenLog = () => { throw new Error('logger failed') }
   assert.equal(rejectionFor(req({ host: 'evil.example' }), undefined, brokenLog), 403)
   assert.equal(rejectionFor(req({ host: 'localhost' }), { admit: () => ({ rejection: 401 }) }, brokenLog), 401)
-  assert.equal(rejectionFor(req({ host: 'localhost' }), { admit: () => { throw new Error('service failed') } }, brokenLog), 503)
+  assert.equal(rejectionFor(req({ host: 'localhost' }), { admit: () => { throw new Error('service failed') } }, brokenLog), undefined)
 })
 
 // What the plugin hands the fence is not the service but a view of it, because

@@ -1,5 +1,5 @@
 {
-  "version": "2.8.4",
+  "version": "2.8.5",
   "algorithm": "sha256",
   "files": [
     {
@@ -50,7 +50,7 @@
     {
       "path": "package.json",
       "size": 5243,
-      "sha256": "5e1260463bb6309d2d39d512f06e2cb6eee4f0ada52603ce49dd228f413277c5"
+      "sha256": "69dfd9a64cb41034bbcee354824c0198e4b7a8e930fdfba5ee8ef21d50f5846d"
     },
     {
       "path": "src/adapter.js",
@@ -324,8 +324,8 @@
     },
     {
       "path": "src/trust.js",
-      "size": 8306,
-      "sha256": "0c1f99a77264afe95432f15c6777d234a8f8f0d4cf7380e220c03c7e315da24d"
+      "size": 9081,
+      "sha256": "cb1090ffc1e433095940918eb746ae0ab128f977c59ac5dfb9bf84ad8ab19fd7"
     },
     {
       "path": "src/updater.js",

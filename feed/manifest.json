@@ -1,7 +1,7 @@
 {
-  "version": "2.8.4",
+  "version": "2.8.5",
   "base": "../",
-  "publishedAt": "2026-11-16T10:22:40.910Z",
+  "publishedAt": "2026-11-16T12:50:13.108Z",
   "notes": "",
   "files": [
     {
@@ -52,7 +52,7 @@
     {
       "path": "package.json",
       "size": 5243,
-      "sha256": "5e1260463bb6309d2d39d512f06e2cb6eee4f0ada52603ce49dd228f413277c5"
+      "sha256": "69dfd9a64cb41034bbcee354824c0198e4b7a8e930fdfba5ee8ef21d50f5846d"
     },
     {
       "path": "src/adapter.js",
@@ -326,8 +326,8 @@
     },
     {
       "path": "src/trust.js",
-      "size": 8306,
-      "sha256": "0c1f99a77264afe95432f15c6777d234a8f8f0d4cf7380e220c03c7e315da24d"
+      "size": 9081,
+      "sha256": "cb1090ffc1e433095940918eb746ae0ab128f977c59ac5dfb9bf84ad8ab19fd7"
     },
     {
       "path": "src/updater.js",
@@ -390,5 +390,5 @@
       "sha256": "579832a2d994b73f0431e062c93d9358550e00701acf7f58c6fa5d3293551a11"
     }
   ],
-  "signature": "uIDIgSGBOPI58kGN6VEveFqaCDVi+lsJOlxfCkRgWlsI1jU2oionS++LiwnYpR54rTDUbqxjJIbe9y/R7VYkAQ=="
+  "signature": "rUs6gOpOABNBptzQ1p3UJ65/v/wTaF4nmAk610TGtRunv554zV2s8joeprtZCRZi99WQsIIOmV9LZ6utow4EBg=="
 }

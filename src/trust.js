@@ -78,6 +78,14 @@ export function connectionAdmissionView(service) {
  * Decide one request. Returns an HTTP status to reject with, or `undefined` to
  * let the handler run.
  *
+ * dsh 0.2.2-rc.2 的 admission 语义（upgrade-guide connection-page-peer）：路由
+ * 自己声明 `auth` 策略，宿主对 `anonymous` 路由在「无人作出准入决策」时允许
+ * 访问，只保留来源检查（回环/bind 地址/无跨站标记）。本插件的路由全部声明
+ * `auth: 'anonymous'`，因此 connection 咨询回答 503（无决策，含 provider 抛
+ * 错）时不再整体 503 —— 那等于给匿名路由强加 required 语义，把设置页全部打
+ * 成 admission unavailable —— 而是落回下面的结构性来源检查；401/403 这类明确
+ * 拒绝仍然硬拒。
+ *
  * @param {import('node:http').IncomingMessage} req
  * @param {object|undefined} connection - the harness `connection` service, when the composition mounts one
  * @param {(decision: {status: number, source: string, reason: string}) => void} [onRejection]
@@ -98,18 +106,20 @@ export function rejectionFor(req, connection, onRejection) {
       const admission = admit.call(connection, req)
       const status = admission && typeof admission === 'object' ? admission.rejection : undefined
       if (status === undefined) return undefined
-      decision = { status, source: 'connection', reason: 'host-rejected' }
+      decision = status === 503 ? undefined : { status, source: 'connection', reason: 'host-rejected' }
     } else {
       const reject = connection?.requestRejection
       if (typeof reject === 'function') {
         const status = reject.call(connection, req)
         if (status === undefined) return undefined
-        decision = { status, source: 'connection', reason: 'host-rejected' }
+        decision = status === 503 ? undefined : { status, source: 'connection', reason: 'host-rejected' }
       }
     }
   } catch {
-    // Never bypass browser authentication when a mounted Host service fails.
-    decision = { status: 503, source: 'connection', reason: 'admission-error' }
+    // A mounted Host service that faults cannot form an admission decision;
+    // for an anonymous-declared route that means "no decision", not "deny" —
+    // the structural fence below still applies its source checks.
+    decision = undefined
   }
   if (decision === undefined) {
     const reason = structuralReason(req)
