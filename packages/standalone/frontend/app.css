@@ -33,6 +33,8 @@
   /* Buffer 2026 圆角体系：控件级 / 卡片级（昼夜共用） */
   --radius-control: 10px;
   --radius-card: 14px;
+  /* 输入类边框（中性，昼夜各取值；夜侧禁用绿系——P2-1） */
+  --border-input: #cbd2da;
   /* 层级（z）令牌：浮层/弹层统一取值（P2-5） */
   --z-raised: 50;
   --z-popover-scope: 500;
@@ -104,7 +106,7 @@ svg { flex-shrink: 0; }
 input, select, textarea { padding: 9px 12px; border: 1px solid var(--dsw-alias-border-l2); border-radius: var(--radius-control); background: var(--surface); color: var(--ink); transition: border-color 150ms var(--ease-out-expo), box-shadow 150ms var(--ease-out-expo); }
 input:focus-visible, select:focus-visible, textarea:focus-visible { outline: none; border-color: var(--green); box-shadow: 0 0 0 3px var(--accent-glow); }
 .app-shell { display: flex; min-height: 100vh; }
-main { flex: 1; min-width: 0; }
+main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .sidebar { width: 238px; flex-shrink: 0; height: 100vh; position: sticky; top: 0; display: flex; flex-direction: column; padding: 25px 16px 18px; background: var(--surface); border-right: 1px solid var(--line); overflow-y: auto; }
 .console-brand { display: flex; align-items: center; gap: 11px; padding: 0 8px 26px; font-size: 16px; font-weight: 600; }
 .console-brand small { display: block; font-size: 11px; font-weight: 400; margin-top: 1px; }
@@ -296,7 +298,7 @@ main { flex: 1; min-width: 0; }
 .ofm_root table { font-size: 12px; }
 .spinning { animation: spin 1s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
-footer { max-width: 1440px; margin: 0 auto; padding: 0 32px 24px; color: var(--dsw-alias-label-tertiary); font-size: 11px; text-align: center; }
+footer { max-width: 1440px; margin: 0 auto auto; padding: 12px 32px 24px; margin-top: auto; color: var(--dsw-alias-label-tertiary); font-size: 11px; text-align: center; }
 ::selection { background: rgba(14,159,110,0.15); color: var(--ink); }
 * { scrollbar-width: thin; scrollbar-color: rgba(72,58,42,0.14) transparent; }
 *::-webkit-scrollbar { width: 6px; height: 6px; }
@@ -3900,6 +3902,8 @@ input:disabled, select:disabled, textarea:disabled, .ui-input:disabled {
 
 /* ---------- 5. 令牌清扫：红归位 + 蓝清零 + 基底去紫 ---------- */
 [data-theme="dark"] {
+  /* 输入类边框：中性灰（P2-1，夜侧禁用绿系） */
+  --border-input: #3a3f45 !important;
   /* 业务/强调槽位在暗色落在夜光绿；红只属于真错误 */
   --dsw-alias-state-business-primary: #34D399 !important;
   --dsw-alias-accent-primary: #34D399 !important;
@@ -3995,7 +3999,7 @@ input:disabled, select:disabled, textarea:disabled, .ui-input:disabled {
 [data-theme="dark"] .ui-input {
   border-radius: var(--radius-control) !important;
   background: #131210 !important;
-  border: 1px solid var(--dsw-alias-border-l2) !important;
+  border: 1px solid var(--border-input) !important;
   color: var(--ink) !important;
   font-variant-numeric: tabular-nums !important;
   box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.28) !important;
@@ -4003,7 +4007,7 @@ input:disabled, select:disabled, textarea:disabled, .ui-input:disabled {
 [data-theme="dark"] input:not(.settings-toggle):not([type="checkbox"]):not([type="radio"]):hover,
 [data-theme="dark"] select:hover,
 [data-theme="dark"] textarea:hover,
-[data-theme="dark"] .ui-input:hover { border-color: var(--dsw-alias-border-l1) !important; }
+[data-theme="dark"] .ui-input:hover { border-color: color-mix(in srgb, var(--border-input) 78%, #fff) !important; }
 /* input 是替换元素，放不了伪元素：四角 L 刻度用背景层画（2px 内缩，7px 臂长） */
 [data-theme="dark"] input:not(.settings-toggle):not([type="checkbox"]):not([type="radio"]):focus,
 [data-theme="dark"] textarea:focus,

@@ -48,7 +48,7 @@
 .calendar-legend > span { display: inline-flex; align-items: center; gap: 6px; }
 .calendar-dot { width: 8px; height: 8px; border-radius: 50%; }
 .calendar-dot.is-tokens { background: var(--green); }
-.calendar-dot.is-claims { background: var(--success); }
+.calendar-dot.is-claims { background: var(--warning); }
 
 /* 当日详情抽屉：Buffer 草稿侧栏式右滑。 */
 .calendar-drawer-root { position: fixed; inset: 0; z-index: 60; }

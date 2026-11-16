@@ -1116,31 +1116,16 @@
 /* --- 1. 总量：大的等宽终端读数 + 极轻呼吸微光 + 扫描光标 --- */
 :root[data-theme="dark"] .usage-total,
 :root[data-theme="dark"] .usage-browser .usage-window-total strong {
-  font-family: Consolas, "Cascadia Mono", "SF Mono", "JetBrains Mono", monospace;
   font-variant-numeric: tabular-nums;
-  color: var(--cp-amber, #e8a33d);
+  color: var(--ink);
   letter-spacing: 0.02em;
-  text-shadow:
-    0 0 12px color-mix(in srgb, var(--cp-amber, #e8a33d) 34%, transparent),
-    0 0 2px color-mix(in srgb, var(--cp-amber, #e8a33d) 55%, transparent);
-  animation: us-glow-breathe 3.6s ease-in-out infinite;
 }
 :root[data-theme="dark"] .usage-browser .usage-window-total strong {
   font-size: 32px;
 }
-:root[data-theme="dark"] .usage-browser .usage-window-total strong::after {
-  content: "▌";
-  margin-left: 0.16em;
-  color: var(--cp-cyan, #34D399);
-  font-size: 0.62em;
-  vertical-align: 0.07em;
-  opacity: 0.62;
-  animation: us-glow-breathe 1.9s steps(2, end) infinite;
-}
 :root[data-theme="dark"] .usage-total span {
   text-shadow: none;
-  color: var(--cp-cyan, #34D399);
-  opacity: 0.72;
+  color: var(--dsw-alias-label-secondary);
   font-family: inherit;
 }
 
@@ -1397,7 +1382,7 @@
 /* --- 1. 总量：黄铜刻度质感（刻线尺 + 纸面压印） --- */
 :root:not([data-theme="dark"]) .usage-total,
 :root:not([data-theme="dark"]) .usage-browser .usage-window-total strong {
-  color: var(--amber-ink, #92400e);
+  color: var(--ink);
   font-variant-numeric: tabular-nums;
   font-weight: 650;
   letter-spacing: 0.005em;
@@ -1413,7 +1398,7 @@
   right: 0;
   bottom: -7px;
   height: 5px;
-  background: repeating-linear-gradient(90deg, color-mix(in srgb, var(--amber-ink, #92400e) 55%, transparent) 0 1px, transparent 1px 6px);
+  background: repeating-linear-gradient(90deg, color-mix(in srgb, var(--ink-quiet, #6a6459) 55%, transparent) 0 1px, transparent 1px 6px);
   opacity: 0.55;
   pointer-events: none;
 }

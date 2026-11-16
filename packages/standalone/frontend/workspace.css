@@ -22,6 +22,7 @@
   border: 1px solid color-mix(in srgb, var(--red, #b23b4b) 34%, transparent);
   color: var(--red, #b23b4b); font-size: 12.5px;
 }
+[data-theme="dark"] .ws-error { color: var(--danger-ink, #f29399); }
 /* Full screen: the frame takes the viewport and the console behind it is inert. */
 .ws-page.is-expanded {
   position: fixed; inset: 0; z-index: 60;
