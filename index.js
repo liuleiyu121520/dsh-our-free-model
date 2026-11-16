@@ -1410,11 +1410,19 @@ export function apply(ctx, config) {
   // server was busy serving it.
   ctx.inject(['webServer'], scoped => {
     const server = scoped.webServer
-    scoped.effect(() => server.register({ kind: 'prefix', path: '/api/our-free-model', handler: api }), 'our-free-model: api routes')
+    // ⚠️ dsh 0.2.2-rc.3 的 route admission migration：
+    // `webServer.register` 现在默认 `auth: 'required'`，没有显式声明的路由会被
+    // 宿主判为「无授权决策」并以 503 `admission unavailable` 拒绝 —— 表现就是
+    // 升级后整个设置页读不到任何数据。
+    //
+    // 这里声明 `auth: 'anonymous'`，把准入交回插件自己的 trust fence
+    // （`rejectionFor`，见 src/trust.js）：本机回环 + 同源 Origin + host 校验，
+    // 与宿主对 `/api` 的判定等价。少了宿主这层默认 required，fence 根本没机会跑。
+    scoped.effect(() => server.register({ kind: 'prefix', path: '/api/our-free-model', handler: api, auth: 'anonymous' }), 'our-free-model: api routes')
     // The events stream is an exact route: exact dispatch outranks the prefix, so
     // the hub's handler owns the socket while every other path still lands on the
     // JSON API.
-    scoped.effect(() => server.register({ kind: 'exact', path: '/api/our-free-model/events', handler: eventsRoute }), 'our-free-model: events stream')
+    scoped.effect(() => server.register({ kind: 'exact', path: '/api/our-free-model/events', handler: eventsRoute, auth: 'anonymous' }), 'our-free-model: events stream')
     logger.info?.('our-free-model: settings API mounted at /api/our-free-model')
   })
 

@@ -8,6 +8,7 @@
  * Run: node scripts/trust-test.mjs
  */
 import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
 import { isLoopbackHost, rejectionFor, structuralRejection, connectionAdmissionView } from '../src/trust.js'
 
 let failures = 0
@@ -188,6 +189,20 @@ check('the view takes a thunk and consults it from the moment the service appear
   assert.equal(rejectionFor(req({ host: '127.0.0.1:8080' }), view), undefined)
   service = { requestRejection: () => 401 }
   assert.equal(rejectionFor(req({ host: 'evil.example' }), view), 401)
+})
+
+// dsh 0.2.2-rc.3 的 route admission migration：`webServer.register` 默认
+// `auth: 'required'`，没声明的路由会因「无授权决策」被宿主判 503
+// `admission unavailable` —— 升级后整个设置页读不到数据（真实报障）。
+// 插件的两处注册必须显式 anonymous，把准入交回本文件的 trust fence。
+check('every webServer route registration opts out of the host default auth', () => {
+  const source = readFileSync(new URL('../index.js', import.meta.url), 'utf8')
+  const registrations = [...source.matchAll(/server\.register\(\{[^}]*\}\)/g)].map(match => match[0])
+  assert.equal(registrations.length, 2, '两处注册：JSON API 与 SSE 事件流')
+  for (const registration of registrations) {
+    assert.match(registration, /auth:\s*'anonymous'/,
+      `路由必须声明 auth: 'anonymous'，否则新版宿主默认 required 会返回 503：${registration.slice(0, 120)}`)
+  }
 })
 
 if (failures === 0) console.log('trust-test: OK')
