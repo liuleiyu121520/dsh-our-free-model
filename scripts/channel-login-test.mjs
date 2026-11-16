@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 
-const source = fs.readFileSync(new URL('../client.js', import.meta.url), 'utf8')
+const source = fs.readFileSync(new URL('./lib/standalone-shared-ui.source.js', import.meta.url), 'utf8')
   .replace('exports.__test = {', 'exports.__test = { ChannelCard,')
 const settle = () => new Promise(resolve => setImmediate(resolve))
 const deferred = () => {

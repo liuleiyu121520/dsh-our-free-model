@@ -25,7 +25,7 @@ const react = await build({
   bundle: true, write: false, format: 'iife', minify: true,
   define: { 'process.env.NODE_ENV': '"production"' },
 })
-const client = fs.readFileSync(path.join(root, 'client.js'), 'utf8')
+const client = fs.readFileSync(path.join(root, 'scripts/lib/standalone-shared-ui.source.js'), 'utf8')
   .replace('exports.__test = {', 'exports.__test = { AggregatePage, CHANNEL_PROVIDERS,')
 const registry = PROVIDERS.map(provider => ({
   ...provider, authKind: provider.auth.kind, credentialUrl: provider.auth.url ?? '',

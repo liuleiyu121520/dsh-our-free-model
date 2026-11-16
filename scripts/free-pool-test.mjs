@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-const source = fs.readFileSync(new URL('../client.js', import.meta.url),'utf8').replace('exports.__test = {','exports.__test = { FreePage, Roster, freePoolView,');
+const source = fs.readFileSync(new URL('./lib/standalone-shared-ui.source.js', import.meta.url),'utf8').replace('exports.__test = {','exports.__test = { FreePage, Roster, freePoolView,');
 let bundle;
 const react={ createElement:(type,props,...children)=>({type,props:props??{},children}),Fragment:'fragment',useState:value=>[typeof value==='function'?value():value,()=>{}],useRef:value=>({current:value}),useEffect(){},useMemo:fn=>fn(),useCallback:fn=>fn };
 const window={__ModuleLoader__:{load:value=>{bundle=value}},addEventListener(){},removeEventListener(){},localStorage:{getItem:()=>null,setItem(){}}};

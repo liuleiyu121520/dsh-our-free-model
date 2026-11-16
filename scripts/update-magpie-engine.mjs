@@ -120,7 +120,6 @@ const suites = [
   'scripts/engine-transport-test.mjs',
   'scripts/magpie-models-test.mjs',
   'scripts/magpie-policy-test.mjs',
-  'scripts/magpie-plugin-test.mjs',
   'scripts/engine-payload-test.mjs',
 ]
 

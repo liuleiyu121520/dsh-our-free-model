@@ -3,7 +3,7 @@ import fs from 'node:fs'
 
 /** 实际共享组件的余额能力、查询反馈与请求交错回归。 */
 export async function verifyChannelCreditsUi() {
-  const source = fs.readFileSync(new URL('../client.js', import.meta.url), 'utf8')
+  const source = fs.readFileSync(new URL('./lib/standalone-shared-ui.source.js', import.meta.url), 'utf8')
     .replace('exports.__test = {', 'exports.__test = { ChannelCard, DICT,')
   const settle = () => new Promise(resolve => setImmediate(resolve))
   function mount(provider, rpcImpl) {

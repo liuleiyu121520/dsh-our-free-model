@@ -251,7 +251,7 @@ try {
     useRef: () => ({ current: null }),
     useCallback: callback => callback,
   }
-  new Function('window', fs.readFileSync(new URL('../client.js', import.meta.url), 'utf8'))(window)
+  new Function('window', fs.readFileSync(new URL('./lib/standalone-shared-ui.source.js', import.meta.url), 'utf8'))(window)
   const { ChannelsPage } = bundle.factory(name => {
     if (name === 'react') return react
     if (name === 'react-dom') {

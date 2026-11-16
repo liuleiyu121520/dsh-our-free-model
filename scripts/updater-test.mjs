@@ -857,13 +857,13 @@ await checkAsync('apply() drops files the new release removed', async () => {
   fs.rmSync(data, { recursive: true, force: true })
 })
 for (const rollback of [false, true]) {
-  await checkAsync(`linked development installs never traverse, back up or delete desktop caches (rollback=${rollback})`, async () => {
+  await checkAsync(`linked development installs never traverse, back up or delete other products' caches (rollback=${rollback})`, async () => {
     const pkg = makePackage(OLD)
     const data = makeDataDir()
     const cache = path.join(pkg, 'packages')
     const sentinels = {
-      'packages/desktop/src-tauri/target/debug/build/example/build_script_build.pdb': 'rust-cache-must-stay-on-original-drive',
-      'packages/desktop/src-tauri/target/release/ofm-desktop.exe': 'desktop-program',
+      'packages/vendor-cache/src-tauri/target/debug/build/example/build_script_build.pdb': 'rust-cache-must-stay-on-original-drive',
+      'packages/vendor-cache/src-tauri/target/release/example.exe': 'native-program',
       'packages/standalone/service.mjs': 'independent-product-source',
     }
     const originalReadDir = fs.readdirSync

@@ -31,7 +31,7 @@ import { CLIENT_TOOL_PREFIX, clientToolWireName } from '../src/o2a/tool-renames.
 import { V2_OFFICIAL_TOOL_ORDER } from '../src/o2a/official-tools.js'
 import { readStream } from '../src/stream.js'
 import { applyFingerprint } from '../src/upstream.js'
-import { fromOpenAiMessages } from '../index.js'
+import { fromOpenAiMessages } from '../src/core.js'
 import { publicModelRows } from '../src/core/completion.js'
 import { until } from './lib/fake-kernel.mjs'
 

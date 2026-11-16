@@ -1,7 +1,8 @@
 /** 仅转换独立端承载；渠道业务仍来自原插件页面。 */
 import fs from 'node:fs'
 import vm from 'node:vm'
-let source = fs.readFileSync(new URL('../../client.js', import.meta.url), 'utf8')
+// E-10 快照固化：client.js 的 S8 时点逐字节副本（sha256 见 docs/software-company/s8-gate/）。
+let source = fs.readFileSync(new URL('./standalone-shared-ui.source.js', import.meta.url), 'utf8')
 function replaceOnce(from, to) {
   if (source.split(from).length !== 2) throw new Error(`共享页面替换位置改变：${from.slice(0, 90)}`)
   source = source.replace(from, to)

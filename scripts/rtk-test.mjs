@@ -118,8 +118,8 @@ D  src/legacy/old-rtk.js
 ?? docs/token-saver/rtk-notes.md
 ?? vendor/channel-pack/cache/rtk-wasm.wasm
 ?? scripts/probes/rtk-probe-output.json
-?? locale/token-saver/en.json
-?? locale/token-saver/zh.json
+?? src/token-saver/en.json
+?? src/token-saver/zh.json
 ?? docs/token-saver/rtk-design.md
 `
 
@@ -244,10 +244,10 @@ src/token-saver/rtk/filters/tree.js
 src/token-saver/rtk/filters/buildOutput.js
 scripts/rtk-test.mjs
 scripts/test-all.mjs
-adapter/kernel.js
+src/route/classify.js
 docs/token-saver.md
-locale/en.json
-locale/zh.json
+vendor/channel-pack/NOTICE.md
+vendor/channel-pack/LICENSE
 `
 
 const LS_SAMPLE = `total 96
@@ -259,10 +259,10 @@ drwxr-xr-x 20 user user 12288 Oct 10 11:58 node_modules
 drwxr-xr-x  3 user user  4096 Oct  7 13:16 .git
 -rw-r--r--  1 user user  2328 Oct  7 12:54 package.json
 -rw-r--r--  1 user user 69270 Oct  7 13:16 README.md
--rw-r--r--  1 user user 119104 Oct  7 13:16 index.js
+-rw-r--r--  1 user user 119104 Oct  7 13:16 src/core.js
 -rw-r--r--  1 user user 24912 Oct  7 12:54 src/http.js
 -rw-r--r--  1 user user  1234 Oct 10 12:01 scratch.txt
-lrwxrwxrwx  1 user user     7 Oct 10 12:02 latest -> index.js
+lrwxrwxrwx  1 user user     7 Oct 10 12:02 latest -> src/core.js
 `
 
 const TREE_SAMPLE = `src/token-saver/rtk
@@ -322,7 +322,7 @@ const SEARCH_LIST_SAMPLE = `Result of search in 'src' (total 16 files):
 - src/token-saver/rtk/filters/gitDiff.js
 - src/token-saver/rtk/filters/grep.js
 - scripts/rtk-test.mjs
-- adapter/kernel.js
+- vendor/channel-pack/NOTICE.md
 - package.json
 `
 

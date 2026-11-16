@@ -8,7 +8,7 @@ import { buildComboCatalog } from '../src/combos.js'
 import { filterModels } from '../packages/standalone/frontend/models-data.mjs'
 import { visibilityCopy } from '../packages/standalone/frontend/visibility-data.mjs'
 
-const source = fs.readFileSync(new URL('../client.js', import.meta.url), 'utf8')
+const source = fs.readFileSync(new URL('./lib/standalone-shared-ui.source.js', import.meta.url), 'utf8')
   .replace('exports.__test = {', 'exports.__test = { Shell, FreePage, ChannelCard, DICT, Roster, ModelCard, Preferences, ModelPicker, ChainEditor, ChainCard, ChainCapacity,')
 let bundle
 const window = {

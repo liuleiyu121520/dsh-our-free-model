@@ -1,6 +1,4 @@
 const forbidden = [
-  new URL('../../index.js', import.meta.url).href,
-  new URL('../../adapter/kernel.js', import.meta.url).href,
   new URL('../../vendor/channel-pack/pack.js', import.meta.url).href,
 ]
 

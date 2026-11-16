@@ -16,7 +16,7 @@ const { build } = uiRequire('esbuild')
 const output = process.env.OFM_UI_SCREENSHOT_DIR ?? path.join(root, '.verify/managed-upgrade-ui')
 fs.mkdirSync(output, { recursive: true })
 const react = await build({ stdin: { contents: "import * as React from 'react';import{createRoot}from'react-dom/client';import{createPortal}from'react-dom';window.testReact=React;window.testDOM={createRoot,createPortal};", resolveDir: path.join(root, 'packages/standalone') }, bundle: true, write: false, format: 'iife', minify: true, define: { 'process.env.NODE_ENV': '"production"' } })
-const client = fs.readFileSync(path.join(root, 'client.js'), 'utf8')
+const client = fs.readFileSync(path.join(root, 'scripts/lib/standalone-shared-ui.source.js'), 'utf8')
 const html = `<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>
 :root{--dsw-alias-label-primary:#283445;--dsw-alias-label-secondary:#566576;--dsw-alias-label-tertiary:#647488;--dsw-alias-bg-base:#f4f7fb;--dsw-alias-bg-layer-1:#fff;--dsw-alias-bg-layer-2:#f4f7fb;--dsw-alias-bg-layer-3:#eaf0f7;--dsw-alias-border-l1:#e1e7ef;--dsw-alias-border-l2:#ccd7e4;--dsw-alias-accent-primary:#4264a2;--dsw-alias-state-business-primary:#4264a2;--dsw-alias-state-success-primary:#28785b;--dsw-alias-state-error-primary:#ae4354}
 body{margin:0;background:#f4f7fb;font:14px 'Segoe UI','Microsoft YaHei',sans-serif}#plugin-root{max-width:1120px;margin:auto;padding:16px;box-sizing:border-box}#other-plugin{position:fixed;bottom:0;left:0;font-size:10px;filter:blur(1px);animation:other-move 2s infinite alternate}@keyframes other-move{to{transform:translateX(2px)}}
@@ -30,7 +30,7 @@ const report = {
   limitations: ['Local API fixtures; no real host installation or vendor account.', 'No GPU, frame time, power or real device performance measurement.', 'Standalone has no upgrade page; managed/self is the plugin UpgradePanel scope.', 'Plugin Shell mounts with host token fixtures, not the complete DSH application.'],
   scenarios: [], checks: [], pageErrors: [], externalRequestsBlocked: [], unexpectedApiRequests: [], screenshots: [],
 }
-const tracked = ['client.js', 'packages/standalone/frontend/settings.tsx', 'packages/standalone/frontend/app.tsx', 'packages/standalone/frontend/app.css', 'packages/standalone/frontend/components/shell.tsx', 'packages/standalone/web/app.js', 'packages/standalone/web/app.css', 'packages/standalone/web/assets.json', 'scripts/managed-upgrade-ui-test.mjs']
+const tracked = ['scripts/lib/standalone-shared-ui.source.js', 'packages/standalone/frontend/settings.tsx', 'packages/standalone/frontend/app.tsx', 'packages/standalone/frontend/app.css', 'packages/standalone/frontend/components/shell.tsx', 'packages/standalone/web/app.js', 'packages/standalone/web/app.css', 'packages/standalone/web/assets.json', 'scripts/managed-upgrade-ui-test.mjs']
 const fingerprints = () => Object.fromEntries(tracked.map(file => { const contents = fs.readFileSync(path.join(root, file)); return [file, { sha256: crypto.createHash('sha256').update(contents).digest('hex'), bytes: contents.length, modified: fs.statSync(path.join(root, file)).mtime.toISOString() }] }))
 report.filesAtStart = fingerprints()
 const server = http.createServer((req, res) => {

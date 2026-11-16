@@ -130,7 +130,7 @@ async function packagePlugin() {
     engineMetadata: fs.existsSync(path.join(packageRoot, 'vendor/magpie/engine.json'))
       ? JSON.parse(fs.readFileSync(path.join(packageRoot, 'vendor/magpie/engine.json'), 'utf8')) : null,
   }
-  assert.equal(hash(client), digest(path.join(repository, 'client.js')), 'Packed client must match the source snapshot')
+  assert.equal(hash(client), digest(path.join(repository, 'scripts/lib/standalone-shared-ui.source.js')), 'Packed client must match the source snapshot')
   assert.ok(report.package.workspacePresent, 'Packaged client has no native model workspace')
   // The package ships the engine as its checksummed compressed parts
   // (src/engine-parts + engine.json), not a loose binary; the shipped bytes

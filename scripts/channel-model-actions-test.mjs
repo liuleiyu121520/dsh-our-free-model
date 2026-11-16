@@ -4,7 +4,7 @@ import fs from 'node:fs'
 /** 挂载实际共享渠道卡片，检查批量操作及加载、失败、重复点击路径。 */
 export async function verifyChannelModelActions() {
   let bundle
-  const source = fs.readFileSync(new URL('../client.js', import.meta.url), 'utf8')
+  const source = fs.readFileSync(new URL('./lib/standalone-shared-ui.source.js', import.meta.url), 'utf8')
     .replace('exports.__test = {', 'exports.__test = { ChannelCard, DICT,')
   const window = { __ModuleLoader__: { load: value => { bundle = value } } }
   new Function('window', source)(window)

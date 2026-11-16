@@ -14,7 +14,7 @@
     "skipLibCheck": true
   },
   "include": [
-    "adapter/**/*"
+    "packages/standalone/frontend/virtual.d.ts"
   ],
   "exclude": [
     "node_modules"

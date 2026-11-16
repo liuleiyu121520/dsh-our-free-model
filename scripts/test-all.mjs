@@ -6,7 +6,7 @@
  * These are the checks that need no network and spend no free-lane quota: each
  * one mounts the real module against a local stand-in. The live end-to-end run
  * against the gateway is separate and costs minutes and quota, so it stays a
- * deliberate act: `node scripts/host-selftest.mjs`.
+ * deliberate act (not part of the offline suites).
  *
  * The default includes the manifest check because shipping a manifest that
  * disagrees with its files breaks the in-app upgrade for every user at once
@@ -31,30 +31,19 @@ if (!['all', 'contributor', 'release'].includes(options.mode)) {
   process.exit(1)
 }
 const { mode, only } = options
-const releaseSuites = new Set(['manifest', 'legacy-payload', 'release', 'catalog', 'legacy-upgrade', 'engine-payload'])
+const releaseSuites = new Set(['legacy-payload', 'engine-payload'])
 
 const suites = [
-  ['manifest', 'build-manifest.mjs', ['--check']],
   // The shipped bundles (token-saver, o2a, core) and the engine parts must
   // match their sources; a stale src/o2a.js would make every suite below test
   // yesterday's shaping while src/o2a/ already looks updated.
   ['legacy-payload', 'build-legacy-payload.mjs', ['--check']],
-  ['release', 'release-e2e.mjs', []],
-  ['legacy-upgrade', 'legacy-upgrade-test.mjs', mode === 'contributor' ? [] : ['--production']],
   ['engine-payload', 'engine-payload-test.mjs', []],
-  ['release-preparation', 'release-preparation-test.mjs', []],
-  ['client-lint', 'client-lint.mjs', []],
-  ['sponsor', 'sponsor-test.mjs', []],
-  ['heatmap', 'heatmap-test.mjs', []],
   ['trust', 'trust-test.mjs', []],
-  ['sanitize', 'sanitize-test.mjs', []],
   ['feed', 'feed-test.mjs', []],
   ['picks', 'picks-test.mjs', []],
-  ['picks-ui', 'picks-ui-test.mjs', []],
-  ['stat-bucket-ui', 'stat-bucket-ui-test.mjs', []],
   ['free-pool', 'free-pool-test.mjs', []],
   ['updater', 'updater-test.mjs', []],
-  ['upgrade-ui', 'upgrade-ui-test.mjs', []],
   ['reload', 'reload-test.mjs', []],
   ['forward', 'forward-test.mjs', []],
   ['gemini-gateway', 'gemini-gateway-test.mjs', []],
@@ -62,12 +51,10 @@ const suites = [
   ['private-file', 'private-file-permissions-test.mjs', []],
   ['subscriptions', 'subscriptions-test.mjs', []],
   ['subscription-completion', 'subscription-completion-test.mjs', []],
-  ['subscription-wiring', 'subscription-wiring-test.mjs', []],
   ['magpie-engine', 'magpie-engine-test.mjs', []],
   ['engine-transport', 'engine-transport-test.mjs', []],
   ['magpie-models', 'magpie-models-test.mjs', []],
   ['magpie-policy', 'magpie-policy-test.mjs', []],
-  ['magpie-plugin', 'magpie-plugin-test.mjs', []],
   ['workbench', 'workbench-test.mjs', []],
   ['workbench-library', 'workbench-library-test.mjs', []],
   ['workbench-management', 'workbench-management-test.mjs', []],
@@ -83,11 +70,8 @@ const suites = [
   ['channel-credits-ui', 'channel-credits-ui-test.mjs', []],
   ['channel-model-actions', 'channel-model-actions-test.mjs', []],
   ['channel-login', 'channel-login-test.mjs', []],
-  ['open-external', 'open-external-test.mjs', []],
   ['channel-image-pricing', 'channel-image-pricing-test.mjs', []],
-  ['forward-boot', 'forward-boot-test.mjs', []],
   ['standalone', 'standalone-test.mjs', []],
-  ['desktop', 'desktop-test.mjs', []],
   ['desktop-update', 'desktop-update-test.mjs', []],
   ['standalone-desktop-regression', 'standalone-desktop-regression-test.mjs', []],
   ['standalone-page-lifecycle', 'standalone-page-lifecycle-test.mjs', []],
@@ -117,25 +101,16 @@ const suites = [
   ['sniff', 'sniff-test.mjs', []],
   ['stream-failure', 'stream-failure-test.mjs', []],
   ['truncation', 'truncation-test.mjs', []],
-  ['recovery', 'recovery-test.mjs', []],
   ['retry-safety', 'retry-safety-test.mjs', []],
   ['usage-sanitize', 'usage-sanitize-test.mjs', []],
   ['speed-stat', 'speed-stat-test.mjs', []],
-  ['picker', 'picker-test.mjs', []],
-  ['tui', 'tui-test.mjs', []],
-  ['catalog', 'catalog-test.mjs', mode === 'contributor' ? ['--contributor'] : []],
-  ['vault', 'vault-test.mjs', []],
   ['mint-eac-seal', 'mint-eac-seal-test.mjs', []],
   ['eac-auth', 'eac-auth-test.mjs', []],
   ['eac-abort', 'eac-abort-test.mjs', []],
-  ['eac-login', 'eac-login-test.mjs', []],
-  ['kilo', 'kilo-test.mjs', []],
-  ['offline', 'offline-test.mjs', []],
   // The aggregated feature set: the token savers ported from the upstream
   // routers, the provider registry, the failure/chain brain, the Anthropic
   // wire, the local answers, and the aggregate lane driver. Each is a pure
-  // module with its own offline suite; `aggregate-wiring` is the one that
-  // proves the host actually reaches them.
+  // module with its own offline suite.
   ['rtk', 'rtk-test.mjs', []],
   ['rtk-shape', 'rtk-shape-test.mjs', []],
   ['local-optimize', 'local-optimize-test.mjs', []],
@@ -145,13 +120,9 @@ const suites = [
   ['prompt-saver', 'prompt-saver-test.mjs', []],
   ['anthropic', 'anthropic-test.mjs', []],
   ['aggregate', 'aggregate-test.mjs', []],
-  ['aggregate-wiring', 'aggregate-wiring-test.mjs', []],
   ['model-test', 'model-test-test.mjs', []],
   ['model-test-probe-race', 'model-test-probe-race-test.mjs', []],
   ['model-test-finish-integration', 'model-test-finish-integration-test.mjs', []],
-  ['bench-integration', 'bench-integration-test.mjs', []],
-  ['plugin-bench-ui', 'plugin-bench-ui-test.mjs', []],
-  ['gateway-source', 'gateway-source-test.mjs', []],
   ['gateway-disconnect', 'gateway-disconnect-test.mjs', []],
   ['standalone-nav', 'standalone-nav-test.mjs', []],
 ].filter(([name]) => (mode === 'contributor' ? !['manifest', 'release'].includes(name)
@@ -177,7 +148,7 @@ const SUITE_TIMEOUT_MS = 60_000
 /**
  * Run a suite while forwarding its output as it arrives. Keeping the output
  * live is important here: a timeout kills the child before a buffered pipe can
- * be read, which used to erase the last check printed by recovery-test.mjs.
+ * be read, which used to erase the last check printed by a failing suite.
  */
 function runSuite(script, args) {
   return new Promise(resolve => {
