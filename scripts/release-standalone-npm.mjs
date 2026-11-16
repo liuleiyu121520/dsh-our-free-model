@@ -64,7 +64,9 @@ function readTarballPackageJson(tarball) {
 
 /** 与发布同一 tgz 字节的本地冒烟（I.1 smoke）：临时 prefix 安装 → 启动 → 断言。 */
 async function smokeOnce(tarball) {
-  const prefix = fs.mkdtempSync(path.join(os.tmpdir(), 'ofm-smoke-'))
+  // macOS：os.tmpdir() 在 /var 下，祖先符号链会触发 library.mjs 的托管存储检查——
+  // 与测试套件一致，统一 realpath 到 /private/var 真实路径（smoke 环境约束，非发布逻辑）。
+  const prefix = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'ofm-smoke-')))
   const home = path.join(prefix, 'home')
   fs.mkdirSync(home, { recursive: true })
   log(`  临时安装目录：${prefix}`)
