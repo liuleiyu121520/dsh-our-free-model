@@ -22,7 +22,7 @@ import {
   Zap,
 } from 'lucide-react'
 import { providers } from 'ofm-provider-list'
-import { Badge, Button, Card, Spinner, Switch } from './components/ui'
+import { Badge, Button, Card, Spinner } from './components/ui'
 import { ModelPicker } from './components/model-picker'
 import type { Host, Model, Summary } from './types'
 import './connection.css'

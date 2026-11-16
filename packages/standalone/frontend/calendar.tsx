@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { CalendarDays, ChevronLeft, ChevronRight, X } from 'lucide-react'
 import { Button, Card } from './components/ui'
 import type { ClaimsQuery, Host, Stats } from './types'
@@ -37,7 +37,11 @@ export function Calendar({ stats, host, active }: { summary?: unknown; stats: St
   const [claimsLoading, setClaimsLoading] = useState(false)
   const [hoverDay, setHoverDay] = useState<string | null>(null)
   const [drawerDay, setDrawerDay] = useState<string | null>(null)
+  const [rovingDay, setRovingDay] = useState<string | null>(null)
   const todayKey = dayKeyOf(new Date())
+  const gridRef = useRef<HTMLDivElement>(null)
+  const drawerRef = useRef<HTMLElement>(null)
+  const lastFocusedRef = useRef<HTMLElement | null>(null)
 
   // 切月一次拉取整月领取历史（AC-19）：窗口 = 该月 1 日至月末。
   useEffect(() => {
@@ -84,6 +88,57 @@ export function Calendar({ stats, host, active }: { summary?: unknown; stats: St
     .map(row => ({ ...row, tokens: row.input + row.output + row.reasoning }))
     .sort((left, right) => right.tokens - left.tokens), [drawerStats])
 
+  // roving tabindex：方向键按周网格移动焦点（仅活跃格 tabIndex=0，NFR-7 键盘可达）
+  const focusCell = (key: string) => {
+    setRovingDay(key)
+    requestAnimationFrame(() => {
+      const cell = gridRef.current?.querySelector<HTMLElement>(`[data-day="${key}"]`)
+      cell?.focus()
+    })
+  }
+  const moveRoving = (key: string, deltaDays: number) => {
+    const date = new Date(Number(key.slice(0, 4)), Number(key.slice(5, 7)) - 1, Number(key.slice(8, 10)) + deltaDays)
+    const next = dayKeyOf(date)
+    if (next.slice(0, 7) !== `${viewMonth.getFullYear()}-${pad2(viewMonth.getMonth() + 1)}`) return
+    focusCell(next)
+  }
+  const onCellKeyDown = (key: string) => (event: React.KeyboardEvent) => {
+    if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); setDrawerDay(key); return }
+    const deltas: Record<string, number> = { ArrowRight: 1, ArrowLeft: -1, ArrowDown: 7, ArrowUp: -7 }
+    if (deltas[event.key] !== undefined) { event.preventDefault(); moveRoving(key, deltas[event.key]) }
+  }
+
+  // 真 modal（FR-7.4/NFR-7）：Esc 关闭、Tab 圈禁、打开聚焦抽屉、关闭归还触发格
+  useEffect(() => {
+    if (!drawerDay) return
+    lastFocusedRef.current = document.activeElement as HTMLElement | null
+    requestAnimationFrame(() => drawerRef.current?.focus())
+    const drawer = drawerRef.current
+    if (!drawer) return
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') { event.preventDefault(); setDrawerDay(null); return }
+      if (event.key !== 'Tab') return
+      const focusables = Array.from(drawer.querySelectorAll<HTMLElement>(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')).filter(el => !el.hasAttribute('disabled'))
+      if (focusables.length === 0) { event.preventDefault(); return }
+      const first = focusables[0], last = focusables[focusables.length - 1]
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus() }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus() }
+    }
+    drawer.addEventListener('keydown', onKeyDown)
+    return () => drawer.removeEventListener('keydown', onKeyDown)
+  }, [drawerDay])
+  useEffect(() => {
+    if (drawerDay === null && lastFocusedRef.current) { lastFocusedRef.current.focus(); lastFocusedRef.current = null }
+  }, [drawerDay])
+
+  // 月份切换后 roving 焦点回落到当月锚点（今天在当月用今天，否则 1 日）
+  useEffect(() => {
+    const monthKey = `${viewMonth.getFullYear()}-${pad2(viewMonth.getMonth() + 1)}`
+    setRovingDay(current => current && current.startsWith(monthKey) ? current
+      : todayKey.startsWith(monthKey) ? todayKey : `${monthKey}-01`)
+  }, [viewMonth, todayKey])
+
   if (!active) return null
 
   const monthLabel = `${viewMonth.getFullYear()} 年 ${viewMonth.getMonth() + 1} 月`
@@ -114,7 +169,7 @@ export function Calendar({ stats, host, active }: { summary?: unknown; stats: St
       <div className="calendar-week-labels" aria-hidden="true">
         {WEEK_LABELS.map((label, index) => <span key={label} className={`calendar-week-label${index >= 5 ? ' is-weekend' : ''}`}>{label}</span>)}
       </div>
-      <div className="calendar-grid" role="grid" aria-label={`${monthLabel}用量日历`}>
+      <div className="calendar-grid" role="grid" aria-label={`${monthLabel}用量日历`} ref={gridRef}>
         {cells.map((key, index) => {
           const weekend = index % 7 >= 5
           if (key === null) return <div key={`blank-${index}`} className="calendar-cell is-blank" role="gridcell" aria-hidden="true" />
@@ -129,16 +184,18 @@ export function Calendar({ stats, host, active }: { summary?: unknown; stats: St
           const isSelected = drawerDay === key
           return <div key={key}
             role="gridcell"
+            data-day={key}
+            aria-selected={rovingDay === key}
             className={`calendar-cell${isFuture ? ' is-future' : ''}${isToday ? ' is-today' : ''}${weekend ? ' is-weekend' : ''}${isSelected ? ' is-selected' : ''}${tokens > 0 || claimDay ? ' has-data' : ''}`}
             aria-label={`${key}：token ${tokens}，模型 ${modelCount} 个${isFuture ? '，未来日期' : ''}`}
             {...isFuture ? {} : {
-              tabIndex: 0,
+              tabIndex: rovingDay === key ? 0 : -1,
               onClick: () => setDrawerDay(key),
               onMouseEnter: () => setHoverDay(key),
               onMouseLeave: () => setHoverDay(current => current === key ? null : current),
-              onFocus: () => setHoverDay(key),
+              onFocus: () => { setHoverDay(key); setRovingDay(key) },
               onBlur: () => setHoverDay(current => current === key ? null : current),
-              onKeyDown: event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); setDrawerDay(key) } },
+              onKeyDown: onCellKeyDown(key),
             }}>
             <span className="calendar-cell-day">{dayNumber}</span>
             {tokens > 0 && <span className="calendar-cell-tokens">{fmtTokens(tokens)}</span>}
@@ -178,7 +235,7 @@ export function Calendar({ stats, host, active }: { summary?: unknown; stats: St
 
     {drawerDay && <div className="calendar-drawer-root" role="dialog" aria-modal="true" aria-label={`${drawerDay} 全天详情`}>
       <div className="calendar-drawer-backdrop" onClick={() => setDrawerDay(null)} />
-      <aside className="calendar-drawer">
+      <aside className="calendar-drawer" ref={drawerRef} tabIndex={-1}>
         <header className="calendar-drawer-head">
           <h2>{drawerDay}{drawerDay === todayKey ? ' · 今天' : ''}</h2>
           <Button variant="ghost" aria-label="关闭详情" onClick={() => setDrawerDay(null)}><X size={16} /></Button>

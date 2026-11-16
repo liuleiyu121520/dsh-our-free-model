@@ -137,7 +137,7 @@ function RoutingEditor({ combo, data, onClose, onSaved }: {
         <label>粘性回合数<Input type="number" inputMode="numeric" min={1} max={100} step={1} required value={stickyLimit} disabled={saving} onChange={event => setStickyLimit(event.target.value)} /></label>
         <div className="rt-enabled"><span>启用路由组</span><Switch checked={enabled} aria-label="启用路由组" disabled={saving} onCheckedChange={setEnabled} /></div>
       </div>
-      <div className="rt-strategy-description"><Badge tone="blue">{strategyName(strategy)}</Badge><span>{strategies[strategy as Strategy]?.detail ?? '以服务返回的策略为准'}</span></div>
+      <div className="rt-strategy-description"><Badge>{strategyName(strategy)}</Badge><span>{strategies[strategy as Strategy]?.detail ?? '以服务返回的策略为准'}</span></div>
       <div className="rt-members-layout">
         <section className="rt-members" aria-label="已选成员顺序">
           <div className="rt-section-heading"><h3>成员顺序</h3><span>{models.length}</span></div>
@@ -235,7 +235,7 @@ export function Routing({ active, host }: { active: boolean; host: Host }) {
     <section className="rt-list" aria-label="路由组列表" aria-busy={loading}>
       {rows.map(combo => <div className="rt-group" key={combo.id}>
         <div className="rt-group-row"><span className="wb-app-icon is-green"><Route size={20} /></span><div className="rt-group-name"><strong>{combo.name}</strong><small>{combo.id}</small></div>
-          <div className="rt-group-strategy"><Badge tone="blue">{strategyName(combo.strategy)}</Badge><small>{combo.models.length} 个成员 · {combo.stickyLimit} 粘性回合</small></div>
+          <div className="rt-group-strategy"><Badge>{strategyName(combo.strategy)}</Badge><small>{combo.models.length} 个成员 · {combo.stickyLimit} 粘性回合</small></div>
           <Switch checked={combo.enabled} disabled={blocked} aria-label={`启用路由组 ${combo.name}`} onCheckedChange={() => void run(combo)} />
           <div className="rt-group-actions"><Button variant="ghost" disabled={blocked} title="编辑路由组" aria-label={`编辑路由组 ${combo.name}`} onClick={() => { setError(''); setStatus(''); setEditor(combo) }}><Pencil size={15} /></Button><Button variant="ghost" className="wb-danger" disabled={blocked} title="删除路由组" aria-label={`删除路由组 ${combo.name}`} onClick={() => setRemoving(combo.id)}><Trash2 size={15} /></Button></div>
         </div>

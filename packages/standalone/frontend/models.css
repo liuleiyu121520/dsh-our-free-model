@@ -610,7 +610,7 @@
 
 /* ---- 新增令牌（两主题通用，不改任何旧令牌） ---- */
 :root {
-  --md-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --md-ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
   --md-ease-breathe: cubic-bezier(0.37, 0, 0.63, 1);
 }
 
@@ -862,7 +862,7 @@
   color: #6EE7B7;
   border-bottom-color: var(--cp-cyan-line);
   font-family: Consolas, "Cascadia Mono", "JetBrains Mono", monospace;
-  font-size: 10px; letter-spacing: 0.2em;
+  font-size: 11px; letter-spacing: 0.2em;
 }
 
 /* ---------- N-06 夜 · 行与读数：扫描底纹 + 等宽琥珀 + 右对齐 ---------- */

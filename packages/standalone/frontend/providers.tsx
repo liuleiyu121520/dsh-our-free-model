@@ -119,7 +119,7 @@ export function Providers({ active, host }: { active: boolean; host: Host }) {
   return <div className="pd-page">
     <header className="wb-heading"><div><span className="wb-eyebrow">PROVIDERS</span><h1>聚合渠道</h1><p>第三方 API 与自有密钥</p></div>
       <Button variant="outline" title="刷新渠道目录" aria-label="刷新渠道目录" disabled={loading || !!selected} busy={loading} onClick={() => void reload()}><RefreshCw size={15} /><span>刷新</span></Button></header>
-    <div className="wb-summary"><span><strong>{data ? registry.length : '—'}</strong> 全部渠道</span><span><i className="wb-dot" /><strong>{data ? totalConnected : '—'}</strong> 已连接</span><span><strong>{data ? registry.length - totalConnected : '—'}</strong> 未连接</span></div>
+    <div className="wb-summary"><span><strong>{data ? registry.length : '—'}</strong> 全部渠道</span><span><i className={totalConnected > 0 ? 'wb-dot' : 'wb-dot is-zero'} /><strong>{data ? totalConnected : '—'}</strong> 已连接</span><span><strong>{data ? registry.length - totalConnected : '—'}</strong> 未连接</span></div>
     <div className="wb-toolbar"><label className="wb-search"><Search size={16} /><Input aria-label="搜索聚合渠道" value={search} placeholder="搜索渠道、地址或协议" onChange={event => setSearch(event.target.value)} /></label>
       <select aria-label="渠道分类" value={category} onChange={event => setCategory(event.target.value)}><option value="all">全部分类</option>{categories.map(value => <option key={value} value={value}>{value}</option>)}</select>
       <div className="wb-segments" aria-label="连接状态">{[['all', '全部'], ['connected', '已连接'], ['pending', '未连接']].map(([id, name]) => <button key={id} type="button" aria-pressed={filter === id} onClick={() => setFilter(id)}>{name}</button>)}</div></div>

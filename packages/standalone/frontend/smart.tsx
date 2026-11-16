@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { ArrowDown, ArrowUp, GripVertical, Info, ListPlus, RefreshCw, Sparkles, Trash2, X } from 'lucide-react'
+import { ArrowDown, ArrowUp, GripVertical, Info, ListPlus, RefreshCw, Search, Sparkles, Trash2, X } from 'lucide-react'
 import { Button, Card } from './components/ui'
 import type { Host, SmartCandidate, SmartState, SmartStatus, Summary } from './types'
 import './smart.css'
@@ -17,13 +17,14 @@ const isInvalid = (statuses: SmartStatus[] | undefined, modelId: string) =>
 
 function CandidateRow({ candidate, onAdd }: { candidate: SmartCandidate; onAdd(id: string): void }) {
   const exhausted = candidate.accounts.total > 0 && candidate.accounts.available === 0
+  const zeroAccounts = candidate.accounts.total === 0
   return <li className="smart-candidate">
     <div className="smart-candidate-main">
       <span className="smart-candidate-id" title={candidate.id}>{candidate.id}</span>
       <span className="smart-candidate-name">{candidate.name && candidate.name !== candidate.model ? candidate.name : ''}</span>
     </div>
     <div className="smart-candidate-meta">
-      <span className={`smart-accounts ${exhausted ? 'is-exhausted' : 'is-ok'}`}>
+      <span className={`smart-accounts ${exhausted ? 'is-exhausted' : zeroAccounts ? 'is-neutral' : 'is-ok'}`}>
         {candidate.accounts.available}/{candidate.accounts.total} 账号可用
       </span>
       <Button variant="ghost" size="sm" className="smart-add-btn" aria-label={`把 ${candidate.id} 加入调度池`}
@@ -78,6 +79,7 @@ export function Smart({ summary, host, active }: { summary: Summary; stats: unkn
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
   const [dragging, setDragging] = useState<number | undefined>(undefined)
+  const [candidateQuery, setCandidateQuery] = useState('')
   const dirty = useRef(false)
 
   const load = useCallback(async () => {
@@ -94,8 +96,13 @@ export function Smart({ summary, host, active }: { summary: Summary; stats: unkn
   useEffect(() => { if (active && !view) void load() }, [active, view, load])
 
   const statusList = view?.statuses
-  const candidates = useMemo(() => (view?.candidates ?? [])
-    .filter(row => row.disabled !== true && row.dead !== true && !draft.includes(row.id)), [view, draft])
+  const candidates = useMemo(() => {
+    const query = candidateQuery.trim().toLowerCase()
+    return (view?.candidates ?? [])
+      .filter(row => row.disabled !== true && row.dead !== true && !draft.includes(row.id))
+      .filter(row => query === '' || row.id.toLowerCase().includes(query) || row.provider.toLowerCase().includes(query)
+        || (row.name ?? '').toLowerCase().includes(query))
+  }, [view, draft, candidateQuery])
   const poolRows = draft.map(modelId => ({
     modelId,
     status: statusOf(statusList, modelId),
@@ -171,9 +178,14 @@ export function Smart({ summary, host, active }: { summary: Summary; stats: unkn
         <div className="smart-card-head">
           <h2>候选模型</h2>
           <p>来自账号渠道的模型目录（已过滤停用与下架条目）。绑定账号数与可用账号数实时推导。</p>
+          <label className="smart-filter-field">
+            <Search size={13} aria-hidden="true" />
+            <input type="search" value={candidateQuery} placeholder={`筛选 ${candidates.length} 个候选（id / 渠道）`}
+              aria-label="筛选候选模型" onChange={event => setCandidateQuery(event.target.value)} />
+          </label>
         </div>
         {candidates.length === 0 ? <p className="smart-candidates-empty" role="status">
-          {view?.candidates.length ? '目录中的模型都已在池内或已停用。' : '渠道目录暂无模型，可稍后重试。'}
+          {candidateQuery ? '没有匹配筛选条件的候选。' : view?.candidates.length ? '目录中的模型都已在池内或已停用。' : '渠道目录暂无模型，可稍后重试。'}
           <Button variant="ghost" size="sm" onClick={() => void load()}><RefreshCw size={13} />刷新</Button>
         </p> : <ul className="smart-candidate-list">
           {candidates.map(row => <CandidateRow key={row.id} candidate={row} onAdd={add} />)}

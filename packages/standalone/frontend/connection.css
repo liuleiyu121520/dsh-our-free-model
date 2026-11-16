@@ -191,7 +191,7 @@
 }
 .cx-field-tag {
   font-family: var(--mono-font, monospace);
-  font-size: 10px;
+  font-size: 11px;
   padding: 1px 6px;
   border-radius: 4px;
   background: var(--hover, #f2ede3);
@@ -213,7 +213,7 @@
   display: flex;
   align-items: center;
   position: relative;
-  border: 1px solid var(--line-strong, var(--line));
+  border: 1px solid var(--line);
   border-radius: 7px;
   background: var(--surface, #ffffff);
   padding: 0 10px;
@@ -222,9 +222,9 @@
   transition: border-color 160ms var(--ease-out-expo), box-shadow 160ms var(--ease-out-expo);
 }
 .cx-input-wrap:focus-within {
-  border-color: var(--accent, #0E9F6E);
+  border-color: var(--green, #0E9F6E);
   box-shadow: 0 0 0 3px var(--accent-glow, rgba(14, 159, 110, 0.14));
-  color: var(--accent, #0E9F6E);
+  color: var(--green-ink, #0B7A54);
 }
 .cx-input-wrap input {
   flex: 1;
@@ -263,10 +263,9 @@
 /* 选中模型卡片的活跃信息条 */
 .cx-active-model-box {
   margin-top: 14px;
-  padding: 12px 14px;
-  border-radius: 8px;
-  background: var(--surface-hover, #faf7f1);
-  border: 1px solid var(--line-soft, #f1ece3);
+  padding: 12px 0 0;
+  background: transparent;
+  border-top: 1px solid var(--line-soft, #f1ece3);
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -312,7 +311,7 @@
   border-color: rgba(52, 211, 153, 0.28);
 }
 .cx-pill-ctx {
-  font-size: 10.5px;
+  font-size: 11px;
   font-family: var(--mono-font, monospace);
   font-variant-numeric: tabular-nums;
   padding: 2px 7px;
@@ -327,51 +326,41 @@
   color: #c9c4b8;
 }
 .cx-pill-cap {
-  font-size: 10.5px;
+  font-size: 11px;
   padding: 2px 7px;
   border-radius: 4px;
   font-weight: 500;
 }
 .cx-pill-cap.is-vision {
-  background: #e0f2fe;
-  color: #0284c7;
-  border: 1px solid #bae6fd;
+  background: var(--accent-soft);
+  color: var(--green-ink);
+  border: 1px solid var(--accent-line);
 }
 .cx-pill-cap.is-reasoning {
-  background: #fef3c7;
-  color: #d97706;
-  border: 1px solid #fde68a;
-}
-[data-theme="dark"] .cx-pill-cap.is-vision {
-  background: rgba(56, 189, 248, 0.14);
-  color: #38bdf8;
-  border-color: rgba(56, 189, 248, 0.28);
-}
-[data-theme="dark"] .cx-pill-cap.is-reasoning {
-  background: rgba(251, 191, 36, 0.14);
-  color: #fbbf24;
-  border-color: rgba(251, 191, 36, 0.28);
+  background: var(--warning-soft);
+  color: var(--warning);
+  border: 1px solid var(--warning-line);
 }
 
 /* ── 模型下拉选择器增强 ── */
 .cx-picker {
   position: relative;
-  z-index: 50;
+  z-index: var(--z-raised, 50);
   margin-top: 12px;
 }
 .cx-picker.is-open {
-  z-index: 1000 !important;
+  z-index: var(--z-popover, 1000) !important;
 }
 .cx-card:has(.is-open),
 .cx-card-model:has(.is-open) {
-  z-index: 500 !important;
+  z-index: var(--z-popover-scope, 500) !important;
 }
 .cx-picker-panel {
   position: absolute !important;
   top: calc(100% + 6px) !important;
   left: 0 !important;
   right: 0 !important;
-  z-index: 1001 !important;
+  z-index: var(--z-popover-panel, 1001) !important;
   margin-top: 0 !important;
   border: 1px solid var(--line) !important;
   border-radius: 10px !important;
@@ -423,7 +412,7 @@
   gap: 8px;
 }
 .cx-picker-tag-channel {
-  font-size: 10.5px;
+  font-size: 11px;
   font-weight: 500;
   padding: 1px 6px;
   border-radius: 3px;
@@ -626,7 +615,7 @@
 }
 
 /* 代码内容区域 */
-.connection-example.cx-code {
+.connection-example.cx-code { white-space: pre; overflow-x: auto;
   margin: 0;
   padding: 18px 20px;
   background: transparent !important;
@@ -643,11 +632,11 @@
 
 /* 语法高亮词元（Syntax Highlighting Tokens） */
 .tok-kw { color: #f472b6; font-weight: 600; }        /* 关键字：from, import, const, return */
-.tok-cmd { color: #38bdf8; font-weight: 600; }       /* curl 命令 */
+.tok-cmd { color: color-mix(in srgb, var(--green, #0E9F6E) 72%, white); font-weight: 600; }       /* curl 命令 */
 .tok-method { color: #34d399; font-weight: 700; }    /* POST, GET */
 .tok-flag { color: #a78bfa; }                         /* -H, -d, -X */
 .tok-hdr { color: #60a5fa; }                          /* Authorization, Content-Type */
-.tok-str { color: #fbbf24; }                          /* 字符串内容 */
+.tok-str { color: color-mix(in srgb, var(--warning) 78%, white); }                          /* 字符串内容 */
 .tok-fn { color: #818cf8; }                           /* 函数调用：create, new */
 .tok-num { color: #f87171; }                          /* 数字 */
 .tok-comment { color: #7c766a; font-style: italic; }  /* 注释 */
@@ -656,7 +645,7 @@
 
 /* 模型名脉冲反馈（当用户在下拉选新模型时，代码里的 model 闪烁一次） */
 .tok-model {
-  color: #38bdf8;
+  color: color-mix(in srgb, var(--green, #0E9F6E) 72%, white);
   background: rgba(56, 189, 248, 0.15);
   padding: 1px 6px;
   border-radius: 4px;
@@ -806,7 +795,7 @@
   gap: 3px;
 }
 .cx-preset-lbl {
-  font-size: 10.5px;
+  font-size: 11px;
   color: var(--muted);
   font-weight: 550;
 }
