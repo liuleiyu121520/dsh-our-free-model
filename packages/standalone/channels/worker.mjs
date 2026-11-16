@@ -149,7 +149,14 @@ parentPort.on('message', async message => {
     else if (type === 'complete') { await complete(message.request, id, controller.signal); send({ type: 'result', id }) }
     else throw new Error('未知渠道操作')
   } catch (error) {
-    send({ type: 'error', id, message: error.message, statusCode: error.statusCode ?? error.status })
+    // W1：把渠道包的一等错误码（LlmError.code，如 QUOTA_EXCEEDED）以 channelCode
+    // 旁路带出 Worker。特意不叫 code —— 共享内核 carryFailure 的白名单会读取 code
+    // 并改写直连路径的分类结果；channelCode 这个名字内核永不读，直连逐字节不变，
+    // 只有 standalone 层的智能调度（smart-schedule.mjs）是它的读者。
+    send({
+      type: 'error', id, message: error.message, statusCode: error.statusCode ?? error.status,
+      ...(typeof error.code === 'string' && error.code !== '' ? { channelCode: error.code } : {}),
+    })
   } finally { controllers.delete(id) }
 })
 

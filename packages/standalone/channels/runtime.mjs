@@ -47,7 +47,12 @@ export async function createChannelRuntime({ dataDir, logger = console, stats })
     if (!entry) return
     if (message.type === 'chunk') {
       try { entry.onChunk?.(message.chunk) } catch (error) { entry.reject(error); worker.postMessage({ type: 'cancel', id: message.id }) }
-    } else if (message.type === 'error') entry.reject(Object.assign(new Error(message.message), { statusCode: message.statusCode }))
+    } else if (message.type === 'error') {
+      // W1 对端：channelCode 原样挂到 Error 上（见 worker.mjs 同名注释）。
+      const failure = Object.assign(new Error(message.message), { statusCode: message.statusCode })
+      if (typeof message.channelCode === 'string' && message.channelCode !== '') failure.channelCode = message.channelCode
+      entry.reject(failure)
+    }
     else entry.resolve(message.value)
   })
   function call(type, payload = {}, signal, onChunk, timeoutMs = 120000) {

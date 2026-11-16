@@ -421,6 +421,38 @@ try {
     assert.equal(service.channels.providers.some(provider => unsupportedProviders.includes(provider)), false)
     assert.equal((await api('/v1/models')).value.data.some(row => unsupportedProviders.some(provider => row.id.startsWith(`${provider}/`))), false)
   })
+  await check('渠道错误码经 channelCode 旁路透传到 standalone 层，直连响应信封逐字节不变', async () => {
+    // 前置：解除 loomy 永久积分锁定（此后的用例不再依赖它为 true），
+    // 再经 state.json 预置 loomy 账号的未来 modelRateLimits —— 这是
+    // throwIfAllAccountsRateLimited 的确定性抛点（零上游请求）。
+    await rpc('credits.permanentLock', { provider: 'loomy', locked: false })
+    const statePath = path.join(dataDir, 'channel-pack', 'state.json')
+    const state = JSON.parse(fs.readFileSync(statePath, 'utf8'))
+    const loomy = state.accounts.find(row => row.id === 'loomy-fixture')
+    assert.ok(loomy, 'state.json 必须包含 loomy 替身账号')
+    loomy.modelRateLimits = { 'fixture-free': Date.now() + 3600_000 }
+    fs.writeFileSync(statePath, JSON.stringify(state))
+    await service.close()
+    service = await startStandalone({ dataDir, port: 0, refresh: false, logger: { warn() {}, info() {} } })
+    await service.ready
+    key = JSON.parse(fs.readFileSync(service.keyFile)).forwardKey
+    // W1 读者侧：runtime 层拿到的错误带 channelCode=QUOTA_EXCEEDED。
+    const failure = await service.runtime.complete({
+      model: 'loomy/fixture-free', openAi: { messages: [{ role: 'user', content: 'channel-code fixture' }] },
+    }).then(() => null, error => error)
+    assert.ok(failure instanceof Error, '预检限流必须抛错')
+    assert.equal(failure.channelCode, 'QUOTA_EXCEEDED')
+    assert.match(failure.message, /均在限流中/)
+    // 直连路径字节级不变：kernel 白名单（carryFailure）不读 channelCode，
+    // HTTP 信封保持无 code 的 502 兜底形状，也不得出现 channelCode 字段。
+    const reply = await api('/v1/chat/completions', { model: 'loomy/fixture-free', messages: [{ role: 'user', content: 'channel-code fixture' }] })
+    assert.equal(reply.response.status, 502)
+    assert.equal(reply.value.error.type, 'server_error')
+    assert.equal(reply.value.error.code, undefined)
+    assert.equal(Object.hasOwn(reply.value.error, 'channelCode'), false)
+    assert.match(reply.value.error.message, /均在限流中/)
+    assertUnsupportedDataPreserved()
+  })
   await check('客户端取消传播到真实渠道网络请求，服务关闭不会迟到写入凭据', async () => {
     const controller = new AbortController()
     const started = new Promise(resolve => { hold = resolve })
