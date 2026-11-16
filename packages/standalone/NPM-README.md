@@ -48,7 +48,6 @@ ofm --help                  # 全部选项
 
 - **源码**：[liuleiyu121520/dsh-our-free-model](https://github.com/liuleiyu121520/dsh-our-free-model)（命令行工具在 [`packages/standalone`](https://github.com/liuleiyu121520/dsh-our-free-model/tree/main/packages/standalone)）
 - **问题反馈**：[Issues](https://github.com/liuleiyu121520/dsh-our-free-model/issues)
-- **DSH 插件入口**（可选，独立产品）：[Ebony-Vinyl/dsh-our-free-model](https://github.com/Ebony-Vinyl/dsh-our-free-model)
 
 > 与上游的关系：源自 [Ebony-Vinyl/dsh-our-free-model](https://github.com/Ebony-Vinyl/dsh-our-free-model)（MIT，版权声明保留、未重新授权），
 > 差异仅在渠道取舍——恢复了上游移除的 WorkBuddy 国内版/国际版与华为云渠道，风险由使用者承担。
