@@ -8,6 +8,9 @@ export function carryFailure(failure, kind = 'error') {
     ...typeof code === 'string' && /^[A-Z][A-Z0-9_]{0,63}$/.test(code) ? { code } : {},
     ...Number.isInteger(status) && status >= 400 && status <= 599 ? { status } : {},
     ...Number.isFinite(source.providerRetryAfterMs) && source.providerRetryAfterMs > 0 ? { providerRetryAfterMs: source.providerRetryAfterMs } : {},
+    // W2：details 只在失败方显式携带时透传（当前唯一生产方是 standalone 智能调度的
+    // 429 信封）。不带 details 的失败逐字节保持原输出。
+    ...source.details !== undefined ? { details: source.details } : {},
   }
 }
 
@@ -32,7 +35,14 @@ export function forwardFailure(outcome, anthropic = false) {
   const [fallbackStatus, type] = classes[failure.code] ?? [502, byStatus[failure.status] ?? 'server_error']
   return {
     status: failure.status ?? fallbackStatus,
-    error: { message: failure.message, type: anthropic && type === 'server_error' ? 'api_error' : type, ...(failure.code ? { code: failure.code } : {}) },
+    error: {
+      message: failure.message,
+      type: anthropic && type === 'server_error' ? 'api_error' : type,
+      ...(failure.code ? { code: failure.code } : {}),
+      // W2：机器可读扩展（如智能调度全池耗尽的各模型解禁明细）。SDK 会忽略
+      // 未知字段；没有 details 时键不存在，信封与改前逐字节相同。
+      ...(failure.details !== undefined ? { details: failure.details } : {}),
+    },
     retryAfterMs: failure.providerRetryAfterMs,
     classified: Boolean(failure.code || failure.status),
   }

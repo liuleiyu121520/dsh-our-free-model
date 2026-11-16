@@ -9,6 +9,7 @@ import { isLoopbackHost } from '../../src/trust.js'
 import { createManagement } from './management.mjs'
 import { createStandaloneEac } from './eac.mjs'
 import { createChannelRuntime } from './channels/runtime.mjs'
+import { createSmartScheduler } from './smart-schedule.mjs'
 import { createRequestLog } from './request-log.mjs'
 import { createSubscriptions } from '../../src/subscriptions.js'
 import { createSubscriptionRuntime } from '../../src/subscription-completion.js'
@@ -141,6 +142,7 @@ export async function startStandalone({
   let listener
   let management
   let channels
+  let scheduler
   let subscriptions
   let magpieEngine
   let magpieModels
@@ -202,7 +204,7 @@ export async function startStandalone({
               enabled: !stopped && stores.settings.get().enabled !== false,
               key: stores.settings.get().forwardKey,
             }),
-            complete: runtime.complete, modelRows: runtime.publicModelRows,
+            complete: runtime.complete, modelRows: gatewayModelRows,
           })
         }
         const targetPort = relayTarget?.port ?? listener.port
@@ -275,6 +277,13 @@ export async function startStandalone({
       subscriptionRuntime: combinedSubscriptionRuntime,
     })
     channels = await createChannelRuntime({ dataDir, logger, stats: stores.stats })
+    // 智能调度器：auto / ourfreemodel 保留名的顺序接力（方案 §3）。
+    // 分发顺序 = isSmartAlias → scheduler → channels.handles → core。
+    scheduler = createSmartScheduler({ settings, channels, logger })
+    // `/v1/models` 的 auto 注入面只覆盖对外网关（主 listener 与 LAN relay target）：
+    // catalog/state、management 的 routable、workbench、gateway.getEnabled 等内部
+    // 消费点继续读 publicModelRows，保持不含 auto（方案 §3.8）。
+    const gatewayModelRows = () => [scheduler.autoRow(), ...runtime.publicModelRows()]
     const core = runtime
     runtime = {
       ...core,
@@ -285,18 +294,24 @@ export async function startStandalone({
       publicModelRows: () => [...core.publicModelRows(), ...channels.publicModelRows()],
       // 请求日志在 service 层观测：插件侧的 src/core 与渠道包保持逐字节不变
       // （它们的 sha256 在签名清单里），独立端要记日志只需包一层。
+      // auto 请求在日志里记 `auto→真实模型`，token 用量仍按真实命中模型记账。
       complete: async (request, onChunk) => {
         const started = Date.now()
         let first = 0
         const tracked = onChunk === undefined ? undefined : chunk => { if (!first) first = Date.now(); onChunk(chunk) }
+        const smart = scheduler.handles(request.model)
+        const routed = smart ? { model: '' } : undefined
+        const loggedModel = () => routed?.model ? `${request.model}→${routed.model}` : request.model
         let outcome
         try {
-          outcome = channels.handles(request.model)
-            ? await channels.complete(request, tracked)
-            : await core.complete(request, tracked)
+          outcome = smart
+            ? await scheduler.complete(request, tracked, routed)
+            : channels.handles(request.model)
+              ? await channels.complete(request, tracked)
+              : await core.complete(request, tracked)
         } catch (error) {
           requestLog?.append({
-            at: started, model: request.model, ok: false,
+            at: started, model: loggedModel(), ok: false,
             elapsedMs: Date.now() - started,
             error: String(error?.message ?? error).slice(0, 200),
           })
@@ -304,7 +319,7 @@ export async function startStandalone({
         }
         const usage = outcome?.usage
         requestLog?.append({
-          at: started, model: request.model, ok: outcome?.error === undefined,
+          at: started, model: loggedModel(), ok: outcome?.error === undefined,
           input: usage?.prompt_tokens ?? 0, output: usage?.completion_tokens ?? 0,
           reasoning: usage?.completion_tokens_details?.reasoning_tokens ?? 0,
           cacheRead: usage?.prompt_tokens_details?.cached_tokens ?? 0,
@@ -322,7 +337,7 @@ export async function startStandalone({
     }
     management = createManagement({
       stores, runtime, channels, eac, subscriptions, workbenchOptions, requestLog,
-      magpieEngine, magpieModels,
+      magpieEngine, magpieModels, scheduler,
       desktopPlatform, desktopArch,
       onEngineStarted: () => { settings.update({ magpieEnabled: true }); settings.flush() },
       onSubscriptionsChanged: () => runtime?.syncAggregateCatalog?.(),
@@ -343,7 +358,7 @@ export async function startStandalone({
     listener = await startForwardServer({
       config: () => ({ host, port: requestedPort, enabled: settings.get().enabled !== false, key: settings.get().forwardKey }),
       complete: runtime.complete,
-      modelRows: runtime.publicModelRows,
+      modelRows: gatewayModelRows,
       health: () => ({
         ok: true, service: PRODUCT, product: 'standalone', version: VERSION,
         capabilities: { anonymous: true, kilo: true, eac: true, accountChannels: true, webUi: true },
@@ -391,7 +406,7 @@ export async function startStandalone({
       managementUrl: `http://${host === '::1' ? '[::1]' : host}:${listener.port}/${management.bootstrapFragment}`,
       port: listener.port,
       keyFile: path.join(dataDir, 'settings.json'),
-      runtime, channels, ready,
+      runtime, channels, scheduler, ready,
       get lan() { return lanState() },
       close() {
         if (closing !== undefined) return closing
@@ -401,6 +416,7 @@ export async function startStandalone({
         eac.dispose()
         magpieModels?.close()
         const engineClosing = magpieEngine?.close()
+        scheduler?.dispose()
         runtime.dispose()
         closing = (async () => {
           try {
@@ -420,6 +436,7 @@ export async function startStandalone({
     eac?.dispose()
     magpieModels?.close()
     await magpieEngine?.close()
+    scheduler?.dispose()
     runtime?.dispose()
     await relayChanges
     await closeRelay()

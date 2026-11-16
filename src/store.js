@@ -229,6 +229,10 @@ export const SETTINGS_INITIAL = {
    *  question with a canned string — each is individually switchable, and the
    *  detector is conservative enough to be off for anything else. */
   localOptimize: { enabled: true, quota: true, prefix: true, title: true, suggestion: true, filepath: true },
+  /** 智能调度池（standalone `auto` 网关别名，顺序接力）：按优先序排列的渠道
+   *  模型 id（`provider/model`）。空池 = `auto` 返回 400 配置指引；保存走
+   *  `POST /api/management/smart/pool`。浅合并补齐，旧 settings.json 无损升级。 */
+  smartSchedulePool: { models: [] },
   /** Acknowledged announcement copy version. */
   announcementAck: '',
   /** Acknowledged disclaimer copy version (src/disclaimer.js); 0 = not yet read. */

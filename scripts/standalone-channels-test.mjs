@@ -8,6 +8,7 @@ import { signSealedRequest, lane } from '../src/eac.js'
 import { createStandaloneEac } from '../packages/standalone/eac.mjs'
 import { createCredentials } from '../packages/standalone/channels/credentials.mjs'
 import { attachments } from '../packages/standalone/channels/images.mjs'
+import { createSmartScheduler, isSmartAlias, isQuotaExhaustion } from '../packages/standalone/smart-schedule.mjs'
 
 const scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'ofm-channels-'))
 const dataDir = path.join(scratch, 'app')
@@ -98,6 +99,10 @@ const upstream = http.createServer(async (req, res) => {
       assert.equal(body.model, 'fixture-free')
     }
     if (signed && req.headers['x-ofm-user'] !== 'fixture-eac-user') { json(res, { error: { message: 'AuthorizationRequired' } }, 401); return }
+    if (JSON.stringify(body.messages).includes('server-fixture')) {
+      json(res, { error: { message: '模拟上游 500', type: 'server_error' } }, 500)
+      return
+    }
     if (JSON.stringify(body.messages).includes('cancel-fixture')) {
       res.writeHead(200, { 'content-type': 'text/event-stream' })
       res.write(`data: ${JSON.stringify({ choices: [{ delta: { content: 'first' } }] })}\n\n`)
@@ -186,6 +191,135 @@ try {
       assert.deepEqual(answer.content, [{ type: 'text', text: 'fixture-tool-output' }])
       assert.notEqual(answer.id, result.messages[0].id)
     }
+  })
+  await check('smart 调度器单元：别名归一、配额判据三形态、流式保护、B 类接力、非配额上抛、快照刷新与 429/400 信封', async () => {
+    assert.equal(isSmartAlias('auto'), true)
+    assert.equal(isSmartAlias('AUTO'), true)
+    assert.equal(isSmartAlias(' ourfreemodel '), true)
+    assert.equal(isSmartAlias('ourfreemodel'), true)
+    assert.equal(isSmartAlias('auto/x'), false)
+    assert.equal(isSmartAlias('claude/auto'), false)
+    assert.equal(isSmartAlias(undefined), false)
+    // 配额判据：channelCode 等值 + 消息兜底（渠道包三形态：trae 积分 / gemini 账号 / qoder 上游）
+    assert.equal(isQuotaExhaustion({ channelCode: 'QUOTA_EXCEEDED', message: 'trae: 积分不足（balance 0）' }), true)
+    assert.equal(isQuotaExhaustion({ message: 'gemini: 模型 m 的所有账号均不可用（限流或额度耗尽），请稍后再试' }), true)
+    assert.equal(isQuotaExhaustion({ message: '产品：模型 m 所有账号均受限，请稍后再试' }), true)
+    assert.equal(isQuotaExhaustion({ message: 'qoder: HTTP 500 upstream exploded' }), false)
+    assert.equal(isQuotaExhaustion(new Error('网络超时')), false)
+
+    // 可编程假渠道：记录派发顺序与 rpc 次数；p/a 按 content 剧本失败，p/b 可切换成败
+    let bFails = false
+    const attempts = []
+    const rpcCalls = []
+    let rpcRounds = 0
+    const fakeSettings = { get: () => ({ smartSchedulePool: { models: ['p/a', 'p/b'] } }) }
+    const fakeChannels = {
+      providers: ['p'],
+      rpc: async body => {
+        rpcCalls.push(body.method)
+        if (body.method === 'model.list') {
+          rpcRounds++
+          return { ok: true, value: { models: [
+            { id: 'a', name: 'A', disabled: false, dead: false },
+            { id: 'b', name: 'B', disabled: false, dead: false },
+          ] } }
+        }
+        return { ok: true, value: { accounts: [{ id: 'u1', enabled: true, modelRateLimits: {} }] } }
+      },
+      complete: async (request, onChunk) => {
+        attempts.push(request.model)
+        const content = String(request.openAi?.messages?.[0]?.content ?? '')
+        if (request.model === 'p/a') {
+          if (content.includes('emit-first')) {
+            onChunk?.({ type: 'text-delta', text: 'half' })
+            throw Object.assign(new Error('p: 所有账号均受限，请稍后再试'), { channelCode: 'QUOTA_EXCEEDED' })
+          }
+          if (content.includes('boom')) throw new Error('p: upstream 500')
+          throw Object.assign(new Error('trae: 积分不足（balance 0）'), { channelCode: 'QUOTA_EXCEEDED' })
+        }
+        if (bFails) throw Object.assign(new Error('p: 所有账号均不可用，请稍后再试'), { channelCode: 'QUOTA_EXCEEDED' })
+        return { text: 'b-ok', toolCalls: [], usage: { prompt_tokens: 1, completion_tokens: 1, completion_tokens_details: { reasoning_tokens: 0 } } }
+      },
+    }
+    const unit = createSmartScheduler({ settings: fakeSettings, channels: fakeChannels, logger: { warn() {}, info() {} } })
+    await unit.refreshSnapshot()
+
+    // 流式保护（AC-9）：已向客户端下发字节后，配额错误原样上抛，不切换候选
+    const chunks = []
+    const streamedFailure = await unit.complete(
+      { model: 'auto', openAi: { messages: [{ role: 'user', content: 'emit-first' }] } },
+      chunk => chunks.push(chunk),
+    ).then(() => null, error => error)
+    assert.equal(streamedFailure?.channelCode, 'QUOTA_EXCEEDED')
+    assert.deepEqual(attempts, ['p/a'])
+    assert.equal(chunks.length, 1)
+
+    // B 类（积分型，预检看不到）运行时接力：落到下一候选，接力后即时刷新快照
+    attempts.length = 0
+    const roundsBefore = rpcRounds
+    const relayed = await unit.complete({ model: 'auto', openAi: { messages: [{ role: 'user', content: 'hi' }] } })
+    assert.deepEqual(attempts, ['p/a', 'p/b'])
+    assert.equal(relayed.text, 'b-ok')
+    assert.ok(rpcRounds > roundsBefore, '运行时接力后必须即时刷新快照')
+
+    // 非配额错误不接力（AC-11）：错误对象按直接调用该模型的语义返回
+    attempts.length = 0
+    const boom = await unit.complete({ model: 'auto', openAi: { messages: [{ role: 'user', content: 'boom' }] } }).then(() => null, error => error)
+    assert.equal(boom?.message, 'p: upstream 500')
+    assert.deepEqual(attempts, ['p/a'])
+
+    // 全池耗尽（积分型）：429 信封，code=RATE_LIMIT，明细 resetUnknown
+    bFails = true
+    attempts.length = 0
+    const exhausted = await unit.complete({ model: 'auto', openAi: { messages: [{ role: 'user', content: 'hi' }] } }).then(() => null, error => error)
+    assert.equal(exhausted?.statusCode, 429)
+    assert.equal(exhausted?.code, 'RATE_LIMIT')
+    assert.match(exhausted?.message ?? '', /调度池/)
+    assert.equal(exhausted?.details?.type, 'smart_pool_exhausted')
+    assert.deepEqual(exhausted?.details?.models, [
+      { model: 'p/a', resetUnknown: true },
+      { model: 'p/b', resetUnknown: true },
+    ])
+    bFails = false
+    unit.dispose()
+
+    // 预检（A 类，modelRateLimits 已知解禁时刻）：零派发、明细带 resetAtMs/ISO
+    const presetChannels = {
+      providers: ['p'],
+      rpc: async body => body.method === 'model.list'
+        ? { ok: true, value: { models: [{ id: 'a', name: 'A', disabled: false, dead: false }] } }
+        : { ok: true, value: { accounts: [{ id: 'u1', enabled: true, modelRateLimits: { a: Date.now() + 3600_000 } }] } },
+      complete: async () => { throw new Error('预检已判耗尽，不应派发') },
+    }
+    const preset = createSmartScheduler({ settings: { get: () => ({ smartSchedulePool: { models: ['p/a'] } }) }, channels: presetChannels, logger: { warn() {}, info() {} } })
+    await preset.refreshSnapshot()
+    const presetFailure = await preset.complete({ model: 'auto', openAi: { messages: [{ role: 'user', content: 'hi' }] } }).then(() => null, error => error)
+    assert.equal(presetFailure?.statusCode, 429)
+    assert.equal(presetFailure?.code, 'RATE_LIMIT')
+    const presetDetail = presetFailure?.details?.models?.[0]
+    assert.equal(presetDetail?.model, 'p/a')
+    assert.ok(Number.isFinite(presetDetail?.resetAtMs) && presetDetail.resetAtMs > Date.now())
+    assert.equal(presetDetail?.resetAtIso, new Date(presetDetail.resetAtMs).toISOString())
+    assert.equal(typeof presetDetail?.resetUnknown, 'undefined')
+    // 池状态面：全池 statuses + 当前命中 + 候选清单
+    const view = preset.state()
+    assert.equal(view.pool.join(','), 'p/a')
+    assert.equal(view.hit, null)
+    assert.equal(view.statuses[0]?.reason, 'exhausted')
+    assert.equal(view.candidates[0]?.id, 'p/a')
+    preset.dispose()
+
+    // 空池与全失效 → 400（配置错误，不是限流）
+    const empty = createSmartScheduler({ settings: { get: () => ({ smartSchedulePool: { models: [] } }) }, channels: fakeChannels, logger: { warn() {}, info() {} } })
+    const emptyFailure = await empty.complete({ model: 'auto', openAi: { messages: [{ role: 'user', content: 'hi' }] } }).then(() => null, error => error)
+    assert.equal(emptyFailure?.statusCode, 400)
+    assert.match(emptyFailure?.message ?? '', /智能调度/)
+    empty.dispose()
+    const allInvalid = createSmartScheduler({ settings: { get: () => ({ smartSchedulePool: { models: ['p/ghost'] } }) }, channels: fakeChannels, logger: { warn() {}, info() {} } })
+    await allInvalid.refreshSnapshot()
+    const invalidFailure = await allInvalid.complete({ model: 'ourfreemodel', openAi: { messages: [{ role: 'user', content: 'hi' }] } }).then(() => null, error => error)
+    assert.equal(invalidFailure?.statusCode, 400)
+    allInvalid.dispose()
   })
   service = await startStandalone({ dataDir, port: 0, refresh: false, logger: { warn: message => warnings.push(message), info() {} } })
   await service.ready
@@ -452,6 +586,118 @@ try {
     assert.equal(Object.hasOwn(reply.value.error, 'channelCode'), false)
     assert.match(reply.value.error.message, /均在限流中/)
     assertUnsupportedDataPreserved()
+  })
+  // —— S3 智能调度（auto 网关别名）集成用例 ——
+  const chatRequests = () => requests.filter(row => row.pathname.endsWith('/chat/completions'))
+  const loomyRequests = () => chatRequests().filter(row => row.headers['x-ofm-fixture-host'] === 'loomyad.xunfei.cn')
+  const rewriteState = patch => {
+    const statePath = path.join(dataDir, 'channel-pack', 'state.json')
+    const state = JSON.parse(fs.readFileSync(statePath, 'utf8'))
+    patch(state)
+    fs.writeFileSync(statePath, JSON.stringify(state))
+  }
+  const rewriteSettings = patch => {
+    const settingsPath = path.join(dataDir, 'settings.json')
+    const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'))
+    patch(settings)
+    fs.writeFileSync(settingsPath, JSON.stringify(settings))
+  }
+  const restartService = async () => {
+    await service.close()
+    service = await startStandalone({ dataDir, port: 0, refresh: false, logger: { warn() {}, info() {} } })
+    await service.ready
+    key = JSON.parse(fs.readFileSync(service.keyFile)).forwardKey
+  }
+  await check('auto 网关：/v1/models 头部恰一条 auto（池空也在、无别名重复条目），空池与全大写别名返回 400 配置指引，auto 不进内部清单', async () => {
+    const list = await api('/v1/models')
+    assert.equal(list.value.data[0]?.id, 'auto')
+    assert.equal(list.value.data.filter(row => row.id === 'auto').length, 1)
+    assert.equal(list.value.data.some(row => row.id === 'ourfreemodel'), false)
+    assert.equal(list.value.data[0].owned_by, 'our-free-model')
+    assert.equal(list.value.data.some(row => row.id === 'loomy/fixture-free'), true)
+    for (const model of ['auto', 'ourfreemodel', 'AUTO']) {
+      const reply = await api('/v1/chat/completions', { model, messages: [{ role: 'user', content: 'hi' }] })
+      assert.equal(reply.response.status, 400, `${model}: ${JSON.stringify(reply.value)}`)
+      assert.equal(reply.value.error.type, 'invalid_request_error')
+      assert.match(reply.value.error.message, /智能调度/)
+    }
+    // 注入面只在对外网关：管理台 summary/catalog 不含 auto（方案 §3.8）
+    const summary = (await api('/api/management/summary')).value
+    assert.equal(summary.catalog.some(row => row.id === 'auto'), false)
+  })
+  await check('auto 顺序接力：预检跳过已耗尽模型（零上游请求）、命中第一可用、别名等价、日志记 auto→真实模型、用量计入真实模型桶', async () => {
+    rewriteSettings(settings => { settings.smartSchedulePool = { models: ['loomy/fixture-free', 'cline/cline-free/mimo-v2.6-flash'] } })
+    await restartService()
+    const loomyBefore = loomyRequests().length
+    const reply = await api('/v1/chat/completions', { model: 'ourfreemodel', messages: [{ role: 'user', content: 'smart-fixture' }] })
+    assert.equal(reply.response.status, 200, JSON.stringify(reply.value))
+    assert.equal(reply.value.choices[0].message.content, 'account-ok')
+    assert.equal(loomyRequests().length, loomyBefore, '预检判耗尽的模型不得发出任何上游网络请求')
+    // 别名 + 流式等价：model=auto（规范名）流式同样命中池内第一可用
+    const stream = await fetch(`${service.url}/v1/chat/completions`, {
+      method: 'POST',
+      headers: { authorization: `Bearer ${key}`, 'content-type': 'application/json' },
+      body: JSON.stringify({ model: 'auto', messages: [{ role: 'user', content: 'smart-fixture' }], stream: true }),
+    })
+    assert.equal(stream.status, 200)
+    const text = await stream.text()
+    assert.ok(text.includes('account-ok') && text.includes('[DONE]'), text.slice(0, 200))
+    assert.equal(loomyRequests().length, loomyBefore)
+    // 请求日志可辨识最终命中的真实模型（FR-4.9）
+    const log = (await api('/api/management/requests?limit=10')).value
+    assert.match(log.entries[0]?.model ?? '', /^auto→cline\/cline-free\/mimo-v2\.6-flash$/)
+    assert.match(log.entries[1]?.model ?? '', /^ourfreemodel→cline\/cline-free\/mimo-v2\.6-flash$/)
+    // 用量计入真实命中模型的 stats 桶（D13），且不新增 auto 统计桶
+    const stats = (await api('/api/management/stats')).value
+    assert.ok((stats.days ?? []).some(day => (day.models ?? []).some(row => row.model === 'cline/cline-free/mimo-v2.6-flash' && row.calls > 0)), JSON.stringify(stats.days?.at(-1)))
+    assert.equal((stats.days ?? []).some(day => (day.models ?? []).some(row => row.model === 'auto')), false)
+  })
+  await check('auto 非配额错误（上游 5xx）不接力，错误信封与直连该模型逐字段一致', async () => {
+    rewriteState(state => { for (const row of state.accounts) delete row.modelRateLimits })
+    rewriteSettings(settings => { settings.smartSchedulePool = { models: ['cline/cline-free/mimo-v2.6-flash', 'loomy/fixture-free'] } })
+    await restartService()
+    const loomyBefore = loomyRequests().length
+    const reply = await api('/v1/chat/completions', { model: 'auto', messages: [{ role: 'user', content: 'server-fixture' }] })
+    assert.ok(reply.response.status >= 500, JSON.stringify(reply.value))
+    assert.equal(loomyRequests().length, loomyBefore, '非配额错误不得接力到池内下一候选')
+    const direct = await api('/v1/chat/completions', { model: 'cline/cline-free/mimo-v2.6-flash', messages: [{ role: 'user', content: 'server-fixture' }] })
+    assert.equal(direct.response.status, reply.response.status)
+    assert.equal(direct.value.error.type, reply.value.error.type)
+  })
+  await check('auto 全池耗尽返回 429 信封（各模型解禁明细）且重启后自愈，退出前还原限流与调度池', async () => {
+    rewriteState(state => {
+      for (const row of state.accounts) {
+        if (row.provider === 'loomy') row.modelRateLimits = { 'fixture-free': Date.now() + 3600_000 }
+        if (row.provider === 'cline') row.modelRateLimits = { 'cline-free/mimo-v2.6-flash': Date.now() + 7200_000 }
+      }
+    })
+    rewriteSettings(settings => { settings.smartSchedulePool = { models: ['loomy/fixture-free', 'cline/cline-free/mimo-v2.6-flash'] } })
+    await restartService()
+    const upstreamBefore = chatRequests().length
+    const exhausted = await api('/v1/chat/completions', { model: 'auto', messages: [{ role: 'user', content: 'exhausted-fixture' }] })
+    assert.equal(exhausted.response.status, 429, JSON.stringify(exhausted.value))
+    assert.equal(exhausted.value.error.type, 'rate_limit_error')
+    assert.equal(exhausted.value.error.code, 'RATE_LIMIT')
+    assert.match(exhausted.value.error.message, /调度池/)
+    assert.equal(exhausted.value.error.details?.type, 'smart_pool_exhausted')
+    const detail = Object.fromEntries((exhausted.value.error.details?.models ?? []).map(row => [row.model, row]))
+    assert.deepEqual(Object.keys(detail), ['loomy/fixture-free', 'cline/cline-free/mimo-v2.6-flash'])
+    for (const row of Object.values(detail)) {
+      assert.ok(Number.isFinite(row.resetAtMs) && row.resetAtMs > Date.now(), JSON.stringify(row))
+      assert.equal(row.resetAtIso, new Date(row.resetAtMs).toISOString())
+    }
+    assert.equal(chatRequests().length, upstreamBefore, '全池耗尽判定不得发出任何上游网络请求')
+    // 重启自愈（AC-12）：跳过状态由持久化 modelRateLimits 派生，无需重新试错
+    await restartService()
+    const afterRestart = await api('/v1/chat/completions', { model: 'auto', messages: [{ role: 'user', content: 'exhausted-fixture' }] })
+    assert.equal(afterRestart.response.status, 429)
+    assert.equal(afterRestart.value.error.details?.type, 'smart_pool_exhausted')
+    assert.equal(chatRequests().length, upstreamBefore)
+    // 还原：清空限流与调度池，后续既有用例（cline 取消传播等）不受影响
+    rewriteState(state => { for (const row of state.accounts) delete row.modelRateLimits })
+    rewriteSettings(settings => { settings.smartSchedulePool = { models: [] } })
+    await restartService()
+    assert.equal((await api('/v1/models')).value.data[0].id, 'auto')
   })
   await check('客户端取消传播到真实渠道网络请求，服务关闭不会迟到写入凭据', async () => {
     const controller = new AbortController()
