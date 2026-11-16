@@ -38,16 +38,16 @@
   --dsw-alias-border-l2: #cbd2da;
   --dsw-alias-state-success-primary: var(--success);
   --dsw-alias-state-error-primary: var(--danger);
-  --dsw-alias-state-business-primary: #326ab8;
+  --dsw-alias-state-business-primary: #0B7A54;
   --dsw-alias-accent-primary: var(--green);
   --dsw-alias-accent-secondary: var(--accent-soft);
   --shadow-sm: 0 1px 2px rgb(20 30 40 / 3%);
   --shadow-md: 0 2px 8px rgb(20 30 40 / 5%);
   --shadow-lg: 0 12px 40px rgb(20 30 40 / 12%);
-  --amber: #326ab8;
-  --amber-ink: #326ab8;
-  --amber-soft: #edf3fc;
-  --amber-line: #cddcf3;
+  --amber: #0B7A54;
+  --amber-ink: #0B7A54;
+  --amber-soft: #e8f5ee;
+  --amber-line: #bfe3d2;
   --amber-glow: transparent;
 }
 :root.workbench-theme[data-theme="dark"] {
@@ -156,8 +156,8 @@
 :root.workbench-theme :is(input, select, textarea):focus-visible { outline: 2px solid var(--green) !important; outline-offset: 2px; }
 :root.workbench-theme :is(.ui-badge, .count-badge) { background: var(--hover) !important; color: var(--muted) !important; border-color: transparent !important; border-radius: 4px !important; clip-path: none !important; }
 :root.workbench-theme .ui-badge-success { background: var(--success-soft) !important; color: var(--success-ink) !important; border-color: var(--success-line) !important; }
-:root.workbench-theme .ui-badge-blue { background: #edf3fc !important; color: #326ab8 !important; border-color: #d4e1f5 !important; }
-:root.workbench-theme[data-theme="dark"] .ui-badge-blue { background: #27374a !important; color: #a0c6f4 !important; border-color: #3b5473 !important; }
+:root.workbench-theme .ui-badge-blue { background: #e8f5ee !important; color: #0B7A54 !important; border-color: #c5e8d6 !important; }
+:root.workbench-theme[data-theme="dark"] .ui-badge-blue { background: #24382c !important; color: #86d8b4 !important; border-color: #35604a !important; }
 :root.workbench-theme .ui-badge-warning { background: var(--warning-soft) !important; color: var(--warning) !important; border-color: var(--warning-line) !important; }
 :root.workbench-theme .status-dot { background: var(--success) !important; box-shadow: none !important; animation: none !important; border-radius: 50% !important; }
 :root.workbench-theme .status-dot.paused { background: var(--warning) !important; }
@@ -188,7 +188,7 @@
 .wb-client-list, .wb-account-list, .pd-list { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
 .wb-client + .wb-client, .wb-account + .wb-account, .pd-row + .pd-row { border-top: 1px solid var(--line); }
 .wb-client-row { display: grid; grid-template-columns: 38px minmax(120px, 1fr) minmax(160px, 230px) 92px 112px; align-items: center; gap: 14px; min-height: 84px; padding: 16px 18px; }
-.wb-app-icon { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; flex-shrink: 0; border-radius: 7px; background: #edf3fc; color: #326ab8; }
+.wb-app-icon { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; flex-shrink: 0; border-radius: 7px; background: #e8f5ee; color: #0B7A54; }
 .wb-app-icon.is-green { background: var(--success-soft); color: var(--success-ink); }
 .wb-client-name, .pd-name { min-width: 0; }
 .wb-client-name strong, .pd-name strong { display: block; font-size: 14px; font-weight: 600; overflow-wrap: anywhere; }
@@ -227,7 +227,7 @@
 .wb-quota strong { color: var(--ink-soft); font-size: 11px; font-weight: 500; font-variant-numeric: tabular-nums; }
 .wb-quota-track { height: 5px; overflow: hidden; background: var(--hover); margin: 8px 0 5px; border-radius: 3px; }
 .wb-quota-track > span { display: block; background: var(--success); height: 100%; border-radius: inherit; }
-.wb-quota:nth-child(even) .wb-quota-track > span { background: #4c80bc; }
+.wb-quota:nth-child(even) .wb-quota-track > span { background: #2F9E74; }
 .wb-quota-track > span.is-low { background: var(--danger); }
 .wb-quota-track.is-unknown { background: transparent; border: 1px dashed var(--dsw-alias-border-l2); }
 .wb-quota > small { font-size: 10px; }
@@ -317,7 +317,7 @@
 :root.workbench-theme[data-theme="dark"] :is(.wb-page, .pd-page, .wb-dialog) .ui-button:disabled { background: var(--hover) !important; color: var(--muted) !important; }
 :root.workbench-theme[data-theme="dark"] :is(.wb-page, .pd-page, .wb-dialog) .ui-badge { font-family: inherit !important; background: var(--hover) !important; border: 0 !important; color: var(--muted) !important; }
 :root.workbench-theme[data-theme="dark"] :is(.wb-page, .pd-page, .wb-dialog) .ui-badge-success { background: var(--success-soft) !important; color: var(--success-ink) !important; }
-:root.workbench-theme[data-theme="dark"] :is(.wb-page, .pd-page, .wb-dialog) .ui-badge-blue { background: #27374a !important; color: #a0c6f4 !important; }
+:root.workbench-theme[data-theme="dark"] :is(.wb-page, .pd-page, .wb-dialog) .ui-badge-blue { background: #24382c !important; color: #86d8b4 !important; }
 
 @media (max-width: 1100px) {
   .wb-client-row { grid-template-columns: 36px minmax(120px, 1fr) minmax(130px, 190px) 105px; gap: 10px; }
@@ -413,9 +413,9 @@
 .wb-section-heading h2 > svg { width: 15px; height: 15px; padding: 5px; box-sizing: content-box; border-radius: 6px; background: var(--accent-soft); color: var(--success-ink); }
 
 /* App tiles read as one system: CLI cool blue, desktop/accounts green. */
-.wb-app-icon { background: linear-gradient(140deg, #eef4fc, #dfe9f7); transition: transform .18s ease; }
+.wb-app-icon { background: linear-gradient(140deg, #eaf6f0, #dceee4); transition: transform .18s ease; }
 .wb-app-icon.is-green { background: linear-gradient(140deg, var(--success-soft), color-mix(in srgb, var(--success-soft) 72%, var(--success) 14%)); }
-:root.workbench-theme[data-theme="dark"] .wb-app-icon { background: linear-gradient(140deg, #27374a, #22303f); }
+:root.workbench-theme[data-theme="dark"] .wb-app-icon { background: linear-gradient(140deg, #24382c, #1f332a); }
 .wb-client:hover .wb-app-icon { transform: translateY(-1px); }
 
 /* Rows: staggered entrance, hover wash with a leading accent bar. */

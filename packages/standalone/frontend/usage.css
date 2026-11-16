@@ -1,5 +1,5 @@
 /* ============================================
-   用量统计页面样式 — 呼吸感纸面（昼）+ 深海仪器（夜）
+   用量统计页面样式 — 呼吸感纸面（昼）+ Buffer 2026 夜航（夜）
    同时包含 Overview 页面的 ov- 前缀样式
    ============================================ */
 
@@ -19,9 +19,9 @@
   --us-accent-soft: var(--amber-soft, #fdf6ec);
   --us-accent-border: var(--amber-line, #eedfc6);
   --us-accent-strong: #8a4b06;
-  --us-success: #177552;
-  --us-success-soft: #eff7f2;
-  --us-success-border: #cfe6da;
+  --us-success: #0B7A54;
+  --us-success-soft: #e8f5ee;
+  --us-success-border: #bfe3d2;
   --us-warning: #8a6215;
   --us-warning-soft: #fbf6ea;
   --us-warning-border: #e9ddc0;
@@ -39,20 +39,20 @@
 
 /* ---- 夜主题变量 ---- */
 [data-theme="dark"] {
-  --us-surface: #11161f;
-  --us-surface-raised: #151b26;
-  --us-surface-sunken: #0b1018;
+  --us-surface: #1b1a16;
+  --us-surface-raised: #232019;
+  --us-surface-sunken: #131210;
   --us-line: rgba(255, 255, 255, 0.07);
   --us-line-soft: rgba(255, 255, 255, 0.045);
   --us-line-strong: rgba(255, 255, 255, 0.12);
-  --us-ink: #edf2f8;
-  --us-ink-secondary: #a8b3c4;
-  --us-ink-tertiary: #8b95a5;
-  --us-ink-muted: #7e8ba1;
-  --us-accent: var(--cp-cyan, #00d0c0);
-  --us-accent-soft: var(--cp-cyan-soft, rgba(0, 208, 192, 0.14));
-  --us-accent-border: var(--cp-cyan-line, rgba(0, 208, 192, 0.28));
-  --us-accent-strong: color-mix(in srgb, var(--cp-cyan, #00d0c0) 72%, #ffffff);
+  --us-ink: #ece9e2;
+  --us-ink-secondary: #b3aca0;
+  --us-ink-tertiary: #a09a8e;
+  --us-ink-muted: #857e72;
+  --us-accent: var(--cp-cyan, #34D399);
+  --us-accent-soft: var(--cp-cyan-soft, rgba(52, 211, 153, 0.14));
+  --us-accent-border: var(--cp-cyan-line, rgba(52, 211, 153, 0.28));
+  --us-accent-strong: color-mix(in srgb, var(--cp-cyan, #34D399) 72%, #ffffff);
   --us-success: #58ddb0;
   --us-success-soft: rgba(88, 221, 176, 0.1);
   --us-success-border: rgba(88, 221, 176, 0.22);
@@ -63,8 +63,8 @@
   --us-error-soft: rgba(227, 106, 106, 0.1);
   --us-shadow-card: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 1px 2px rgba(0, 0, 0, 0.38);
   --us-shadow-card-hover: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 18px 46px -30px rgba(0, 0, 0, 0.92), 0 2px 8px rgba(0, 0, 0, 0.34);
-  --us-shadow-metric-hover: 0 12px 34px -10px rgba(0, 0, 0, 0.62), 0 0 26px -14px color-mix(in srgb, var(--cp-cyan, #00d0c0) 50%, transparent);
-  --us-grid-line: var(--cp-grid, rgba(0, 208, 192, 0.055));
+  --us-shadow-metric-hover: 0 12px 34px -10px rgba(0, 0, 0, 0.62), 0 0 26px -14px color-mix(in srgb, var(--cp-cyan, #34D399) 50%, transparent);
+  --us-grid-line: var(--cp-grid, rgba(52, 211, 153, 0.055));
 }
 
 /* ============================================
@@ -83,14 +83,14 @@
 
 /* 昼主题：纸面上的彩色印章 */
 :root .ov-metric:nth-child(1) .ov-metric-icon { background: var(--amber-soft, #fdf6ec); color: var(--amber, #b45309); }
-:root .ov-metric:nth-child(2) .ov-metric-icon { background: #eff7f2; color: #177552; }
+:root .ov-metric:nth-child(2) .ov-metric-icon { background: #e8f5ee; color: #0B7A54; }
 :root .ov-metric:nth-child(3) .ov-metric-icon { background: #fbf6ea; color: #8a6215; }
 :root .ov-metric:nth-child(4) .ov-metric-icon { background: #f7f0f5; color: #875a7d; }
 :root .ov-metric:nth-child(5) .ov-metric-icon { background: #fdf5f5; color: #9c3343; }
 :root .ov-metric:nth-child(6) .ov-metric-icon { background: #eaf5f6; color: #0f7285; }
 
 /* 夜主题：仪器上的指示灯 */
-[data-theme="dark"] .ov-metric:nth-child(1) .ov-metric-icon { background: var(--cp-cyan-soft, rgba(0, 208, 192, 0.12)); color: var(--cp-cyan, #00d0c0); box-shadow: 0 0 8px color-mix(in srgb, var(--cp-cyan, #00d0c0) 10%, transparent); }
+[data-theme="dark"] .ov-metric:nth-child(1) .ov-metric-icon { background: var(--cp-cyan-soft, rgba(52, 211, 153, 0.12)); color: var(--cp-cyan, #34D399); box-shadow: 0 0 8px color-mix(in srgb, var(--cp-cyan, #34D399) 10%, transparent); }
 [data-theme="dark"] .ov-metric:nth-child(2) .ov-metric-icon { background: rgba(88, 221, 176, 0.11); color: #58ddb0; box-shadow: 0 0 8px rgba(88, 221, 176, 0.06); }
 [data-theme="dark"] .ov-metric:nth-child(3) .ov-metric-icon { background: rgba(242, 166, 90, 0.11); color: #f4b46f; box-shadow: 0 0 8px rgba(242, 166, 90, 0.06); }
 [data-theme="dark"] .ov-metric:nth-child(4) .ov-metric-icon { background: rgba(155, 91, 137, 0.12); color: #c88bbd; box-shadow: 0 0 8px rgba(155, 91, 137, 0.06); }
@@ -131,7 +131,7 @@
   box-shadow: 0 2px 8px color-mix(in srgb, var(--amber, #b45309) 16%, transparent);
 }
 [data-theme="dark"] .ov-chart .dashboard-chart-column:hover .dashboard-chart-bar {
-  box-shadow: 0 0 12px color-mix(in srgb, var(--cp-cyan, #00d0c0) 24%, transparent);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--cp-cyan, #34D399) 24%, transparent);
 }
 
 /* 空态插画感 */
@@ -147,7 +147,7 @@
   border-radius: 10px; margin-bottom: 12px;
 }
 :root .ov-quick-icon { background: var(--amber-soft, #fdf6ec); color: var(--amber, #b45309); }
-[data-theme="dark"] .ov-quick-icon { background: var(--cp-cyan-soft, rgba(0, 208, 192, 0.12)); color: var(--cp-cyan, #00d0c0); box-shadow: 0 0 10px color-mix(in srgb, var(--cp-cyan, #00d0c0) 10%, transparent); }
+[data-theme="dark"] .ov-quick-icon { background: var(--cp-cyan-soft, rgba(52, 211, 153, 0.12)); color: var(--cp-cyan, #34D399); box-shadow: 0 0 10px color-mix(in srgb, var(--cp-cyan, #34D399) 10%, transparent); }
 
 .ov-endpoint {
   background: var(--us-surface-sunken);
@@ -160,7 +160,7 @@
   font-family: 'Cascadia Code', 'Fira Code', 'JetBrains Mono', Consolas, monospace;
   font-size: 12px; color: var(--us-accent);
 }
-[data-theme="dark"] .ov-endpoint { background: #0a0c10; }
+[data-theme="dark"] .ov-endpoint { background: #12110e; }
 
 /* 复制按钮成功态 */
 .ov-copied {
@@ -272,7 +272,7 @@
   box-shadow: 0 2px 8px color-mix(in srgb, var(--amber, #b45309) 16%, transparent);
 }
 [data-theme="dark"] .usage-day:hover .usage-day-bar {
-  box-shadow: 0 0 12px color-mix(in srgb, var(--cp-cyan, #00d0c0) 24%, transparent);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--cp-cyan, #34D399) 24%, transparent);
 }
 .usage-day span { color: var(--us-ink-tertiary); font-size: 10px; white-space: nowrap; }
 
@@ -419,7 +419,7 @@
     0 0 0 1px inset color-mix(in srgb, var(--ov-accent) 12%, transparent);
 }
 .ov-metric:nth-child(1) { --ov-accent: var(--amber, #b45309); --ov-accent-soft: var(--amber-soft, #fdf6ec); }
-.ov-metric:nth-child(2) { --ov-accent: #177552; --ov-accent-soft: #eff7f2; }
+.ov-metric:nth-child(2) { --ov-accent: #0B7A54; --ov-accent-soft: #e8f5ee; }
 .ov-metric:nth-child(3) { --ov-accent: #8a6215; --ov-accent-soft: #fbf6ea; }
 .ov-metric:nth-child(4) { --ov-accent: #875a7d; --ov-accent-soft: #f7f0f5; }
 .ov-metric:nth-child(5) { --ov-accent: #9c3343; --ov-accent-soft: #fdf5f5; }
@@ -632,7 +632,7 @@
     0 0 24px -14px color-mix(in srgb, var(--ov-accent) 55%, transparent),
     0 0 0 1px inset color-mix(in srgb, var(--ov-accent) 18%, transparent);
 }
-[data-theme="dark"] .ov-metric:nth-child(1) { --ov-accent: var(--cp-cyan, #00d0c0); --ov-accent-soft: var(--cp-cyan-soft, rgba(0, 208, 192, 0.14)); }
+[data-theme="dark"] .ov-metric:nth-child(1) { --ov-accent: var(--cp-cyan, #34D399); --ov-accent-soft: var(--cp-cyan-soft, rgba(52, 211, 153, 0.14)); }
 [data-theme="dark"] .ov-metric:nth-child(2) { --ov-accent: #58ddb0; --ov-accent-soft: rgba(88, 221, 176, 0.11); }
 [data-theme="dark"] .ov-metric:nth-child(3) { --ov-accent: #f4b46f; --ov-accent-soft: rgba(242, 166, 90, 0.11); }
 [data-theme="dark"] .ov-metric:nth-child(4) { --ov-accent: #c88bbd; --ov-accent-soft: rgba(155, 91, 137, 0.14); }
@@ -648,22 +648,22 @@
 [data-theme="dark"] .usage-day:hover .usage-day-bar,
 [data-theme="dark"] .usage-day:focus .usage-day-bar,
 [data-theme="dark"] .usage-day:focus-visible .usage-day-bar {
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 0 16px -2px color-mix(in srgb, var(--cp-cyan, #00d0c0) 50%, transparent);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 0 16px -2px color-mix(in srgb, var(--cp-cyan, #34D399) 50%, transparent);
 }
 [data-theme="dark"] .ov-chart .dashboard-chart-column:hover .dashboard-chart-bar {
-  box-shadow: 0 0 14px -2px color-mix(in srgb, var(--cp-cyan, #00d0c0) 45%, transparent);
+  box-shadow: 0 0 14px -2px color-mix(in srgb, var(--cp-cyan, #34D399) 45%, transparent);
 }
 [data-theme="dark"] .usage-day-bar {
-  background: linear-gradient(180deg, color-mix(in srgb, var(--cp-cyan, #00d0c0) 84%, #ffffff) 0%, var(--cp-cyan, #00d0c0) 56%, color-mix(in srgb, var(--cp-cyan, #00d0c0) 62%, #041014) 100%);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--cp-cyan, #34D399) 84%, #ffffff) 0%, var(--cp-cyan, #34D399) 56%, color-mix(in srgb, var(--cp-cyan, #34D399) 62%, #0e0d0b) 100%);
 }
 [data-theme="dark"] .usage-day-bar.zero {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.045));
 }
 [data-theme="dark"] .usage-day:hover .usage-day-bar:not(.zero) {
-  background: linear-gradient(180deg, color-mix(in srgb, var(--cp-cyan, #00d0c0) 68%, #ffffff) 0%, color-mix(in srgb, var(--cp-cyan, #00d0c0) 86%, #ffffff) 56%, var(--cp-cyan, #00d0c0) 100%);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--cp-cyan, #34D399) 68%, #ffffff) 0%, color-mix(in srgb, var(--cp-cyan, #34D399) 86%, #ffffff) 56%, var(--cp-cyan, #34D399) 100%);
 }
 [data-theme="dark"] .ov-chart .dashboard-chart-bar {
-  background: linear-gradient(180deg, color-mix(in srgb, var(--cp-cyan, #00d0c0) 84%, #ffffff) 0%, var(--cp-cyan, #00d0c0) 56%, color-mix(in srgb, var(--cp-cyan, #00d0c0) 62%, #041014) 100%);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--cp-cyan, #34D399) 84%, #ffffff) 0%, var(--cp-cyan, #34D399) 56%, color-mix(in srgb, var(--cp-cyan, #34D399) 62%, #0e0d0b) 100%);
 }
 [data-theme="dark"] .ov-chart .dashboard-chart-bar.zero {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.045));
@@ -694,18 +694,18 @@
   background-color: rgba(255, 255, 255, 0.03);
 }
 [data-theme="dark"] .usage-model-search input:focus {
-  background: #13161d;
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--cp-cyan, #00d0c0) 16%, transparent), inset 0 0 0 1px color-mix(in srgb, var(--cp-cyan, #00d0c0) 35%, transparent);
+  background: #1e1c18;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--cp-cyan, #34D399) 16%, transparent), inset 0 0 0 1px color-mix(in srgb, var(--cp-cyan, #34D399) 35%, transparent);
 }
 [data-theme="dark"] .usage-model-filters select:focus {
-  background-color: #0d141f;
+  background-color: #161511;
 }
 [data-theme="dark"] .ov-chart-col::after {
   background: #e8ecf1;
-  color: #13161d;
+  color: #1e1c18;
   box-shadow: 0 6px 16px -4px rgba(0, 0, 0, 0.6);
 }
-[data-theme="dark"] .ov-endpoint code { color: var(--cp-cyan, #00d0c0); }
+[data-theme="dark"] .ov-endpoint code { color: var(--cp-cyan, #34D399); }
 [data-theme="dark"] .ov-failure-row:hover { background: rgba(227, 106, 106, 0.08); }
 
 /* ---- 窄屏微调 ---- */
@@ -748,7 +748,7 @@
 
 /* ---------- 1. 浏览器表面：选区 / 插入符 / 滚动条 / 焦点 ---------- */
 .usage-browser ::selection { background: color-mix(in srgb, var(--amber, #b45309) 18%, transparent); color: var(--us-ink); }
-:root[data-theme="dark"] .usage-browser ::selection { background: color-mix(in srgb, var(--cp-cyan, #00d0c0) 28%, transparent); }
+:root[data-theme="dark"] .usage-browser ::selection { background: color-mix(in srgb, var(--cp-cyan, #34D399) 28%, transparent); }
 .usage-browser .usage-model-search input,
 .usage-browser .usage-model-filters select { caret-color: var(--us-accent); }
 .usage-browser .usage-model-search input[type="search"]::-webkit-search-cancel-button { appearance: none; -webkit-appearance: none; }
@@ -792,16 +792,16 @@
 }
 :root:not([data-theme="dark"]) .ov-chart .dashboard-chart-bar.zero { background: var(--us-line-strong); box-shadow: none; }
 :root[data-theme="dark"] .usage-day-bar, :root[data-theme="dark"] .ov-chart .dashboard-chart-bar {
-  background: linear-gradient(180deg, color-mix(in srgb, var(--cp-cyan, #00d0c0) 84%, #ffffff) 0%, var(--cp-cyan, #00d0c0) 56%, color-mix(in srgb, var(--cp-cyan, #00d0c0) 62%, #041014) 100%);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22), 0 0 12px -6px color-mix(in srgb, var(--cp-cyan, #00d0c0) 70%, transparent);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--cp-cyan, #34D399) 84%, #ffffff) 0%, var(--cp-cyan, #34D399) 56%, color-mix(in srgb, var(--cp-cyan, #34D399) 62%, #0e0d0b) 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22), 0 0 12px -6px color-mix(in srgb, var(--cp-cyan, #34D399) 70%, transparent);
 }
 :root[data-theme="dark"] .usage-day-bar.zero, :root[data-theme="dark"] .ov-chart .dashboard-chart-bar.zero {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.045));
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 :root[data-theme="dark"] .usage-day:hover .usage-day-bar:not(.zero) {
-  background: linear-gradient(180deg, color-mix(in srgb, var(--cp-cyan, #00d0c0) 68%, #ffffff) 0%, color-mix(in srgb, var(--cp-cyan, #00d0c0) 86%, #ffffff) 56%, var(--cp-cyan, #00d0c0) 100%);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.26), 0 0 18px -3px color-mix(in srgb, var(--cp-cyan, #00d0c0) 55%, transparent);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--cp-cyan, #34D399) 68%, #ffffff) 0%, color-mix(in srgb, var(--cp-cyan, #34D399) 86%, #ffffff) 56%, var(--cp-cyan, #34D399) 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.26), 0 0 18px -3px color-mix(in srgb, var(--cp-cyan, #34D399) 55%, transparent);
 }
 .usage-day span { font-weight: 500; }
 :root[data-theme="dark"] .usage-trend-chart { border-bottom-color: rgba(255, 255, 255, 0.055); }
@@ -841,12 +841,12 @@
   box-shadow: 0 0 0 3px var(--us-accent-soft), inset 0 0 0 1px var(--us-accent-border);
 }
 :root[data-theme="dark"] .usage-model-search input:focus {
-  background: linear-gradient(180deg, #0d141f 0%, #0c121b 100%);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--cp-cyan, #00d0c0) 16%, transparent), inset 0 0 0 1px color-mix(in srgb, var(--cp-cyan, #00d0c0) 32%, transparent);
+  background: linear-gradient(180deg, #161511 0%, #131210 100%);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--cp-cyan, #34D399) 16%, transparent), inset 0 0 0 1px color-mix(in srgb, var(--cp-cyan, #34D399) 32%, transparent);
 }
 :root[data-theme="dark"] .usage-model-filters select:focus {
-  background-color: #0d141f;
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--cp-cyan, #00d0c0) 16%, transparent), inset 0 0 0 1px color-mix(in srgb, var(--cp-cyan, #00d0c0) 32%, transparent);
+  background-color: #161511;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--cp-cyan, #34D399) 16%, transparent), inset 0 0 0 1px color-mix(in srgb, var(--cp-cyan, #34D399) 32%, transparent);
 }
 :root[data-theme="dark"] .usage-model-search input::placeholder { color: var(--us-ink-muted); opacity: 1; }
 :root:not([data-theme="dark"]) .usage-model-search input:focus-visible,
@@ -886,7 +886,7 @@
 .ov-failure-list .ov-failure-row { padding: 6px 8px; margin: 0 -8px; border-radius: 7px; }
 .ov-source-row:focus-visible { outline: 2px solid var(--us-accent); outline-offset: -2px; border-radius: 8px; }
 :root:not([data-theme="dark"]) .ov-source-row:hover { background: var(--us-accent-soft); }
-:root[data-theme="dark"] .ov-source-row:hover { background: linear-gradient(90deg, color-mix(in srgb, var(--cp-cyan, #00d0c0) 8%, transparent), rgba(255, 255, 255, 0.02)); }
+:root[data-theme="dark"] .ov-source-row:hover { background: linear-gradient(90deg, color-mix(in srgb, var(--cp-cyan, #34D399) 8%, transparent), rgba(255, 255, 255, 0.02)); }
 :root[data-theme="dark"] .ov-failure-row:hover { background: rgba(227, 106, 106, 0.08); }
 
 /* ---------- 9. 响应式细部 ---------- */
@@ -1131,7 +1131,7 @@
 :root[data-theme="dark"] .usage-browser .usage-window-total strong::after {
   content: "▌";
   margin-left: 0.16em;
-  color: var(--cp-cyan, #00d0c0);
+  color: var(--cp-cyan, #34D399);
   font-size: 0.62em;
   vertical-align: 0.07em;
   opacity: 0.62;
@@ -1139,24 +1139,24 @@
 }
 :root[data-theme="dark"] .usage-total span {
   text-shadow: none;
-  color: var(--cp-cyan, #00d0c0);
+  color: var(--cp-cyan, #34D399);
   opacity: 0.72;
   font-family: inherit;
 }
 
 /* --- 2. 指标卡：青主色 / 琥珀数据 / 红只留给失败；数字走 Consolas --- */
-:root[data-theme="dark"] .ov-metric:nth-child(1) { --ov-accent: var(--cp-cyan, #00d0c0); --ov-accent-soft: var(--cp-cyan-soft, rgba(0, 208, 192, 0.12)); }
-:root[data-theme="dark"] .ov-metric:nth-child(2) { --ov-accent: #63e8da; --ov-accent-soft: rgba(0, 208, 192, 0.09); }
+:root[data-theme="dark"] .ov-metric:nth-child(1) { --ov-accent: var(--cp-cyan, #34D399); --ov-accent-soft: var(--cp-cyan-soft, rgba(52, 211, 153, 0.12)); }
+:root[data-theme="dark"] .ov-metric:nth-child(2) { --ov-accent: #6EE7B7; --ov-accent-soft: rgba(52, 211, 153, 0.09); }
 :root[data-theme="dark"] .ov-metric:nth-child(3) { --ov-accent: var(--cp-amber, #e8a33d); --ov-accent-soft: rgba(232, 163, 61, 0.12); }
 :root[data-theme="dark"] .ov-metric:nth-child(4) { --ov-accent: #f0b75e; --ov-accent-soft: rgba(232, 163, 61, 0.10); }
 :root[data-theme="dark"] .ov-metric:nth-child(5) { --ov-accent: var(--cp-red, #e94542); --ov-accent-soft: var(--cp-red-soft, rgba(233, 69, 66, 0.13)); }
-:root[data-theme="dark"] .ov-metric:nth-child(6) { --ov-accent: var(--cp-cyan, #00d0c0); --ov-accent-soft: rgba(0, 208, 192, 0.08); }
-:root[data-theme="dark"] .ov-metric:nth-child(1) .ov-metric-icon { background: var(--cp-cyan-soft, rgba(0, 208, 192, 0.12)); color: var(--cp-cyan, #00d0c0); box-shadow: 0 0 10px -3px var(--cp-glow, rgba(0, 208, 192, 0.16)); }
-:root[data-theme="dark"] .ov-metric:nth-child(2) .ov-metric-icon { background: rgba(0, 208, 192, 0.08); color: #63e8da; box-shadow: 0 0 8px -3px var(--cp-glow, rgba(0, 208, 192, 0.16)); }
+:root[data-theme="dark"] .ov-metric:nth-child(6) { --ov-accent: var(--cp-cyan, #34D399); --ov-accent-soft: rgba(52, 211, 153, 0.08); }
+:root[data-theme="dark"] .ov-metric:nth-child(1) .ov-metric-icon { background: var(--cp-cyan-soft, rgba(52, 211, 153, 0.12)); color: var(--cp-cyan, #34D399); box-shadow: 0 0 10px -3px var(--cp-glow, rgba(52, 211, 153, 0.16)); }
+:root[data-theme="dark"] .ov-metric:nth-child(2) .ov-metric-icon { background: rgba(52, 211, 153, 0.08); color: #6EE7B7; box-shadow: 0 0 8px -3px var(--cp-glow, rgba(52, 211, 153, 0.16)); }
 :root[data-theme="dark"] .ov-metric:nth-child(3) .ov-metric-icon { background: rgba(232, 163, 61, 0.12); color: var(--cp-amber, #e8a33d); box-shadow: 0 0 8px -3px rgba(232, 163, 61, 0.22); }
 :root[data-theme="dark"] .ov-metric:nth-child(4) .ov-metric-icon { background: rgba(232, 163, 61, 0.10); color: #f0b75e; box-shadow: 0 0 8px -3px rgba(232, 163, 61, 0.18); }
 :root[data-theme="dark"] .ov-metric:nth-child(5) .ov-metric-icon { background: var(--cp-red-soft, rgba(233, 69, 66, 0.13)); color: var(--cp-red, #e94542); box-shadow: 0 0 8px -3px rgba(233, 69, 66, 0.22); }
-:root[data-theme="dark"] .ov-metric:nth-child(6) .ov-metric-icon { background: rgba(0, 208, 192, 0.09); color: var(--cp-cyan, #00d0c0); box-shadow: 0 0 8px -3px var(--cp-glow, rgba(0, 208, 192, 0.16)); }
+:root[data-theme="dark"] .ov-metric:nth-child(6) .ov-metric-icon { background: rgba(52, 211, 153, 0.09); color: var(--cp-cyan, #34D399); box-shadow: 0 0 8px -3px var(--cp-glow, rgba(52, 211, 153, 0.16)); }
 :root[data-theme="dark"] .usage-browser .ov-metric strong,
 :root[data-theme="dark"] .usage-browser .dashboard-metric strong {
   font-family: Consolas, "Cascadia Mono", "SF Mono", "JetBrains Mono", monospace;
@@ -1164,30 +1164,30 @@
   letter-spacing: 0.015em;
 }
 :root[data-theme="dark"] .usage-browser .ov-metric:hover strong {
-  color: var(--ov-accent, var(--cp-cyan, #00d0c0));
-  text-shadow: 0 0 12px color-mix(in srgb, var(--ov-accent, var(--cp-cyan, #00d0c0)) 30%, transparent);
+  color: var(--ov-accent, var(--cp-cyan, #34D399));
+  text-shadow: 0 0 12px color-mix(in srgb, var(--ov-accent, var(--cp-cyan, #34D399)) 30%, transparent);
 }
 :root[data-theme="dark"] .usage-browser .ov-metric:hover {
   transform: translateY(-3px);
   box-shadow:
     0 12px 34px -14px rgba(0, 0, 0, 0.78),
-    0 0 24px -12px color-mix(in srgb, var(--ov-accent, var(--cp-cyan, #00d0c0)) 55%, transparent);
+    0 0 24px -12px color-mix(in srgb, var(--ov-accent, var(--cp-cyan, #34D399)) 55%, transparent);
 }
 
-/* --- 3. 图表柱：扫描青 + 柱面扫描线；hover 从底部 scaleY 长高约 2px --- */
+/* --- 3. 图表柱：夜光绿 + 柱面扫描线；hover 从底部 scaleY 长高约 2px --- */
 :root[data-theme="dark"] .usage-browser .usage-day-bar,
 :root[data-theme="dark"] .ov-chart .dashboard-chart-bar {
-  background-color: var(--cp-cyan, #00d0c0);
+  background-color: var(--cp-cyan, #34D399);
   background-image:
     repeating-linear-gradient(180deg, rgba(234, 255, 253, 0.20) 0 1px, rgba(234, 255, 253, 0) 1px 4px),
-    linear-gradient(180deg, color-mix(in srgb, var(--cp-cyan, #00d0c0) 84%, #ffffff) 0%, var(--cp-cyan, #00d0c0) 56%, color-mix(in srgb, var(--cp-cyan, #00d0c0) 62%, #041014) 100%);
+    linear-gradient(180deg, color-mix(in srgb, var(--cp-cyan, #34D399) 84%, #ffffff) 0%, var(--cp-cyan, #34D399) 56%, color-mix(in srgb, var(--cp-cyan, #34D399) 62%, #0e0d0b) 100%);
   border-radius: 0;
-  box-shadow: inset 0 1px 0 rgba(234, 255, 253, 0.35), 0 0 14px -8px var(--cp-glow, rgba(0, 208, 192, 0.16));
+  box-shadow: inset 0 1px 0 rgba(234, 255, 253, 0.35), 0 0 14px -8px var(--cp-glow, rgba(52, 211, 153, 0.16));
 }
 :root[data-theme="dark"] .usage-browser .usage-day-bar.zero,
 :root[data-theme="dark"] .ov-chart .dashboard-chart-bar.zero {
   background-color: rgba(255, 255, 255, 0.035);
-  background-image: repeating-linear-gradient(180deg, rgba(0, 208, 192, 0.10) 0 1px, rgba(0, 208, 192, 0) 1px 5px);
+  background-image: repeating-linear-gradient(180deg, rgba(52, 211, 153, 0.10) 0 1px, rgba(52, 211, 153, 0) 1px 5px);
   border-radius: 0;
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
 }
@@ -1199,26 +1199,26 @@
   transform-origin: bottom;
   background-image:
     repeating-linear-gradient(180deg, rgba(234, 255, 253, 0.32) 0 1px, rgba(234, 255, 253, 0) 1px 4px),
-    linear-gradient(180deg, color-mix(in srgb, var(--cp-cyan, #00d0c0) 58%, #ffffff) 0%, color-mix(in srgb, var(--cp-cyan, #00d0c0) 90%, #ffffff) 52%, var(--cp-cyan, #00d0c0) 100%);
+    linear-gradient(180deg, color-mix(in srgb, var(--cp-cyan, #34D399) 58%, #ffffff) 0%, color-mix(in srgb, var(--cp-cyan, #34D399) 90%, #ffffff) 52%, var(--cp-cyan, #34D399) 100%);
   box-shadow:
     inset 0 1px 0 rgba(234, 255, 253, 0.55),
-    0 0 20px -4px color-mix(in srgb, var(--cp-cyan, #00d0c0) 55%, transparent),
-    0 0 34px -16px var(--cp-glow, rgba(0, 208, 192, 0.16));
+    0 0 20px -4px color-mix(in srgb, var(--cp-cyan, #34D399) 55%, transparent),
+    0 0 34px -16px var(--cp-glow, rgba(52, 211, 153, 0.16));
 }
 :root[data-theme="dark"] .usage-browser .usage-day span {
   font-family: Consolas, "Cascadia Mono", monospace;
-  color: color-mix(in srgb, var(--cp-cyan, #00d0c0) 42%, #7e8ba1);
+  color: color-mix(in srgb, var(--cp-cyan, #34D399) 42%, #857e72);
 }
 :root[data-theme="dark"] .usage-browser .usage-day:hover span,
 :root[data-theme="dark"] .usage-browser .usage-day:focus span,
 :root[data-theme="dark"] .usage-browser .usage-day:focus-visible span {
-  color: var(--cp-cyan, #00d0c0);
+  color: var(--cp-cyan, #34D399);
 }
 :root[data-theme="dark"] .usage-browser .usage-day-track {
-  background-image: repeating-linear-gradient(to top, var(--cp-grid, rgba(0, 208, 192, 0.028)) 0 1px, transparent 1px 25%);
+  background-image: repeating-linear-gradient(to top, var(--cp-grid, rgba(52, 211, 153, 0.028)) 0 1px, transparent 1px 25%);
 }
 :root[data-theme="dark"] .usage-browser .usage-trend-chart {
-  border-bottom-color: var(--cp-cyan-line, rgba(0, 208, 192, 0.30));
+  border-bottom-color: var(--cp-cyan-line, rgba(52, 211, 153, 0.30));
 }
 
 /* --- 4. 表格：等宽读数 + hover 左侧青色刻度线 --- */
@@ -1226,10 +1226,10 @@
   font-family: Consolas, "Cascadia Mono", monospace;
   font-size: 10px;
   letter-spacing: 0.08em;
-  color: var(--cp-cyan, #00d0c0);
-  background: var(--us-surface-raised, #151b26);
-  border-bottom-color: var(--cp-cyan-line, rgba(0, 208, 192, 0.30));
-  box-shadow: inset 0 1px 0 rgba(0, 208, 192, 0.10);
+  color: var(--cp-cyan, #34D399);
+  background: var(--us-surface-raised, #232019);
+  border-bottom-color: var(--cp-cyan-line, rgba(52, 211, 153, 0.30));
+  box-shadow: inset 0 1px 0 rgba(52, 211, 153, 0.10);
 }
 :root[data-theme="dark"] .usage-browser .usage-model-table td:not(:first-child) {
   font-family: Consolas, "Cascadia Mono", monospace;
@@ -1237,11 +1237,11 @@
   letter-spacing: 0.01em;
 }
 :root[data-theme="dark"] .usage-browser .usage-model-table tbody tr td {
-  border-bottom-color: rgba(0, 208, 192, 0.07);
+  border-bottom-color: rgba(52, 211, 153, 0.07);
 }
 :root[data-theme="dark"] .usage-browser .usage-model-table tbody tr:hover td {
-  background-color: var(--us-surface-raised, #151b26);
-  background-image: linear-gradient(90deg, color-mix(in srgb, var(--cp-cyan, #00d0c0) 8%, transparent), transparent 46%);
+  background-color: var(--us-surface-raised, #232019);
+  background-image: linear-gradient(90deg, color-mix(in srgb, var(--cp-cyan, #34D399) 8%, transparent), transparent 46%);
 }
 :root[data-theme="dark"] .usage-browser .usage-model-table tbody tr td:first-child::before {
   content: "";
@@ -1250,7 +1250,7 @@
   top: 0;
   bottom: 0;
   width: 3px;
-  background: repeating-linear-gradient(180deg, var(--cp-cyan, #00d0c0) 0 2px, transparent 2px 5px);
+  background: repeating-linear-gradient(180deg, var(--cp-cyan, #34D399) 0 2px, transparent 2px 5px);
   transform: scaleY(0);
   transform-origin: center;
   transition: transform 180ms var(--us-ease-out, ease-out);
@@ -1262,27 +1262,27 @@
 }
 :root[data-theme="dark"] .usage-browser .usage-model-table td:first-child code,
 :root[data-theme="dark"] .usage-browser .usage-model-table td small {
-  color: color-mix(in srgb, var(--cp-cyan, #00d0c0) 28%, #7e8ba1);
+  color: color-mix(in srgb, var(--cp-cyan, #34D399) 28%, #857e72);
 }
 
 /* --- 5. 筛选、分页、空态：终端键与 NO SIGNAL 框 --- */
 :root[data-theme="dark"] .usage-browser .usage-model-search input,
 :root[data-theme="dark"] .usage-browser .usage-model-filters select {
   border-radius: 2px;
-  border-color: var(--cp-cyan-line, rgba(0, 208, 192, 0.30));
-  background: var(--us-surface-sunken, #0b1018);
-  color: var(--cp-cyan, #00d0c0);
+  border-color: var(--cp-cyan-line, rgba(52, 211, 153, 0.30));
+  background: var(--us-surface-sunken, #131210);
+  color: var(--cp-cyan, #34D399);
   font-family: Consolas, "Cascadia Mono", monospace;
-  caret-color: var(--cp-cyan, #00d0c0);
+  caret-color: var(--cp-cyan, #34D399);
 }
 :root[data-theme="dark"] .usage-browser .usage-model-search input::placeholder {
-  color: color-mix(in srgb, var(--cp-cyan, #00d0c0) 38%, #7e8ba1);
+  color: color-mix(in srgb, var(--cp-cyan, #34D399) 38%, #857e72);
   opacity: 1;
 }
 :root[data-theme="dark"] .usage-browser .usage-model-search input:focus,
 :root[data-theme="dark"] .usage-browser .usage-model-filters select:focus {
-  border-color: var(--cp-cyan, #00d0c0);
-  box-shadow: 0 0 0 3px rgba(0, 208, 192, 0.12), inset 0 0 0 1px var(--cp-cyan-line, rgba(0, 208, 192, 0.30));
+  border-color: var(--cp-cyan, #34D399);
+  box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.12), inset 0 0 0 1px var(--cp-cyan-line, rgba(52, 211, 153, 0.30));
 }
 :root[data-theme="dark"] .usage-browser .usage-trend .channel-filters button {
   border-radius: 2px;
@@ -1290,25 +1290,25 @@
   letter-spacing: 0.05em;
 }
 :root[data-theme="dark"] .usage-browser .usage-trend .channel-filters button[aria-pressed="true"] {
-  background: var(--cp-cyan-soft, rgba(0, 208, 192, 0.12));
-  color: var(--cp-cyan, #00d0c0);
-  border-color: var(--cp-cyan-line, rgba(0, 208, 192, 0.30));
-  box-shadow: inset 0 1px 0 rgba(0, 208, 192, 0.10), 0 0 14px -6px var(--cp-glow, rgba(0, 208, 192, 0.16));
+  background: var(--cp-cyan-soft, rgba(52, 211, 153, 0.12));
+  color: var(--cp-cyan, #34D399);
+  border-color: var(--cp-cyan-line, rgba(52, 211, 153, 0.30));
+  box-shadow: inset 0 1px 0 rgba(52, 211, 153, 0.10), 0 0 14px -6px var(--cp-glow, rgba(52, 211, 153, 0.16));
 }
 :root[data-theme="dark"] .usage-browser .usage-empty > svg {
   border-radius: 0;
-  border-color: var(--cp-cyan-line, rgba(0, 208, 192, 0.30));
-  background: var(--cp-cyan-soft, rgba(0, 208, 192, 0.12));
-  color: var(--cp-cyan, #00d0c0);
+  border-color: var(--cp-cyan-line, rgba(52, 211, 153, 0.30));
+  background: var(--cp-cyan-soft, rgba(52, 211, 153, 0.12));
+  color: var(--cp-cyan, #34D399);
 }
 :root[data-theme="dark"] .usage-browser .usage-window-empty {
   border-radius: 1px;
-  border-color: var(--cp-cyan-line, rgba(0, 208, 192, 0.30));
-  background: rgba(0, 208, 192, 0.05);
+  border-color: var(--cp-cyan-line, rgba(52, 211, 153, 0.30));
+  background: rgba(52, 211, 153, 0.05);
 }
 :root[data-theme="dark"] .usage-browser .usage-window-empty::before {
   border-radius: 0;
-  background: var(--cp-cyan, #00d0c0);
+  background: var(--cp-cyan, #34D399);
 }
 :root[data-theme="dark"] .usage-browser .usage-pagination {
   font-family: Consolas, "Cascadia Mono", monospace;
@@ -1320,14 +1320,14 @@
 
 /* --- 6. 反馈：对勾盖章 + 青/琥珀色差一闪（cp-glitch-pop） --- */
 :root[data-theme="dark"] .usage-browser .usage-feedback {
-  color: var(--cp-cyan, #00d0c0);
-  background: var(--cp-cyan-soft, rgba(0, 208, 192, 0.12));
-  border-color: var(--cp-cyan-line, rgba(0, 208, 192, 0.30));
+  color: var(--cp-cyan, #34D399);
+  background: var(--cp-cyan-soft, rgba(52, 211, 153, 0.12));
+  border-color: var(--cp-cyan-line, rgba(52, 211, 153, 0.30));
   border-radius: 1px;
   font-family: Consolas, "Cascadia Mono", monospace;
   letter-spacing: 0.04em;
   text-shadow:
-    1px 0 0 color-mix(in srgb, var(--cp-cyan, #00d0c0) 45%, transparent),
+    1px 0 0 color-mix(in srgb, var(--cp-cyan, #34D399) 45%, transparent),
     -1px 0 0 color-mix(in srgb, var(--cp-amber, #e8a33d) 45%, transparent);
   animation: us-toast-in 240ms var(--us-ease-out, ease-out) both, cp-glitch-pop 320ms steps(2, end) 40ms both;
 }
@@ -1336,8 +1336,8 @@
   display: inline-block;
   margin-right: 6px;
   padding: 0 3px;
-  color: var(--cp-cyan, #00d0c0);
-  border: 1px solid var(--cp-cyan-line, rgba(0, 208, 192, 0.30));
+  color: var(--cp-cyan, #34D399);
+  border: 1px solid var(--cp-cyan-line, rgba(52, 211, 153, 0.30));
   font-weight: 700;
   text-shadow: none;
   transform-origin: 50% 60%;
@@ -1345,18 +1345,18 @@
 }
 :root[data-theme="dark"] .ov-copied {
   animation: cp-glitch-pop 300ms steps(2, end) both;
-  box-shadow: 0 0 16px -5px var(--cp-glow, rgba(0, 208, 192, 0.16));
+  box-shadow: 0 0 16px -5px var(--cp-glow, rgba(52, 211, 153, 0.16));
 }
 :root[data-theme="dark"] .copy-feedback {
   text-shadow:
-    1px 0 0 color-mix(in srgb, var(--cp-cyan, #00d0c0) 45%, transparent),
+    1px 0 0 color-mix(in srgb, var(--cp-cyan, #34D399) 45%, transparent),
     -1px 0 0 color-mix(in srgb, var(--cp-amber, #e8a33d) 45%, transparent);
 }
 :root[data-theme="dark"] .copy-feedback::after {
   content: "";
   position: absolute;
   inset: -4px -7px;
-  border: 1px solid var(--cp-cyan-line, rgba(0, 208, 192, 0.30));
+  border: 1px solid var(--cp-cyan-line, rgba(52, 211, 153, 0.30));
   border-radius: 1px;
   transform-origin: 50% 60%;
   pointer-events: none;
@@ -1365,27 +1365,27 @@
 
 /* --- 7. 页面特有容器：selection / caret / 滚动条 --- */
 :root[data-theme="dark"] .usage-browser ::selection {
-  background: color-mix(in srgb, var(--cp-cyan, #00d0c0) 28%, transparent);
-  color: #eafffd;
+  background: color-mix(in srgb, var(--cp-cyan, #34D399) 28%, transparent);
+  color: #ECFDF5;
 }
 :root[data-theme="dark"] .usage-browser .usage-model-search input,
 :root[data-theme="dark"] .usage-browser .usage-model-filters select {
-  caret-color: var(--cp-cyan, #00d0c0);
+  caret-color: var(--cp-cyan, #34D399);
 }
 :root[data-theme="dark"] .usage-browser .usage-trend-scroll,
 :root[data-theme="dark"] .usage-browser .usage-model-scroll {
-  scrollbar-color: rgba(0, 208, 192, 0.30) transparent;
+  scrollbar-color: rgba(52, 211, 153, 0.30) transparent;
 }
 :root[data-theme="dark"] .usage-browser .usage-trend-scroll::-webkit-scrollbar-thumb,
 :root[data-theme="dark"] .usage-browser .usage-model-scroll::-webkit-scrollbar-thumb {
-  background: rgba(0, 208, 192, 0.30);
+  background: rgba(52, 211, 153, 0.30);
   border: 2px solid transparent;
   background-clip: content-box;
   border-radius: 0;
 }
 :root[data-theme="dark"] .usage-browser .usage-trend-scroll::-webkit-scrollbar-thumb:hover,
 :root[data-theme="dark"] .usage-browser .usage-model-scroll::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 208, 192, 0.48);
+  background: rgba(52, 211, 153, 0.48);
   border: 2px solid transparent;
   background-clip: content-box;
 }

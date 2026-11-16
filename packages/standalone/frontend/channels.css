@@ -53,7 +53,7 @@
   padding: 8px 16px;
   font-size: 13px;
   font-weight: 500;
-  color: var(--muted, #64748b);
+  color: var(--muted, #7c766a);
   background: transparent;
   border: 1px solid transparent;
   border-radius: 9px;
@@ -64,12 +64,12 @@
   user-select: none;
 }
 .channel-console-tab:hover {
-  color: var(--ink, #0f172a);
+  color: var(--ink, #1c1a16);
   background: rgba(0, 0, 0, 0.04);
 }
 .channel-console-tab[aria-selected="true"],
 .channel-console-tab.is-active {
-  color: var(--ink, #0f172a);
+  color: var(--ink, #1c1a16);
   background: var(--surface, #ffffff);
   border-color: var(--line, rgba(0, 0, 0, 0.1));
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06), 0 2px 8px -2px rgba(0, 0, 0, 0.08);
@@ -77,18 +77,18 @@
 }
 
 [data-theme="dark"] .channel-console-tab {
-  color: #94a3b8;
+  color: #a8a196;
 }
 [data-theme="dark"] .channel-console-tab:hover {
-  color: #f1f5f9;
+  color: #ece9e2;
   background: rgba(255, 255, 255, 0.05);
 }
 [data-theme="dark"] .channel-console-tab[aria-selected="true"],
 [data-theme="dark"] .channel-console-tab.is-active {
-  color: #3ecfa0;
-  background: rgba(0, 208, 192, 0.12);
-  border-color: rgba(0, 208, 192, 0.32);
-  box-shadow: 0 2px 12px -2px rgba(0, 208, 192, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  color: #34D399;
+  background: rgba(52, 211, 153, 0.12);
+  border-color: rgba(52, 211, 153, 0.32);
+  box-shadow: 0 2px 12px -2px rgba(52, 211, 153, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
 .channel-tab-icon {
@@ -113,7 +113,7 @@
   transition: border-color 200ms ease, box-shadow 200ms ease;
 }
 [data-theme="dark"] .ofm_root .ofm_hero {
-  background: #0f141d;
+  background: #161511;
   border-color: rgba(255, 255, 255, 0.07);
   box-shadow: 0 4px 20px -4px rgba(0, 0, 0, 0.5);
 }
@@ -144,7 +144,7 @@
   line-height: 1.3 !important;
 }
 [data-theme="dark"] .ofm_root .ofm_pagetitle h2 {
-  color: #f1f5f9 !important;
+  color: #ece9e2 !important;
 }
 
 .ofm_root .ofm_pagesub {
@@ -155,7 +155,7 @@
   max-width: 65ch;
 }
 [data-theme="dark"] .ofm_root .ofm_pagesub {
-  color: #94a3b8;
+  color: #a8a196;
 }
 
 /* ── 3. Pagehead Controls & Segmented Pill Controls ── */
@@ -216,7 +216,7 @@
 [data-theme="dark"] .ofm_root .ofm_hero .ofm_seg button:hover,
 [data-theme="dark"] .ofm_root .ofm_pagehead .ofm_seg button:hover,
 [data-theme="dark"] .ofm_root .ofm_page .ofm_seg button:hover {
-  color: #f1f5f9 !important;
+  color: #ece9e2 !important;
   background: rgba(255, 255, 255, 0.06) !important;
 }
 
@@ -224,7 +224,7 @@
 .ofm_root .ofm_pagehead .ofm_seg button[aria-pressed="true"],
 .ofm_root .ofm_page .ofm_seg button[aria-pressed="true"] {
   background: var(--surface, #ffffff) !important;
-  color: var(--ink, #0f172a) !important;
+  color: var(--ink, #1c1a16) !important;
   font-weight: 600 !important;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
   border-bottom: none !important;
@@ -233,8 +233,8 @@
 [data-theme="dark"] .ofm_root .ofm_hero .ofm_seg button[aria-pressed="true"],
 [data-theme="dark"] .ofm_root .ofm_pagehead .ofm_seg button[aria-pressed="true"],
 [data-theme="dark"] .ofm_root .ofm_page .ofm_seg button[aria-pressed="true"] {
-  background: rgba(0, 208, 192, 0.16) !important;
-  color: #7ff5ea !important;
+  background: rgba(52, 211, 153, 0.16) !important;
+  color: #A7F3D0 !important;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
   border-bottom: none !important;
 }
@@ -252,7 +252,7 @@
   border-radius: 8px !important;
 }
 [data-theme="dark"] .ofm_root .ofm_pagehead .ofm_switch {
-  color: #94a3b8 !important;
+  color: #a8a196 !important;
 }
 
 .ofm_root .ofm_pagehead .ofm_switch i {
@@ -278,13 +278,13 @@
   width: 14px !important;
   height: 14px !important;
   border-radius: 50% !important;
-  background: #94a3b8 !important;
+  background: #a8a196 !important;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2) !important;
   transition: transform 220ms cubic-bezier(.34, 1.3, .64, 1), background 180ms ease !important;
 }
 .ofm_root .ofm_pagehead .ofm_switch[aria-checked="true"] i {
-  background: #00d0c0 !important;
-  border-color: #00d0c0 !important;
+  background: #34D399 !important;
+  border-color: #34D399 !important;
 }
 .ofm_root .ofm_pagehead .ofm_switch[aria-checked="true"] i::after {
   transform: translateX(14px) !important;
@@ -318,7 +318,7 @@
 [data-theme="dark"] .ofm_root button.ofm_btn {
   background: rgba(255, 255, 255, 0.06) !important;
   border-color: rgba(255, 255, 255, 0.12) !important;
-  color: #e2e8f0 !important;
+  color: #ddd8cd !important;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3) !important;
 }
 [data-theme="dark"] .ofm_root button.ofm_btn:hover:not(:disabled) {
@@ -338,7 +338,7 @@
   -webkit-overflow-scrolling: touch;
 }
 [data-theme="dark"] .ofm_root .ofm_tablewrap {
-  background: #0d1117;
+  background: #131210;
   border-color: rgba(255, 255, 255, 0.07);
   box-shadow: 0 4px 20px -4px rgba(0, 0, 0, 0.5);
 }
@@ -362,8 +362,8 @@
   text-transform: none !important;
 }
 [data-theme="dark"] .ofm_root .ofm_table thead th {
-  background: #111622 !important;
-  color: #94a3b8 !important;
+  background: #1c1b17 !important;
+  color: #a8a196 !important;
   border-bottom-color: rgba(255, 255, 255, 0.07) !important;
 }
 
@@ -377,7 +377,7 @@
 }
 [data-theme="dark"] .ofm_root .ofm_table tbody td {
   border-bottom-color: rgba(255, 255, 255, 0.04);
-  color: #e2e8f0;
+  color: #ddd8cd;
 }
 .ofm_root .ofm_table tbody tr:last-child td {
   border-bottom: none;
@@ -408,13 +408,13 @@
 }
 .ofm_root .ofm_badge.available {
   background: rgba(16, 185, 129, 0.12);
-  color: #10b981;
+  color: #34D399;
   border: 1px solid rgba(16, 185, 129, 0.25);
 }
 [data-theme="dark"] .ofm_root .ofm_badge.available {
-  background: rgba(0, 208, 192, 0.12);
-  color: #3ecfa0;
-  border-color: rgba(0, 208, 192, 0.3);
+  background: rgba(52, 211, 153, 0.12);
+  color: #34D399;
+  border-color: rgba(52, 211, 153, 0.3);
 }
 .ofm_root .ofm_badge.unavailable,
 .ofm_root .ofm_badge.throttled {
@@ -460,7 +460,7 @@
   box-shadow: var(--shadow-md);
 }
 [data-theme="dark"] .ofm_root .ofm_kpi {
-  background: #0f141d;
+  background: #161511;
   border-color: rgba(255, 255, 255, 0.07);
   box-shadow: 0 4px 16px -4px rgba(0, 0, 0, 0.4);
 }
@@ -471,7 +471,7 @@
   color: var(--muted);
 }
 [data-theme="dark"] .ofm_root .ofm_kpilabel {
-  color: #94a3b8;
+  color: #a8a196;
 }
 .ofm_root .ofm_kpivalue {
   font-size: 22px;
@@ -481,7 +481,7 @@
   letter-spacing: -0.02em;
 }
 [data-theme="dark"] .ofm_root .ofm_kpivalue {
-  color: #f1f5f9;
+  color: #ece9e2;
 }
 .ofm_root .ofm_kpisub {
   font-size: 11px;
@@ -489,7 +489,7 @@
   line-height: 1.4;
 }
 [data-theme="dark"] .ofm_root .ofm_kpisub {
-  color: #64748b;
+  color: #7c766a;
 }
 
 /* ── 6. Section & Note Polish ── */
@@ -507,7 +507,7 @@
   color: var(--ink);
 }
 [data-theme="dark"] .ofm_root .ofm_sec_title {
-  color: #f1f5f9;
+  color: #ece9e2;
 }
 .ofm_root .ofm_sec_hint {
   font-size: 12px;
@@ -515,7 +515,7 @@
   font-variant-numeric: tabular-nums;
 }
 [data-theme="dark"] .ofm_root .ofm_sec_hint {
-  color: #94a3b8;
+  color: #a8a196;
 }
 .ofm_root .ofm_note {
   font-size: 12px;
@@ -524,7 +524,7 @@
   margin: 10px 0;
 }
 [data-theme="dark"] .ofm_root .ofm_note {
-  color: #7e8ba1;
+  color: #857e72;
 }
 
 /* ── 7. Channel Tools Section (供应商与备份) ── */
@@ -537,7 +537,7 @@
   margin-bottom: 20px;
 }
 [data-theme="dark"] .channel-tools-card {
-  background: #0f141d;
+  background: #161511;
   border-color: rgba(255, 255, 255, 0.07);
 }
 .channel-tools-card h3 {
@@ -547,7 +547,7 @@
   margin: 0 0 16px 0;
 }
 [data-theme="dark"] .channel-tools-card h3 {
-  color: #f1f5f9;
+  color: #ece9e2;
 }
 
 .channel-tool-row {
@@ -575,7 +575,7 @@
   color: var(--ink);
 }
 [data-theme="dark"] .channel-tool-row label {
-  color: #e2e8f0;
+  color: #ddd8cd;
 }
 
 .channel-tool-row select,
@@ -591,14 +591,14 @@
 }
 [data-theme="dark"] .channel-tool-row select,
 [data-theme="dark"] .channel-tool-row input {
-  background: #141a24;
+  background: #1e1c18;
   border-color: rgba(255, 255, 255, 0.1);
-  color: #f1f5f9;
+  color: #ece9e2;
 }
 .channel-tool-row select:focus,
 .channel-tool-row input:focus {
-  border-color: #00d0c0;
-  box-shadow: 0 0 0 3px rgba(0, 208, 192, 0.15);
+  border-color: #34D399;
+  box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.15);
 }
 
 /* ── 8. Responsive Adaptations ── */
