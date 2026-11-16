@@ -128,7 +128,7 @@ if (subcommand === 'preflight') {
   const unexpected = status.split('\n').filter(line => {
     if (!line.trim()) return false
     // 允许未跟踪的控制面/评审工作区：.impeccable/ 与 docs/software-company/
-    return !/^ \?\? (\.impeccable\/|docs\/software-company\/)/.test(line)
+    return !/^\?\? (\.impeccable\/|docs\/software-company\/)/.test(line)
   })
   assert(unexpected.length === 0, `git 工作区干净（仅允许 .impeccable/ 与 docs/software-company/ 未跟踪）\n${unexpected.join('\n')}`)
 
