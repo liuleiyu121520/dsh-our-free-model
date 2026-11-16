@@ -315,6 +315,11 @@
   background: var(--surface-2, rgba(0, 0, 0, 0.04)) !important;
   border-color: var(--muted) !important;
 }
+/* primary 变体对齐全局系统组件 ui-button-default：600/12px（S9 复验 A5，统一组件语言） */
+.ofm_root button.ofm_btn.primary {
+  font-size: 12px !important;
+  font-weight: 600 !important;
+}
 [data-theme="dark"] .ofm_root button.ofm_btn {
   background: rgba(255, 255, 255, 0.06) !important;
   border-color: rgba(255, 255, 255, 0.12) !important;

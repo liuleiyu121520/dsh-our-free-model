@@ -5302,7 +5302,7 @@ input:disabled, select:disabled, textarea:disabled, .ui-input:disabled {
   display: inline-flex; align-items: center; gap: 7px;
   margin-left: auto; font-size: 12px; color: var(--ink-soft); cursor: pointer;
 }
-.model-list-toolbar .model-enable-switch input { margin: 0; cursor: pointer; }
+.model-list-toolbar .model-enable-switch input { margin: 0; cursor: pointer; accent-color: var(--green); }
 .model-list-toolbar > span[role="status"] { font-variant-numeric: tabular-nums; font-size: 12px; }
 @media (max-width: 900px) {
   .model-list-toolbar .model-enable-switch { margin-left: 0; }
