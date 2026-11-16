@@ -133,7 +133,7 @@ export function isLoopbackAddress(address) {
 }
 
 /** 管理读写要求鉴权；登录恢复仅允许同源页面触发固定本机动作。 */
-export function createManagement({ stores, runtime, channels, eac, subscriptions, workbenchOptions, requestLog, magpieEngine, magpieModels, scheduler, onEngineStarted, onSubscriptionsChanged, info, onSettingsChanged, loginTerminal = openLoginTerminal, desktopPlatform = process.platform, desktopArch = process.arch }) {
+export function createManagement({ stores, runtime, channels, eac, subscriptions, workbenchOptions, requestLog, magpieEngine, magpieModels, scheduler, claims, onEngineStarted, onSubscriptionsChanged, info, onSettingsChanged, loginTerminal = openLoginTerminal, desktopPlatform = process.platform, desktopArch = process.arch }) {
   // `desktopPlatform`/`desktopArch` are threaded from the caller instead of read
   // from `process` so the Windows-only update flow stays exercisable on a test
   // runner that is neither (`desktop-update.mjs` already takes them this way).
@@ -349,6 +349,14 @@ export function createManagement({ stores, runtime, channels, eac, subscriptions
       json(res, 200, summary())
     } else if (method === 'GET' && pathname === `${PREFIX}/stats`) {
       json(res, 200, buildStats(stores.stats.get(), runtime.catalog))
+    } else if (method === 'GET' && pathname === `${PREFIX}/claims/history` && claims) {
+      // 领取历史查询（FR-8.5）：按日期范围返回按日聚合（providers/claimedCount/events）。
+      // from/to 校验（YYYY-MM-DD、跨度 ≤400 天）在记录器内部，错误带 400 状态码。
+      const params = new URL(req.url, 'http://localhost').searchParams
+      json(res, 200, claims.query({
+        ...(params.get('from') !== null ? { from: params.get('from') } : {}),
+        ...(params.get('to') !== null ? { to: params.get('to') } : {}),
+      }))
     } else if (method === 'GET' && pathname === `${PREFIX}/smart/state` && scheduler) {
       // 智能调度页数据面：池、当前命中、全池状态、候选清单。读取前先对齐一次
       // 快照（refreshSnapshot 内部去重且失败静默，channels 不可用时回旧值）。
@@ -478,7 +486,15 @@ export function createManagement({ stores, runtime, channels, eac, subscriptions
         const controller = new AbortController()
         const abort = () => controller.abort()
         res.once('close', abort)
-        try { json(res, 200, await channels.rpc(body, controller.signal)) }
+        try {
+          const reply = await channels.rpc(body, controller.signal)
+          // 领取历史（FR-8.2a）：credits.claim* 成功返回时按 results[] 逐账号落事件。
+          // 记录失败不影响原响应；渠道包自己的 auto-checkin.json 零触碰。
+          if (claims && typeof body.method === 'string' && body.method.startsWith('credits.claim') && reply?.ok === true) {
+            try { claims.recordManualClaim(body.payload?.provider, reply.value) } catch { /* 观测层失败静默 */ }
+          }
+          json(res, 200, reply)
+        }
         finally { res.removeListener('close', abort) }
       }
     } else if (method === 'GET' && pathname === `${PREFIX}/requests` && requestLog) {

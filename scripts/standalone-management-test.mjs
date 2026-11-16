@@ -541,6 +541,122 @@ try {
     await request('/api/management/smart/pool', { body: { models: [] } })
     assert.deepEqual((await smartState()).pool, [])
   })
+  await check('claims 领取历史：claimAll 包装落记录（AC-17）、人为推进 lastAt 落记录（AC-18）、范围校验 400、auto-checkin.json 零触碰', async () => {
+    const localDay = (at = Date.now()) => {
+      const date = new Date(at)
+      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+    }
+    const today = localDay()
+    // —— AC-18（模块级，可编程 lastAt）：首轮回填不落记录，lastAt 变化才落，重复 lastAt 不重复落 ——
+    const { createClaimsHistory } = await import('../packages/standalone/claims-history.mjs')
+    let lastAt = 0
+    let pollRounds = 0
+    const poller = createClaimsHistory({
+      dataDir: path.join(scratch, 'claims-poller'),
+      channels: { rpc: async () => { pollRounds++; return { ok: true, value: { autoCheckin: {
+        enabled: true, lastDate: '2026-11-17', lastResult: '2 个账号领取成功（500 credit）', lastAt,
+        channels: [{ provider: 'trae', text: '1 个账号领取成功（500 credit）' }, { provider: 'qoder', text: '1 个账号今日已签到' }],
+      } } } } },
+      logger: { warn() {} },
+      pollMs: 3_600_000,
+    })
+    await poller.poll()
+    let view = poller.query({})
+    assert.equal(Object.keys(view.days).length, 0, '首轮只初始化 lastSeenAt，不回填历史')
+    lastAt = Date.now()
+    await poller.poll()
+    view = poller.query({})
+    assert.equal(Object.keys(view.days).length, 1, 'lastAt 推进后必须落当日记录')
+    const pollerDay = view.days[today]
+    assert.ok(pollerDay, 'auto 运行记录落在本地时区当日')
+    assert.deepEqual(pollerDay.providers, ['trae', 'qoder'])
+    assert.equal(pollerDay.claimedCount, 2)
+    assert.equal(pollerDay.events.length, 2)
+    assert.equal(pollerDay.events[0].source, 'auto')
+    assert.equal(pollerDay.events[0].at, lastAt)
+    await poller.poll()
+    assert.equal(poller.query({}).days[today].events.length, 2, 'lastAt 未变不得重复落记录')
+    assert.ok(pollRounds >= 3, '每次 poll 必须真实调用 usage.autoCheckin')
+    poller.dispose()
+
+    // —— AC-17（服务级）：种子 loomy 账号走真实 credits.claimAll RPC 包装 ——
+    const claimsDir = path.join(scratch, 'claims')
+    fs.mkdirSync(path.join(claimsDir, 'channel-pack'), { recursive: true })
+    // 模型进黑名单：claims 替身账号不得把 fixture-free 泄漏进目录，影响既有清单断言。
+    fs.writeFileSync(path.join(claimsDir, 'channel-pack', 'state.json'), JSON.stringify({
+      accounts: [{ id: 'loomy-fixture', provider: 'loomy', nickname: 'claims 替身账号', enabled: true, refreshable: false,
+        createdAt: Date.now(), expiresAt: Date.now() + 86400000, credentialRef: 'LOOMY_ACCOUNT_FIXTURE' }],
+      disabledModels: { loomy: { 'fixture-free': true } },
+    }))
+    const { createCredentials } = await import('../packages/standalone/channels/credentials.mjs')
+    const seed = createCredentials(claimsDir)
+    await seed.set('LOOMY_ACCOUNT_FIXTURE', JSON.stringify({ access_token: 'fixture-loomy', userid: 'fixture-user', phone: '13000000000', expires_at: String(Date.now() + 86400000) }))
+    seed.dispose()
+    // 关掉渠道包自身的自动签到首跑（环境变量仅作用于本实例的 worker），auto-checkin.json 全程零写入。
+    process.env.DSH_CHANNEL_PACK_AUTO_CHECKIN_DELAY_MS = '99999999'
+    let claimsService
+    try {
+      claimsService = await startStandalone({ dataDir: claimsDir, port: 0, refresh: false, logger: { warn() {} } })
+      await claimsService.ready
+      const claimsKey = JSON.parse(fs.readFileSync(claimsService.keyFile, 'utf8')).forwardKey
+      const rpc = async (method, payload) => {
+        const response = await fetch(claimsService.url + '/api/management/channels/rpc', {
+          method: 'POST', headers: { authorization: `Bearer ${claimsKey}`, 'content-type': 'application/json' },
+          body: JSON.stringify({ method, payload }), signal: AbortSignal.timeout(20000),
+        })
+        return { status: response.status, value: await response.json() }
+      }
+      const history = async query => {
+        const response = await fetch(claimsService.url + `/api/management/claims/history${query ?? ''}`, {
+          headers: { authorization: `Bearer ${claimsKey}` }, signal: AbortSignal.timeout(10000),
+        })
+        return { status: response.status, value: await response.json() }
+      }
+      const autoPath = path.join(claimsDir, 'channel-pack', 'auto-checkin.json')
+      const autoBefore = fs.existsSync(autoPath) ? fs.readFileSync(autoPath, 'utf8') : null
+      const claim = await rpc('credits.claimAll', { provider: 'loomy' })
+      assert.equal(claim.status, 200)
+      assert.equal(claim.value.ok, true, JSON.stringify(claim.value))
+      const outcomeKind = claim.value.value?.results?.[0]?.outcome?.kind
+      assert.ok(typeof outcomeKind === 'string' && outcomeKind !== '', '替身账号必须产生 claim outcome')
+      assert.equal(fs.existsSync(autoPath) ? fs.readFileSync(autoPath, 'utf8') : null, autoBefore,
+        '领取历史层绝不读写渠道包的 auto-checkin.json')
+      const afterClaim = await history(`?from=${today}&to=${today}`)
+      assert.equal(afterClaim.status, 200)
+      assert.equal(afterClaim.value.schema, 'standalone/claims-history/v1')
+      const claimedDay = afterClaim.value.days[today]
+      assert.ok(claimedDay, 'claimAll 后当日必须出现记录（AC-17）')
+      assert.deepEqual(claimedDay.providers, ['loomy'])
+      assert.equal(claimedDay.events.length, claim.value.value.results.length)
+      assert.equal(claimedDay.events[0].source, 'manual')
+      assert.equal(claimedDay.events[0].kind, outcomeKind)
+      assert.ok(claimedDay.events[0].text.includes('claims 替身账号'))
+      assert.equal(claimedDay.events.filter(row => row.kind === 'claimed').length, claimedDay.claimedCount,
+        'claimedCount 只统计 kind=claimed 的渠道')
+      assert.ok(fs.existsSync(path.join(claimsDir, 'claims-history.json')), '记录必须持久化落盘')
+      // since 锚点：最早记录日 = 今天（三态 join 的「无数据」判据依赖它）
+      assert.equal(afterClaim.value.since, today)
+
+      // —— 范围校验 400 ——
+      assert.equal((await history('?from=2026/01/01')).status, 400)
+      assert.equal((await history('?from=2026-13-01')).status, 400)
+      assert.equal((await history(`?from=${today}&to=2020-01-01`)).status, 400)
+      assert.equal((await history('?from=2000-01-01&to=2099-12-31')).status, 400)
+      assert.equal((await history('?from=2020-01-01&to=2020-01-01')).status, 200)
+      // 缺省窗口（62 天）可用
+      assert.equal((await history()).status, 200)
+      // 日历三态：since 之后的无记录日 = 0，不是「无数据」
+      const yesterday = localDay(Date.now() - 86_400_000)
+      const window = await (async () => {
+        // 今天有记录；昨天无记录但 since=today → 昨天属「无数据」；查询窗口内应只含今天的键
+        return history(`?from=${yesterday}&to=${today}`)
+      })()
+      assert.deepEqual(Object.keys(window.value.days), [today])
+    } finally {
+      delete process.env.DSH_CHANNEL_PACK_AUTO_CHECKIN_DELAY_MS
+      await claimsService?.close()
+    }
+  })
   await check('设置变更重新安排周期任务且 --no-refresh 保持无自动请求', async () => {
     const nativeTimeout = globalThis.setTimeout
     let scheduled

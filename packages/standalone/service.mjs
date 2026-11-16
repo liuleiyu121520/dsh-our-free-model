@@ -10,6 +10,7 @@ import { createManagement } from './management.mjs'
 import { createStandaloneEac } from './eac.mjs'
 import { createChannelRuntime } from './channels/runtime.mjs'
 import { createSmartScheduler } from './smart-schedule.mjs'
+import { createClaimsHistory } from './claims-history.mjs'
 import { createRequestLog } from './request-log.mjs'
 import { createSubscriptions } from '../../src/subscriptions.js'
 import { createSubscriptionRuntime } from '../../src/subscription-completion.js'
@@ -143,6 +144,7 @@ export async function startStandalone({
   let management
   let channels
   let scheduler
+  let claims
   let gatewayModelRows
   let subscriptions
   let magpieEngine
@@ -287,6 +289,9 @@ export async function startStandalone({
     // 注意 gatewayModelRows/scheduler 都要挂在外层作用域：reconcileRelay 定义在
     // try 块之外，看不见 try 块内的 const（否则 LAN relay 启动即 ReferenceError）。
     gatewayModelRows = () => [scheduler.autoRow(), ...runtime.publicModelRows()]
+    // 领取历史记录器（FR-8）：手动 credits.claim* 包装 + auto-checkin 快照轮询，
+    // 独立 claims-history.json；渠道包自己的 auto-checkin.json 零触碰。
+    claims = createClaimsHistory({ dataDir, channels, logger })
     const core = runtime
     runtime = {
       ...core,
@@ -340,7 +345,7 @@ export async function startStandalone({
     }
     management = createManagement({
       stores, runtime, channels, eac, subscriptions, workbenchOptions, requestLog,
-      magpieEngine, magpieModels, scheduler,
+      magpieEngine, magpieModels, scheduler, claims,
       desktopPlatform, desktopArch,
       onEngineStarted: () => { settings.update({ magpieEnabled: true }); settings.flush() },
       onSubscriptionsChanged: () => runtime?.syncAggregateCatalog?.(),
@@ -409,7 +414,7 @@ export async function startStandalone({
       managementUrl: `http://${host === '::1' ? '[::1]' : host}:${listener.port}/${management.bootstrapFragment}`,
       port: listener.port,
       keyFile: path.join(dataDir, 'settings.json'),
-      runtime, channels, scheduler, ready,
+      runtime, channels, scheduler, claims, ready,
       get lan() { return lanState() },
       close() {
         if (closing !== undefined) return closing
@@ -420,6 +425,7 @@ export async function startStandalone({
         magpieModels?.close()
         const engineClosing = magpieEngine?.close()
         scheduler?.dispose()
+        claims?.dispose()
         runtime.dispose()
         closing = (async () => {
           try {
@@ -440,6 +446,7 @@ export async function startStandalone({
     magpieModels?.close()
     await magpieEngine?.close()
     scheduler?.dispose()
+    claims?.dispose()
     runtime?.dispose()
     await relayChanges
     await closeRelay()
