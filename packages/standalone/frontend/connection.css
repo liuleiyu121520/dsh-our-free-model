@@ -921,3 +921,10 @@
     align-items: stretch;
   }
 }
+
+/* —— auto · 智能调度说明卡（FR-6.2）—— 全 token，昼夜自适应 —— */
+.cx-auto-card { border-color: var(--accent-line); }
+.cx-icon-auto { color: var(--green-ink); background: var(--accent-soft); }
+.cx-auto-body { display: flex; flex-direction: column; gap: 10px; }
+.cx-auto-alias { margin: 0; font-size: 12.5px; line-height: 1.75; color: var(--ink-soft); }
+.cx-auto-alias code { font-family: var(--mono-font, monospace); font-size: 12px; padding: 1px 6px; border-radius: 6px; background: var(--accent-soft); color: var(--green-ink); border: 1px solid var(--accent-line); }

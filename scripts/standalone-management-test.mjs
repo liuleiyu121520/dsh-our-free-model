@@ -407,7 +407,9 @@ try {
     } finally { controller.abort(); holdNextCall = false }
   })
   await check('模型隐藏只过滤公开清单，保留管理入口和历史调用并持久化', async () => {
+    // /v1/models 头部恒有 auto 条目（智能调度 FR-5，始终暴露）；隐藏断言只看直连模型行。
     const listing = async () => (await (await request('/v1/models', { headers: { authorization: `Bearer ${key}` } })).json()).data
+      .filter(row => row.id !== 'auto')
     assert.equal((await request('/api/management/settings', { body: { hiddenModelIds: [model, model] } })).status, 200)
     assert.deepEqual((await listing()).map(row => row.id), [kilo])
     const summary = await (await request('/api/management/summary')).json()
@@ -494,6 +496,50 @@ try {
     assert.equal(visible.data.some(row => row.id === model), false)
     assert.equal((await request('/api/management/settings', { body: { hiddenModelIds: [], hideEacModels: false } })).status, 200)
     assert.equal((await (await request('/v1/models', { headers: { authorization: `Bearer ${key}` } })).json()).data.some(row => row.id === model), true)
+  })
+  await check('智能调度 API：状态读取、池校验（形状/去重/上限）、保存持久化重启不丢、徽标计数进摘要、注入面不含 auto', async () => {
+    const smartState = async () => (await (await request('/api/management/smart/state')).json())
+    const initial = await smartState()
+    assert.deepEqual(initial.pool, [])
+    assert.equal(initial.hit, null)
+    assert.equal(Array.isArray(initial.candidates), true)
+    // 校验：非数组、缺 provider 前缀（auto 是保留名不能入池）、带空白、超上限 32
+    for (const invalid of [
+      { models: 'auto' },
+      { models: ['auto'] },
+      { models: ['norow/模型 id 带空格'] },
+      { models: [42] },
+      { models: Array.from({ length: 33 }, (_, index) => `p/m${index}`) },
+      {},
+    ]) assert.equal((await request('/api/management/smart/pool', { body: invalid })).status, 400, JSON.stringify(invalid))
+    // 去重保序 + 保存；未知模型允许入池（失效条目由页面置灰、调度时跳过）
+    const saved = await (await request('/api/management/smart/pool', { body: {
+      models: ['kilo/nvidia/nemotron-3.5-lightning:free', 'kilo/nvidia/nemotron-3.5-lightning:free', 'free/mimo-v2.6-flash-free'],
+    } })).json()
+    assert.deepEqual(saved.pool, ['kilo/nvidia/nemotron-3.5-lightning:free', 'free/mimo-v2.6-flash-free'])
+    assert.equal(Array.isArray(saved.statuses), true)
+    // 徽标计数进摘要（池 2、无账号 → 可用 0）；内部清单面不含 auto
+    const summary = await (await request('/api/management/summary')).json()
+    assert.deepEqual(summary.smart, { pool: 2, available: 0 })
+    assert.equal(summary.catalog.some(row => row.id === 'auto'), false)
+    assert.equal(summary.settings.smartSchedulePool.models.length, 2)
+    const gateway = await (await request('/api/management/channels/rpc', { body: { method: 'gateway.getEnabled', payload: {} } })).json()
+    assert.equal(gateway.value.models.some(row => row.id === 'auto'), false)
+    // settings 透传：合法保存 / 非法拒绝
+    assert.equal((await request('/api/management/settings', { body: { smartSchedulePool: { models: ['free/mimo-v2.6-flash-free'] } } })).status, 200)
+    assert.equal((await request('/api/management/settings', { body: { smartSchedulePool: { models: ['bad'] } } })).status, 400)
+    // 重启持久化（AC-4）；/v1/models 头部恰一条 auto 始终存在
+    await service.close()
+    service = await startStandalone({ dataDir, refresh: false, logger: { warn() {} } })
+    cookie = await login({ key: getKey() })
+    const persisted = await smartState()
+    assert.deepEqual(persisted.pool, ['free/mimo-v2.6-flash-free'])
+    const visible = await (await request('/v1/models', { headers: { authorization: `Bearer ${getKey()}` } })).json()
+    assert.equal(visible.data?.[0]?.id, 'auto')
+    assert.equal((visible.data ?? []).filter(row => row.id === 'auto').length, 1)
+    // 清理：恢复空池，不影响后续用例
+    await request('/api/management/smart/pool', { body: { models: [] } })
+    assert.deepEqual((await smartState()).pool, [])
   })
   await check('设置变更重新安排周期任务且 --no-refresh 保持无自动请求', async () => {
     const nativeTimeout = globalThis.setTimeout

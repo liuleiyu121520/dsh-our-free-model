@@ -16,6 +16,7 @@ import {
   Play,
   RotateCcw,
   ShieldAlert,
+  Sparkles,
   Terminal,
   X,
   Zap,
@@ -23,12 +24,12 @@ import {
 import { providers } from 'ofm-provider-list'
 import { Badge, Button, Card, Spinner, Switch } from './components/ui'
 import { ModelPicker } from './components/model-picker'
-import type { Host, Summary } from './types'
+import type { Host, Model, Summary } from './types'
 import './connection.css'
 
 /** 渠道 id → 展示名。与模型页同源。 */
 const channelName = (id: string) => {
-  const known: Record<string, string> = { anonymous: '匿名模型', kilo: 'Kilo 免费池', eac: 'EAC 协付' }
+  const known: Record<string, string> = { anonymous: '匿名模型', kilo: 'Kilo 免费池', eac: 'EAC 协付', smart: '智能调度' }
   return known[id] ?? providers.find(provider => provider.id === id)?.name ?? id
 }
 
@@ -36,6 +37,9 @@ const capacity = (value?: number) => value && Number.isFinite(value) && value > 
   ? value >= 1000 ? `${Number((value / 1000).toFixed(1))}K` : String(value) : '未知'
 
 type TabType = 'curl' | 'python' | 'node' | 'presets'
+
+/** auto 虚拟行：网关保留名（规范名），置顶展示；owned_by 形态与渠道行一致。 */
+const AUTO_MODEL: Model = { id: 'auto', name: 'OurFreeModel 智能调度', channel: 'smart', routable: true }
 
 interface TestResult {
   ok: boolean
@@ -57,15 +61,17 @@ export function Connection({ summary, host, active }: { summary: Summary; host: 
   const [testResult, setTestResult] = useState<TestResult | null>(null)
   const [modelFlashing, setModelFlashing] = useState(false)
 
-  // 模型选择：留空时自动落到第一个可接入的模型。
+  // 模型选择：auto（智能调度）置顶固定一项（FR-6.1），其余为直连模型；
+  // 留空时自动落到 auto。auto 是网关保留名，即使调度池为空也始终可选。
   const [picked, setPicked] = useState('')
   const routable = useMemo(() => summary.catalog.filter(row => row.routable), [summary.catalog])
-  const selected = routable.find(row => row.id === picked) ?? routable[0]
+  const options = useMemo<Model[]>(() => [AUTO_MODEL, ...routable], [routable])
+  const selected = options.find(row => row.id === picked) ?? options[0]
 
   // 目录刷新后原选择可能消失：把 picked 校正回实际存在的 id
   useEffect(() => {
-    if (picked !== '' && !routable.some(row => row.id === picked)) setPicked('')
-  }, [picked, routable])
+    if (picked !== '' && !options.some(row => row.id === picked)) setPicked('')
+  }, [picked, options])
 
   // 当选择模型变动时，触发代码区域中模型 ID 的脉冲高光
   const prevSelectedId = useRef(selected?.id)
@@ -83,6 +89,15 @@ export function Connection({ summary, host, active }: { summary: Summary; host: 
   const endpoint = `${summary.baseUrl}/v1`
   const model = selected?.id ?? 'MODEL_ID'
   const effectiveKey = fillKey && apiKey ? apiKey : 'YOUR_API_KEY'
+
+  // auto 独立最小示例（FR-6.2）：与上方选择无关，永远指向 auto，方便直接复制。
+  const autoCurl = `curl -X POST ${summary.baseUrl}/v1/chat/completions \\
+  -H "Authorization: Bearer YOUR_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "model": "auto",
+    "messages": [{"role": "user", "content": "你好，请用一句话介绍你自己。"}]
+  }'`
 
   // 代码示例生成
   const curlCode = `curl -X POST ${summary.baseUrl}/v1/chat/completions \\
@@ -310,17 +325,19 @@ console.log(completion.choices[0].message.content)`
           <span className="cx-card-icon"><Cable size={17} /></span>
           <div className="cx-card-titles">
             <h2>目标模型</h2>
-            <p>{routable.length > 0 ? `共 ${routable.length} 个模型已接入，选中后下方示例即时响应。` : '暂无可用模型，请先在渠道页登录。'}</p>
+            <p>{routable.length > 0
+              ? `auto 智能调度置顶始终可用；另有 ${routable.length} 个直连模型，选中后下方示例即时响应。`
+              : '暂无直连模型；可先选用 auto 智能调度（在「智能调度」页配置调度池）。'}</p>
           </div>
         </div>
 
-        {routable.length > 0 && <ModelPicker
-          models={routable}
+        <ModelPicker
+          models={options}
           selectedId={selected?.id}
           channelName={channelName}
           capacity={capacity}
           onSelect={setPicked}
-        />}
+        />
 
         {selected && <div className="cx-active-model-box">
           <div className="cx-active-row">
@@ -345,6 +362,34 @@ console.log(completion.choices[0].message.content)`
         </div>}
       </Card>
     </div>
+
+    {/* Auto / OurFreeModel 说明卡（FR-6.2）：语义、别名等价与独立的 model=auto curl 示例 */}
+    <Card className="cx-card cx-auto-card">
+      <div className="cx-card-head">
+        <span className="cx-card-icon cx-icon-auto"><Sparkles size={17} /></span>
+        <div className="cx-card-titles">
+          <h2>auto · 智能调度（OurFreeModel）</h2>
+          <p>按调度池顺序接力：第一个可用模型承接请求，其内部多账号轮换规则不变；当日配额耗尽后自动落到下一个，非配额错误不接力。</p>
+        </div>
+      </div>
+      <div className="cx-auto-body">
+        <p className="cx-auto-alias">模型名 <code>auto</code> 与别名 <code>ourfreemodel</code> 等价（二者任填其一）；调度池在「智能调度」页配置，全池耗尽时返回 429 并附各模型解禁时刻明细。</p>
+        <div className="copy-field">
+          <div className="cx-input-wrap">
+            <Terminal size={14} aria-hidden="true" />
+            <input id="connection-auto-curl" readOnly value={autoCurl} />
+          </div>
+          <Button
+            variant="outline"
+            className={copied === 'auto-curl' ? 'cx-copied' : undefined}
+            disabled={busy}
+            onClick={() => void copy('auto-curl', autoCurl, 'auto 调用示例已复制。')}
+          >
+            {copied === 'auto-curl' ? <Check size={14} /> : <Copy size={14} />}复制示例
+          </Button>
+        </div>
+      </div>
+    </Card>
 
     {/* 下半部分：调用示例与即时测试工作室 */}
     <Card className="cx-studio-card">

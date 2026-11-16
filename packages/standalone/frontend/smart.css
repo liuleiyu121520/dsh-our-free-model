@@ -1,0 +1,88 @@
+/* 智能调度页（smart）—— Buffer 2026。
+   纪律：只引用全局 token（var(--…)），不写任何硬编码色值；昼夜主题自动适配。 */
+
+.smart-browser { display: flex; flex-direction: column; gap: 18px; }
+.smart-header { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.smart-header-main h1 { display: flex; align-items: center; gap: 9px; font-size: 24px; font-weight: 600; letter-spacing: -0.02em; }
+.smart-title-icon { color: var(--green-ink); }
+.smart-header-sub { margin-top: 4px; font-size: 13px; color: var(--muted); }
+.smart-header-sub code { font-size: 12px; padding: 1px 5px; border-radius: 6px; background: var(--hover); color: var(--green-ink); }
+.smart-header-status { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; }
+.smart-hit-chip { display: inline-flex; align-items: center; gap: 8px; padding: 7px 12px; border: 1px solid var(--accent-line); border-radius: 999px; background: var(--accent-soft); font-size: 12.5px; color: var(--ink); font-variant-numeric: tabular-nums; }
+.smart-hit-chip strong { color: var(--green-ink); font-weight: 600; max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.smart-hit-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--success); box-shadow: 0 0 0 3px var(--accent-glow); }
+.smart-alias-note { font-size: 11.5px; color: var(--ink-faint); }
+.smart-alias-note code { color: var(--ink-soft); }
+
+.smart-note-card { display: flex; gap: 10px; align-items: flex-start; padding: 13px 15px; border: 1px solid var(--accent-line); background: var(--accent-soft); border-radius: var(--radius-card); }
+.smart-note-icon { color: var(--green-ink); flex-shrink: 0; margin-top: 2px; }
+.smart-note-card p { margin: 0; font-size: 12.5px; line-height: 1.75; color: var(--ink-soft); }
+.smart-note-card strong { color: var(--ink); font-weight: 600; }
+
+.smart-loading { color: var(--muted); font-size: 13px; padding: 30px 0; text-align: center; }
+
+.smart-empty { display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; padding: 42px 24px; border: 1px dashed var(--dsw-alias-border-l2); border-radius: var(--radius-card); background: var(--surface); }
+.smart-empty svg { color: var(--green-ink); }
+.smart-empty h2 { font-size: 15px; font-weight: 600; color: var(--ink); }
+.smart-empty p { margin: 0; font-size: 12.5px; color: var(--muted); max-width: 420px; line-height: 1.7; }
+
+.smart-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+@media (max-width: 1080px) { .smart-grid { grid-template-columns: minmax(0, 1fr); } }
+
+.smart-card-head { padding-bottom: 10px; border-bottom: 1px solid var(--line-soft); margin-bottom: 12px; }
+.smart-card-head h2 { font-size: 15px; font-weight: 600; color: var(--ink); }
+.smart-card-head p { margin-top: 4px; font-size: 12px; line-height: 1.65; color: var(--muted); }
+
+/* —— 候选清单 —— */
+.smart-candidate-list, .smart-pool-list, .smart-status-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.smart-candidate { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 12px; border: 1px solid var(--line-soft); border-radius: var(--radius-control); background: var(--surface); transition: border-color 150ms var(--ease-out-expo), background 150ms var(--ease-out-expo); }
+.smart-candidate:hover { border-color: var(--accent-line); background: var(--surface-hover); }
+.smart-candidate-main { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.smart-candidate-id { font-family: var(--mono-font, monospace); font-size: 12.5px; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.smart-candidate-name { font-size: 11.5px; color: var(--ink-faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.smart-candidate-meta { display: flex; align-items: center; gap: 9px; flex-shrink: 0; }
+.smart-accounts { font-size: 11.5px; padding: 3px 8px; border-radius: 999px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.smart-accounts.is-ok { color: var(--success-ink); background: var(--success-soft); border: 1px solid var(--success-line); }
+.smart-accounts.is-exhausted { color: var(--warning); background: var(--warning-soft); border: 1px solid var(--warning-line); }
+.smart-add-btn { flex-shrink: 0; }
+.smart-candidates-empty { margin: 6px 0 0; font-size: 12.5px; color: var(--muted); display: flex; align-items: center; gap: 10px; }
+
+/* —— 调度池 —— */
+.smart-pool-row { display: flex; align-items: center; gap: 9px; padding: 10px 12px; border: 1px solid var(--line-soft); border-radius: var(--radius-control); background: var(--surface); transition: border-color 150ms var(--ease-out-expo), box-shadow 150ms var(--ease-out-expo), opacity 150ms var(--ease-out-expo); }
+.smart-pool-row:hover { border-color: var(--accent-line); }
+.smart-pool-row.is-dragging { opacity: 0.55; box-shadow: var(--shadow-md); }
+.smart-pool-row.is-invalid { background: var(--hover); border-style: dashed; }
+.smart-pool-order { width: 20px; height: 20px; display: grid; place-items: center; border-radius: 6px; background: var(--accent-soft); color: var(--green-ink); font-size: 11px; font-weight: 600; font-variant-numeric: tabular-nums; flex-shrink: 0; }
+.smart-pool-row.is-invalid .smart-pool-order { background: var(--hover); color: var(--ink-faint); }
+.smart-pool-grip { color: var(--ink-faint); cursor: grab; flex-shrink: 0; }
+.smart-pool-id { flex: 1; min-width: 0; font-family: var(--mono-font, monospace); font-size: 12.5px; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.smart-pool-row.is-invalid .smart-pool-id { color: var(--ink-faint); text-decoration: line-through; text-decoration-color: var(--dsw-alias-border-l2); text-decoration-thickness: 1px; }
+.smart-tag { font-size: 11px; padding: 3px 8px; border-radius: 999px; white-space: nowrap; flex-shrink: 0; }
+.smart-tag.is-ok-tag { color: var(--success-ink); background: var(--success-soft); border: 1px solid var(--success-line); }
+.smart-tag.is-skipped-tag { color: var(--warning); background: var(--warning-soft); border: 1px solid var(--warning-line); }
+.smart-tag.is-invalid-tag { color: var(--ink-faint); background: var(--hover); border: 1px solid var(--dsw-alias-border-l2); }
+.smart-pool-actions { display: flex; align-items: center; gap: 2px; flex-shrink: 0; }
+.smart-move-btn, .smart-remove-btn { padding: 5px; }
+.smart-remove-btn:hover { color: var(--danger); }
+.smart-pool-empty { margin: 0; font-size: 12.5px; line-height: 1.7; color: var(--muted); }
+.smart-pool-empty code { color: var(--green-ink); background: var(--accent-soft); padding: 1px 5px; border-radius: 6px; font-size: 11.5px; }
+.smart-save-row { display: flex; align-items: center; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+.smart-save-btn { min-width: 128px; }
+.smart-save-hint { font-size: 11.5px; color: var(--ink-faint); }
+
+/* —— 池状态区 —— */
+.smart-status-row { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border: 1px solid var(--line-soft); border-radius: var(--radius-control); background: var(--surface); }
+.smart-status-row.is-invalid { background: var(--hover); }
+.smart-status-id { flex: 1; min-width: 0; font-family: var(--mono-font, monospace); font-size: 12.5px; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.smart-state { font-size: 11.5px; white-space: nowrap; }
+.smart-state.is-ok { color: var(--success-ink); }
+.smart-state.is-exhausted { color: var(--warning); }
+.smart-state.is-invalid { color: var(--ink-faint); }
+.smart-status-accounts { font-size: 11.5px; color: var(--muted); font-variant-numeric: tabular-nums; flex-shrink: 0; }
+.smart-status-empty { margin: 0; font-size: 12.5px; color: var(--muted); }
+.smart-status-footnote { margin: 10px 0 0; font-size: 11.5px; line-height: 1.7; color: var(--ink-faint); }
+
+/* 降级动效（prefers-reduced-motion 与全站一致：仅透明度/边框过渡，无需关闭） */
+@media (prefers-reduced-motion: reduce) {
+  .smart-candidate, .smart-pool-row { transition: none; }
+}

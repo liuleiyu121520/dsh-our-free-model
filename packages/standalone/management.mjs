@@ -59,6 +59,25 @@ async function readBody(req, limit = MAX_BODY_BYTES) {
   return value
 }
 
+/** 智能调度池条目：必须是 `provider/model` 形式（provider 不含 / 与空白，model 不含空白）。 */
+const SMART_MODEL_PATTERN = /^[^/\s]+\/[^\s]+$/
+const SMART_POOL_MAX = 32
+const SMART_MODEL_MAX = 300
+
+/** 校验调度池：逐条 `provider/model`、去重（保序）、上限 32。未知模型不拒绝 —— 失效条目在页面上置灰展示。 */
+function validateSmartPool(models) {
+  if (!Array.isArray(models)) throw fail(400, 'models 必须是字符串数组')
+  for (const raw of models) {
+    if (typeof raw !== 'string' || !SMART_MODEL_PATTERN.test(raw)) {
+      throw fail(400, `模型 id 必须是 provider/model 形式：${String(raw).slice(0, 80)}`)
+    }
+    if (raw.length > SMART_MODEL_MAX) throw fail(400, `模型 id 过长（上限 ${SMART_MODEL_MAX} 字符）`)
+  }
+  const unique = [...new Set(models)]
+  if (unique.length > SMART_POOL_MAX) throw fail(400, `调度池最多 ${SMART_POOL_MAX} 个模型`)
+  return unique
+}
+
 function validateSettings(patch) {
   const visibility = validateModelVisibility(patch)
   const booleans = new Set(['enabled', 'exposeRegionModels', 'streamRecovery', 'standaloneProbe', 'standaloneLanEnabled', 'dshImportAsked'])
@@ -66,6 +85,11 @@ function validateSettings(patch) {
   const result = {}
   for (const [key, value] of Object.entries(patch)) {
     if (Object.hasOwn(visibility, key)) { result[key] = visibility[key]; continue }
+    if (key === 'smartSchedulePool') {
+      if (value === null || typeof value !== 'object' || Array.isArray(value)) throw fail(400, 'smartSchedulePool 必须是 { models: [...] }')
+      result[key] = { models: validateSmartPool(value.models) }
+      continue
+    }
     if (booleans.has(key)) {
       if (typeof value !== 'boolean') throw fail(400, `${key} 必须是布尔值`)
     } else if (Object.hasOwn(numbers, key)) {
@@ -91,6 +115,8 @@ export function managementSettings(value) {
     dshImportAsked: value.dshImportAsked === true,
     probeIntervalMinutes: value.probeIntervalMinutes ?? 15,
     defaultMaxTokens: value.defaultMaxTokens ?? 32768,
+    // 智能调度池：只读回显（写走 POST /smart/pool 与 settings 校验透传）。
+    smartSchedulePool: { models: [...(Array.isArray(value.smartSchedulePool?.models) ? value.smartSchedulePool.models : [])] },
   }
 }
 
@@ -222,6 +248,11 @@ export function createManagement({ stores, runtime, channels, eac, subscriptions
     const state = runtime.state()
     const available = stores.availability.get()
     const routable = new Set(runtime.publicModelRows().map(entry => entry.id))
+    // 智能调度徽标：池内当前可用（未当日耗尽且未失效）的模型数（FR-2.2）。
+    const smartView = scheduler ? (() => {
+      const view = scheduler.state()
+      return { pool: view.pool.length, available: view.statuses.filter(row => row.usable === true).length }
+    })() : undefined
     return {
       ...info(),
       channels: channels?.state(),
@@ -229,6 +260,7 @@ export function createManagement({ stores, runtime, channels, eac, subscriptions
       settings: managementSettings(stores.settings.get()),
       catalogSyncedAt: stores.settings.get().catalogSyncedAt ?? 0,
       probedAt: available.at ?? 0,
+      ...(smartView ? { smart: smartView } : {}),
       catalog: state.catalog.map(entry => {
         const measured = modelAvailability(entry.id, available, Boolean(entry.channel))
         return ({
@@ -317,6 +349,18 @@ export function createManagement({ stores, runtime, channels, eac, subscriptions
       json(res, 200, summary())
     } else if (method === 'GET' && pathname === `${PREFIX}/stats`) {
       json(res, 200, buildStats(stores.stats.get(), runtime.catalog))
+    } else if (method === 'GET' && pathname === `${PREFIX}/smart/state` && scheduler) {
+      // 智能调度页数据面：池、当前命中、全池状态、候选清单。读取前先对齐一次
+      // 快照（refreshSnapshot 内部去重且失败静默，channels 不可用时回旧值）。
+      await scheduler.refreshSnapshot()
+      json(res, 200, scheduler.state())
+    } else if (method === 'POST' && pathname === `${PREFIX}/smart/pool` && scheduler) {
+      const body = await readBody(req)
+      const models = validateSmartPool(body?.models)
+      persist({ smartSchedulePool: { models } })
+      await scheduler.refreshSnapshot()
+      const view = scheduler.state()
+      json(res, 200, { pool: view.pool, hit: view.hit, statuses: view.statuses, candidates: view.candidates })
     } else if (method === 'GET' && pathname === `${PREFIX}/engine/status`) {
       json(res, 200, magpieEngine?.status() ?? { state: 'unavailable', available: false })
     } else if (method === 'POST' && pathname === `${PREFIX}/engine/start`) {

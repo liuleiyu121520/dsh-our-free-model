@@ -143,6 +143,7 @@ export async function startStandalone({
   let management
   let channels
   let scheduler
+  let gatewayModelRows
   let subscriptions
   let magpieEngine
   let magpieModels
@@ -283,7 +284,9 @@ export async function startStandalone({
     // `/v1/models` 的 auto 注入面只覆盖对外网关（主 listener 与 LAN relay target）：
     // catalog/state、management 的 routable、workbench、gateway.getEnabled 等内部
     // 消费点继续读 publicModelRows，保持不含 auto（方案 §3.8）。
-    const gatewayModelRows = () => [scheduler.autoRow(), ...runtime.publicModelRows()]
+    // 注意 gatewayModelRows/scheduler 都要挂在外层作用域：reconcileRelay 定义在
+    // try 块之外，看不见 try 块内的 const（否则 LAN relay 启动即 ReferenceError）。
+    gatewayModelRows = () => [scheduler.autoRow(), ...runtime.publicModelRows()]
     const core = runtime
     runtime = {
       ...core,

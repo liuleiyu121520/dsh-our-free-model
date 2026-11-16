@@ -1,4 +1,4 @@
-import { Activity, Boxes, Cable, ChevronRight, Handshake, LayoutDashboard, LogOut, Moon, Network, Settings2, ShieldCheck, Sun, Monitor, PanelsTopLeft, LibraryBig, Route, RotateCw } from 'lucide-react'
+import { Activity, Boxes, Cable, ChevronRight, Handshake, LayoutDashboard, LogOut, Moon, Network, Settings2, ShieldCheck, Sparkles, Sun, Monitor, PanelsTopLeft, LibraryBig, Route, RotateCw } from 'lucide-react'
 import { useState } from 'react'
 import { flushSync } from 'react-dom'
 import { Badge, Button } from './ui'
@@ -8,6 +8,7 @@ import { hasDesktopBridge } from '../desktop-update'
 const navigation = [
   { label: '免费模型', items: [
     { id: 'models', name: '模型与开关', icon: Boxes },
+    { id: 'smart', name: '智能调度', icon: Sparkles },
     { id: 'channels', name: '账号渠道', icon: Network },
     { id: 'connection', name: '网关与 API 接入', icon: Cable },
     { id: 'requests', name: '请求日志', icon: Activity },
@@ -104,7 +105,14 @@ export const pageNames: Record<Page, string> = {
   overview: '概览', workspace: '模型工作台', models: '模型与开关', usage: '用量统计',
   channels: '账号渠道', agents: '客户端与订阅', providers: '聚合渠道', library: '资源库', routing: '路由组',
   eac: 'EAC 协付渠道', settings: '服务设置', updates: '应用更新', connection: '网关与 API 接入', requests: '请求日志',
+  smart: '智能调度',
 }
+
+/** 徽标计数（FR-2.2）：模型与开关=目录数；智能调度=池内当前可用模型数（0 也如实显示）。 */
+const badgeFor = (id: Page, summary?: Summary): string | number | undefined =>
+  id === 'models' ? summary?.catalog.length ?? '—'
+    : id === 'smart' ? summary?.smart?.available ?? '—'
+      : undefined
 
 export function Sidebar({ page, summary, host, lite = false, onDisclaimer }: { page: Page; summary?: Summary; host: Host; lite?: boolean; onDisclaimer(): void }) {
   return <>
@@ -126,12 +134,14 @@ export function Sidebar({ page, summary, host, lite = false, onDisclaimer }: { p
       .filter(group => group.items.length > 0)
       .map(group => <div className="nav-group" key={group.label}>
         <span className="nav-group-label">{group.label}</span>
-        {group.items.map(item => <button key={item.id} className={`console-nav-item ${page === item.id ? 'selected' : ''}`}
+        {group.items.map(item => {
+          const badge = badgeFor(item.id, summary)
+          return <button key={item.id} className={`console-nav-item ${page === item.id ? 'selected' : ''}`}
           aria-current={page === item.id ? 'page' : undefined} onClick={() => host.navigate(item.id)}>
           <span className="console-nav-indicator" aria-hidden="true" />
           <item.icon size={18} strokeWidth={1.7} /><span>{item.name}</span>
-          {item.id === 'models' && <span className="count-badge">{summary?.catalog.length ?? '—'}</span>}
-        </button>)}
+          {badge !== undefined && <span className="count-badge">{badge}</span>}
+        </button>})}
       </div>)}</nav>
     <div className="sidebar-support"><ShieldCheck size={17} /><div><strong>独立本地存储</strong><p>本机运行 / 仅监听回环地址</p></div></div>
     <div className="console-sidebar-footer"><div><span className="status-dot" />本地服务在线<small>v{summary?.version ?? '—'}</small></div>
