@@ -827,7 +827,7 @@
 [data-theme="dark"] .model-table {
   position: relative;
   border-radius: 0;
-  border-color: var(--cp-cyan-line);
+  border-color: var(--border-input);
   clip-path: polygon(18px 0, 100% 0, 100% calc(100% - 18px), calc(100% - 18px) 100%, 0 100%, 0 18px);
   background:
     repeating-linear-gradient(0deg, var(--cp-scan) 0 1px, transparent 1px 3px),
@@ -887,7 +887,7 @@
   font-family: Consolas, "Cascadia Mono", "JetBrains Mono", monospace;
   font-variant-numeric: tabular-nums;
 }
-[data-theme="dark"] .model-limits > span { color: var(--cp-amber); letter-spacing: 0.02em; }
+[data-theme="dark"] .model-limits > span { color: var(--md-ink); letter-spacing: 0.02em; }
 [data-theme="dark"] .model-limits small { color: var(--md-ink-muted); font-family: inherit; }
 @media (min-width: 761px) {
   [data-theme="dark"] .model-limits { align-items: flex-end; text-align: right; }
@@ -1043,7 +1043,7 @@
 }
 
 /* ---------- D-02 昼 · 数据黄铜：读数 / 时间戳 / 纸白输入槽 ---------- */
-:root:not([data-theme="dark"]) .model-limits > span { color: var(--amber-ink); }
+:root:not([data-theme="dark"]) .model-limits > span { color: var(--md-ink); }
 :root:not([data-theme="dark"]) .model-identity code { color: #7d6b53; }
 :root:not([data-theme="dark"]) .model-filters select,
 :root:not([data-theme="dark"]) .model-search input { border-radius: 8px; }

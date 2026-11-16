@@ -298,7 +298,7 @@ main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .ofm_root table { font-size: 12px; }
 .spinning { animation: spin 1s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
-footer { max-width: 1440px; margin: 0 auto auto; padding: 12px 32px 24px; margin-top: auto; color: var(--dsw-alias-label-tertiary); font-size: 11px; text-align: center; }
+footer { max-width: 1440px; margin: 0 auto; padding: 12px 32px 24px; margin-top: auto; color: var(--dsw-alias-label-tertiary); font-size: 11px; text-align: center; }
 ::selection { background: rgba(14,159,110,0.15); color: var(--ink); }
 * { scrollbar-width: thin; scrollbar-color: rgba(72,58,42,0.14) transparent; }
 *::-webkit-scrollbar { width: 6px; height: 6px; }
@@ -1149,8 +1149,8 @@ pre { white-space: pre-wrap; overflow-wrap: anywhere; background: #f2ede4; borde
   transition: background 250ms cubic-bezier(.32,.72,0,1), border-color 250ms, box-shadow 250ms;
 }
 [data-theme="dark"] .settings-toggle:after {
-  background: var(--dsw-alias-label-secondary);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.3);
   transition: transform 250ms cubic-bezier(.32,.72,0,1), background 250ms;
 }
 [data-theme="dark"] .settings-toggle:checked {
@@ -3616,7 +3616,12 @@ input:disabled, select:disabled, textarea:disabled, .ui-input:disabled {
 :root:not([data-theme="dark"]) .dashboard-heading, :root:not([data-theme="dark"]) .page-heading { border-bottom: 1px dashed #d8cdb9 !important; padding-bottom: 10px !important; }
 
 /* ---- 2. 输入框与聚焦（墨环） ---- */
-:root:not([data-theme="dark"]) input, :root:not([data-theme="dark"]) textarea, :root:not([data-theme="dark"]) select, :root:not([data-theme="dark"]) .ui-input { background: #fdfcf9 !important; border: 1px solid #ddd3c2 !important; border-radius: 6px !important; box-shadow: inset 0 1px 2px rgba(86,52,10,0.04) !important; transition: border-color 280ms cubic-bezier(0.32,0.72,0,1), box-shadow 280ms cubic-bezier(0.32,0.72,0,1) !important; }
+:root:not([data-theme="dark"]) input, :root:not([data-theme="dark"]) textarea, :root:not([data-theme="dark"]) select, :root:not([data-theme="dark"]) .ui-input { background: #fdfcf9 !important;
+/* S9 终验：昼 checked 开关轨道实底绿（压过上方纸白输入槽 !important；对齐 channels 昼） */
+:root:not([data-theme="dark"]) input[type="checkbox"].settings-toggle:checked {
+  background: var(--green-ink) !important;
+  border-color: var(--green-ink) !important;
+} border: 1px solid #ddd3c2 !important; border-radius: 6px !important; box-shadow: inset 0 1px 2px rgba(86,52,10,0.04) !important; transition: border-color 280ms cubic-bezier(0.32,0.72,0,1), box-shadow 280ms cubic-bezier(0.32,0.72,0,1) !important; }
 :root:not([data-theme="dark"]) .channel-search input:focus { border-color: #0E9F6E !important; box-shadow: 0 0 0 3px rgba(14,159,110,0.14), 0 0 14px -6px rgba(14,159,110,0.35) !important; }
 :root:not([data-theme="dark"]) .channel-search input:hover:not(:focus) { border-color: #a9d8c2 !important; }
 
@@ -4143,7 +4148,7 @@ input:disabled, select:disabled, textarea:disabled, .ui-input:disabled {
 [data-theme="dark"] .theme-toggle:hover { color: #A7F3D0 !important; }
 [data-theme="dark"] .login-help code { color: #A7F3D0 !important; }
 [data-theme="dark"] .ui-switch.on { background: rgba(52, 211, 153, 0.55) !important; border-color: rgba(52, 211, 153, 0.75) !important; }
-[data-theme="dark"] .settings-toggle:checked { background: rgba(52, 211, 153, 0.55) !important; border-color: rgba(52, 211, 153, 0.75) !important; }
+[data-theme="dark"] .settings-toggle:checked { background: var(--green) !important; border-color: rgba(52, 211, 153, 0.75) !important; }
 [data-theme="dark"] .settings-toggle:checked:hover { background: rgba(52, 211, 153, 0.72) !important; }
 /* 插件面板里唯一一处硬编码蓝（.ofm_starbtn）顺手归位；若归铸器师管，我一行撤回 */
 [data-theme="dark"] .ofm_starbtn { color: #A7F3D0 !important; }
@@ -4619,7 +4624,7 @@ input:disabled, select:disabled, textarea:disabled, .ui-input:disabled {
 [data-theme="dark"] .settings-fieldset .settings-toggle:after,
 [data-theme="dark"] .settings-fieldset .settings-toggle:checked:after,
 [data-theme="dark"] .settings-fieldset .settings-field .settings-toggle {
-  border-radius: 0 !important;
+  border-radius: 999px !important;
 }
 
 /* 20. API 接入页 cx-icon：1px → 对角切 4px */
@@ -4790,10 +4795,9 @@ input:disabled, select:disabled, textarea:disabled, .ui-input:disabled {
   border-color: rgba(233, 69, 66, 0.35) !important;
 }
 
-/* 4. KPI 数字按语义着色：正常=白、异常=红、注意=琥珀 */
+/* 4. KPI 数字：夜亮色单色（P1-3d 单色规则，零值中性同色） */
 [data-theme="dark"] .ov-metric strong {
-  color: var(--cp-cyan, #34D399) !important;
-  text-shadow: 0 0 12px rgba(52, 211, 153, 0.15) !important;
+  color: var(--ink) !important;
 }
 
 /* ---- 问题二：设计同质化 ---- */

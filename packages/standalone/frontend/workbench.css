@@ -152,7 +152,7 @@
 :root.workbench-theme .ui-button-outline { background: var(--surface) !important; border: 1px solid var(--dsw-alias-border-l2) !important; color: var(--ink-soft) !important; }
 :root.workbench-theme .ui-button-ghost { background: transparent !important; border-color: transparent !important; color: var(--muted) !important; }
 :root.workbench-theme :is(.ui-button-outline, .ui-button-ghost):hover:not(:disabled) { background: var(--hover) !important; color: var(--ink) !important; transform: none !important; box-shadow: none !important; }
-:root.workbench-theme :is(input, select, textarea) { background: var(--surface) !important; color: var(--ink) !important; border: 1px solid var(--dsw-alias-border-l2) !important; border-radius: 6px !important; clip-path: none !important; box-shadow: none !important; font-family: inherit; }
+:root.workbench-theme :is(input, select, textarea) { background: var(--surface) !important; color: var(--ink) !important; border: 1px solid var(--border-input) !important; border-radius: 6px !important; clip-path: none !important; box-shadow: none !important; font-family: inherit; }
 :root.workbench-theme :is(input, select, textarea):focus-visible { outline: 2px solid var(--green) !important; outline-offset: 2px; }
 :root.workbench-theme :is(.ui-badge, .count-badge) { background: var(--hover) !important; color: var(--muted) !important; border-color: transparent !important; border-radius: 4px !important; clip-path: none !important; }
 :root.workbench-theme .ui-badge-success { background: var(--success-soft) !important; color: var(--success-ink) !important; border-color: var(--success-line) !important; }
