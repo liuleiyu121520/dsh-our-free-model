@@ -3,6 +3,9 @@
  *
  *     node scripts/test-all.mjs [--mode all|contributor|release] [--only <name>]
  *
+ * `--only <name>` 同时是 opt-in 套件的显式入口：列在 `optInSuites` 里的套件
+ * （当前只有 channel-source）不进默认运行，只在被 --only 点名时执行。
+ *
  * These are the checks that need no network and spend no free-lane quota: each
  * one mounts the real module against a local stand-in. The live end-to-end run
  * against the gateway is separate and costs minutes and quota, so it stays a
@@ -32,6 +35,18 @@ if (!['all', 'contributor', 'release'].includes(options.mode)) {
 }
 const { mode, only } = options
 const releaseSuites = new Set(['legacy-payload', 'engine-payload'])
+/**
+ * 显式 opt-in 套件（§6F.7，R4O-003）：不在默认 `npm test` 里运行，仅经
+ * `npm test -- --only <name>` 显式路径执行（与下方 filter 链兼容：only 命中时
+ * 不做 opt-in 剔除）。
+ *
+ * channel-source（channel-pack-test --source --channels-only）以 sourceMode 直名
+ * 解析 `@deepseek-ai/dsh-llm/invariant`；npm install 重同步后该直名是否可达取决于
+ * node_modules 的实际状态（root package.json 的 E-6 后形态已不声明该依赖，仅 devDep
+ * dsh-llm-legacy 按存疑保留提供）。opt-in 把这一环境敏感面从默认套件中解耦，
+ * 默认门槛不再随安装状态漂移。
+ */
+const optInSuites = new Set(['channel-source'])
 
 const suites = [
   // The shipped bundles (token-saver, o2a, core) and the engine parts must
@@ -127,7 +142,7 @@ const suites = [
   ['standalone-nav', 'standalone-nav-test.mjs', []],
 ].filter(([name]) => (mode === 'contributor' ? !['manifest', 'release'].includes(name)
   : mode === 'release' ? releaseSuites.has(name) : true)
-  && (only === null || name.startsWith(only)))
+  && (only === null ? !optInSuites.has(name) : name.startsWith(only)))
 
 if (only !== null && suites.length === 0) {
   console.error(`--only "${only}" selected no suite`)
