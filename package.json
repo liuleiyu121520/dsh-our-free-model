@@ -29,7 +29,8 @@
     "test:release": "node scripts/test-all.mjs --mode release",
     "channel-pack": "node scripts/build-channel-pack.mjs",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "build:legacy-payload": "node scripts/build-legacy-payload.mjs"
+    "build:legacy-payload": "node scripts/build-legacy-payload.mjs",
+    "release:standalone": "node scripts/release-standalone-npm.mjs"
   },
   "keywords": [
     "free-model",
