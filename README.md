@@ -34,6 +34,19 @@ npx our-free-model-standalone        # 或全局安装：npm i -g our-free-model
 启动后按提示打开管理台，登录账号渠道，在「智能调度」页勾选模型并排序，
 然后在你的客户端里把 Base URL 设为 `http://127.0.0.1:18900/v1`、模型名填 `auto`。
 
+## 控制台预览
+
+<table>
+  <tr>
+    <td align="center"><img src="docs/images/standalone-console/channels-light.png" width="400" alt="账号渠道页（昼主题）：渠道卡与账号池"></td>
+    <td align="center"><img src="docs/images/standalone-console/smart-light.png" width="400" alt="智能调度页：候选模型与调度池接力"></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/images/standalone-console/calendar-light.png" width="400" alt="用量日历页：按日 token 消耗与渠道领取"></td>
+    <td align="center"><img src="docs/images/standalone-console/night-theme.png" width="400" alt="夜间主题（暖深色）"></td>
+  </tr>
+</table>
+
 ## 仓库结构
 
 | 路径 | 内容 |

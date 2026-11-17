@@ -23,7 +23,19 @@ ofm
 启动后终端打印一次性管理链接（10 分钟内有效），浏览器打开即可。API 地址是
 `http://127.0.0.1:18900/v1`，API Key 在控制台「网关与 API 接入」页查看。
 
-![控制台](https://raw.githubusercontent.com/liuleiyu121520/dsh-our-free-model/main/docs/images/standalone-gateway.png)
+<div align="center">
+  <img src="https://raw.githubusercontent.com/liuleiyu121520/dsh-our-free-model/feat/standalone-lite/docs/images/standalone-console/channels-light.png" width="864" alt="网页控制台：账号渠道页（昼主题）">
+</div>
+
+<table>
+  <tr>
+    <td align="center"><img src="https://raw.githubusercontent.com/liuleiyu121520/dsh-our-free-model/feat/standalone-lite/docs/images/standalone-console/smart-light.png" width="400" alt="智能调度页：候选模型与调度池接力"></td>
+    <td align="center"><img src="https://raw.githubusercontent.com/liuleiyu121520/dsh-our-free-model/feat/standalone-lite/docs/images/standalone-console/calendar-light.png" width="400" alt="用量日历页：按日 token 消耗与渠道领取"></td>
+  </tr>
+  <tr>
+    <td colspan="2" align="center"><img src="https://raw.githubusercontent.com/liuleiyu121520/dsh-our-free-model/feat/standalone-lite/docs/images/standalone-console/night-theme.png" width="400" alt="夜间主题（暖深色）"></td>
+  </tr>
+</table>
 
 ## 它做什么
 
@@ -31,7 +43,7 @@ ofm
 
 - **13 个账号渠道**统一管理：登录、账号池、每日签到、用量与备份
 - **OpenAI 兼容**：`/v1/chat/completions`、`/v1/responses`，任何兼容客户端直接接
-- **自带网页控制台**，不需要另装界面
+- **自带网页控制台**：账号渠道 / 智能调度 / 网关与 API 接入 / 用量日历 / 请求日志 / 服务设置，昼/夜双主题
 - **零运行时依赖**，只用 Node 内置模块
 - **默认只监听 `127.0.0.1`**，凭据只落在本机数据目录
 
