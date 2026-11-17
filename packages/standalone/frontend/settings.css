@@ -315,8 +315,8 @@
 [data-theme="dark"] .cx-code::before { color: var(--cp-cyan); }
 [data-theme="dark"] .connection-danger { border-color: var(--cp-red); }
 [data-theme="dark"] .connection-danger h2 { color: var(--cp-red); }
-[data-theme="dark"] .cx-danger-btn { color: #fff !important; border-color: #ff6b68 !important; background: var(--cp-red) !important; box-shadow: 0 0 14px -4px rgba(233, 69, 66, 0.5); }
-[data-theme="dark"] .cx-danger-btn:hover:not(:disabled) { color: #fff !important; background: #f25552 !important; border-color: #ff8a86 !important; box-shadow: 0 0 20px -4px rgba(233, 69, 66, 0.6); }
+[data-theme="dark"] .cx-danger-btn { color: #fff !important; border-color: #ff6b68 !important; background: #cc3835 !important; box-shadow: 0 0 14px -4px rgba(233, 69, 66, 0.5); }
+[data-theme="dark"] .cx-danger-btn:hover:not(:disabled) { color: #fff !important; background: #d03a37 !important; border-color: #ff8a86 !important; box-shadow: 0 0 20px -4px rgba(233, 69, 66, 0.6); }
 
 /* ---------- 渠道管理深色 ---------- */
 [data-theme="dark"] .ch-metric-icon { background: var(--cp-cyan-soft); color: var(--cp-cyan); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05); }
@@ -851,17 +851,17 @@ label.settings-field { cursor: pointer; }
 }
 .settings-footer .settings-actions .ui-button[type="submit"] { position: relative; }
 :root:not([data-theme="dark"]) .settings-footer .settings-actions .ui-button-default[type="submit"] {
-  background: linear-gradient(180deg, #2fb984 0%, #0E9F6E 56%, #0c8a5f 100%);
-  border-color: rgba(12, 122, 84, 0.72); color: #fffdf7;
+  background: linear-gradient(180deg, #0C8158 0%, #0B7A54 56%, #096B49 100%);
+  border-color: rgba(10, 117, 80, 0.72); color: #fffdf7;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.30), 0 1px 2px rgba(var(--warm-shadow), 0.18);
 }
 :root:not([data-theme="dark"]) .settings-footer .settings-actions .ui-button-default[type="submit"]:hover:not(:disabled) {
-  background: linear-gradient(180deg, #35c48c 0%, #12a06c 100%);
+  background: linear-gradient(180deg, #0B8056 0%, #0A6E4B 100%);
   border-color: rgba(10, 110, 75, 0.78); color: #fffdf7;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.34), 0 7px 18px -8px rgba(14, 159, 110, 0.62), 1px 3px 0 rgba(var(--warm-shadow), 0.12);
 }
 :root:not([data-theme="dark"]) .settings-footer .settings-actions .ui-button-default[type="submit"]:active:not(:disabled) {
-  background: linear-gradient(180deg, #0E9F6E 0%, #0a7550 100%);
+  background: linear-gradient(180deg, #096B49 0%, #085C3E 100%);
   box-shadow: inset 0 2px 3px rgba(86, 52, 10, 0.35);
 }
 .settings-footer .settings-actions .ui-button[type="submit"]::before {

@@ -862,6 +862,7 @@
   border-color: var(--danger-line, #efd5d9) !important;
 }
 .cx-danger-btn:hover:not(:disabled) {
+  color: var(--danger-ink, #9c3343) !important;
   background: var(--danger-line, #efd5d9) !important;
 }
 [data-theme="dark"] .cx-danger-btn {
@@ -869,6 +870,7 @@
   border-color: rgba(244, 63, 94, 0.35) !important;
 }
 [data-theme="dark"] .cx-danger-btn:hover:not(:disabled) {
+  color: var(--danger-ink, #f29399) !important;
   background: rgba(244, 63, 94, 0.15) !important;
 }
 

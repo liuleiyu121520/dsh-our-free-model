@@ -621,11 +621,11 @@ pre { white-space: pre-wrap; overflow-wrap: anywhere; background: #f2ede4; borde
   font-weight: 600;
   transition: color 160ms var(--ease-out-expo), background-color 160ms var(--ease-out-expo), border-color 160ms var(--ease-out-expo), transform 120ms var(--ease-out-expo), box-shadow 200ms var(--ease-out-expo);
 }
-/* 夜 · 危险键：全界面唯一允许纯红大色块的地方 */
+/* 夜 · 危险键：全界面唯一允许纯红大色块的地方（红阶压深至 WCAG ≥4.5:1，白字可读） */
 [data-theme="dark"] .danger-button {
-  background: var(--cp-red); color: #fff; border: 1px solid #ff6b68;
+  background: #cc3835; color: #fff; border: 1px solid #ff6b68;
 }
-[data-theme="dark"] .danger-button:hover { background: #f25552; }
+[data-theme="dark"] .danger-button:hover { background: #d03a37; }
 
 /* 昼 · 纸上凸起：柔和圆角 + 暖棕定向影（投向右下，像被左上的太阳照着） */
 :root:not([data-theme="dark"]) .ui-button, :root:not([data-theme="dark"]) .primary,
@@ -2148,13 +2148,13 @@ input::placeholder, textarea::placeholder { color: #757064; opacity: 1; }
 }
 
 /* ---------- 5. 控件：按钮、输入、开关、徽章（夜与昼同构：一套圆角与字重） ---------- */
-/* 夜 · 危险键：全界面唯一允许纯红大色块的地方 */
+/* 夜 · 危险键：全界面唯一允许纯红大色块的地方（红阶压深至 WCAG ≥4.5:1，白字可读） */
 [data-theme="dark"] .danger-button {
-  background: var(--cp-red); color: #fff; border: 1px solid #ff6b68;
+  background: #cc3835; color: #fff; border: 1px solid #ff6b68;
   box-shadow: 0 0 16px -4px rgba(233,69,66,0.5);
 }
-[data-theme="dark"] .danger-button:hover { background: #f25552; box-shadow: 0 0 22px -4px rgba(233,69,66,0.68); }
-[data-theme="dark"] .danger-button:active { background: #d93e3b; }
+[data-theme="dark"] .danger-button:hover { background: #d03a37; box-shadow: 0 0 22px -4px rgba(233,69,66,0.68); }
+[data-theme="dark"] .danger-button:active { background: #b5302e; }
 /* ---------- 6. 数据仪表：图表、表格与来源列表 ---------- */
 [data-theme="dark"] .dashboard-chart-bar,
 [data-theme="dark"] .usage-day-bar {
@@ -3336,9 +3336,10 @@ input:disabled, select:disabled, textarea:disabled, .ui-input:disabled {
 }
 
 /* ---- 2. 活力绿按钮：不是平涂渐变，是有物理感的绿主键 ---- */
-:root:not([data-theme="dark"]) body .ui-button-default,
-:root:not([data-theme="dark"]) body .primary {
-  background: linear-gradient(180deg, #1DB984 0%, #0E9F6E 50%, #0B7A54 100%) !important;
+/* 对比度（WCAG）：文字 #fffdf6 对渐变全部档位 ≥4.8:1；:not(.ofm_btn) 让位渠道共享纸面按钮（channels.css 接管，昼 #262320/#f5f3f0=14.1:1）。 */
+:root:not([data-theme="dark"]) body .ui-button-default:not(.ofm_btn),
+:root:not([data-theme="dark"]) body .primary:not(.ofm_btn) {
+  background: linear-gradient(180deg, #0C8158 0%, #0B7A54 55%, #096B49 100%) !important;
   color: #fffdf6 !important;
   border: 1px solid #0a7550 !important;
   border-radius: var(--radius-control, 10px) !important;
@@ -3352,8 +3353,8 @@ input:disabled, select:disabled, textarea:disabled, .ui-input:disabled {
   overflow: hidden !important;
 }
 /* 镜面高光条：顶部一条白色反光，不是整体渐变 */
-:root:not([data-theme="dark"]) body .ui-button-default::before,
-:root:not([data-theme="dark"]) body .primary::before {
+:root:not([data-theme="dark"]) body .ui-button-default:not(.ofm_btn)::before,
+:root:not([data-theme="dark"]) body .primary:not(.ofm_btn)::before {
   content: "" !important;
   position: absolute !important;
   top: 0 !important;
@@ -3366,8 +3367,8 @@ input:disabled, select:disabled, textarea:disabled, .ui-input:disabled {
   transition: left 350ms cubic-bezier(0.32,0.72,0,1), right 350ms cubic-bezier(0.32,0.72,0,1) !important;
 }
 /* 拉丝纹理：极细水平噪点 */
-:root:not([data-theme="dark"]) body .ui-button-default::after,
-:root:not([data-theme="dark"]) body .primary::after {
+:root:not([data-theme="dark"]) body .ui-button-default:not(.ofm_btn)::after,
+:root:not([data-theme="dark"]) body .primary:not(.ofm_btn)::after {
   content: "" !important;
   position: absolute !important;
   top: 0 !important;
@@ -3379,15 +3380,15 @@ input:disabled, select:disabled, textarea:disabled, .ui-input:disabled {
   opacity: 0.6 !important;
 }
 /* hover：高光位置移动（模拟釉面微转反光面变） */
-:root:not([data-theme="dark"]) body .ui-button-default:hover::before,
-:root:not([data-theme="dark"]) body .primary:hover::before {
+:root:not([data-theme="dark"]) body .ui-button-default:not(.ofm_btn):hover::before,
+:root:not([data-theme="dark"]) body .primary:not(.ofm_btn):hover::before {
   left: 3% !important;
   right: 25% !important;
   background: linear-gradient(160deg, rgba(255,250,235,0.45), rgba(255,250,235,0.08)) !important;
 }
-:root:not([data-theme="dark"]) body .ui-button-default:hover,
-:root:not([data-theme="dark"]) body .primary:hover {
-  background: linear-gradient(180deg, #21B183 0%, #0E8F63 50%, #0C8158 100%) !important;
+:root:not([data-theme="dark"]) body .ui-button-default:not(.ofm_btn):hover,
+:root:not([data-theme="dark"]) body .primary:not(.ofm_btn):hover {
+  background: linear-gradient(180deg, #0B8056 0%, #0A6E4B 55%, #085C3E 100%) !important;
   border-color: #0a6e4b !important;
   box-shadow:
     0 1px 0 rgba(255,240,200,0.5) inset,
@@ -3397,9 +3398,9 @@ input:disabled, select:disabled, textarea:disabled, .ui-input:disabled {
   transform: translateY(-1px) !important;
 }
 /* active：按进纸里，下沉 1px，高光收缩 */
-:root:not([data-theme="dark"]) body .ui-button-default:active,
-:root:not([data-theme="dark"]) body .primary:active {
-  background: linear-gradient(180deg, #14A472 0%, #0B7A54 50%, #096B49 100%) !important;
+:root:not([data-theme="dark"]) body .ui-button-default:not(.ofm_btn):active,
+:root:not([data-theme="dark"]) body .primary:not(.ofm_btn):active {
+  background: linear-gradient(180deg, #096B49 0%, #085C3E 55%, #074F35 100%) !important;
   border-color: #095a40 !important;
   box-shadow:
     0 1px 0 rgba(255,240,200,0.25) inset,
@@ -3408,8 +3409,8 @@ input:disabled, select:disabled, textarea:disabled, .ui-input:disabled {
     0 2px 6px -2px rgba(86,52,10,0.20) !important;
   transform: translateY(1px) !important;
 }
-:root:not([data-theme="dark"]) body .ui-button-default:active::before,
-:root:not([data-theme="dark"]) body .primary:active::before {
+:root:not([data-theme="dark"]) body .ui-button-default:not(.ofm_btn):active::before,
+:root:not([data-theme="dark"]) body .primary:not(.ofm_btn):active::before {
   left: 20% !important;
   right: 20% !important;
   height: 25% !important;
@@ -4231,21 +4232,21 @@ input:disabled, select:disabled, textarea:disabled, .ui-input:disabled {
   color: #0B7A54 !important;
 }
 
-/* ⑦ 活力绿主键：压哑光、减甜度——细刻边 + 几乎无大软阴影，像矿物铭牌 */
-:root:not([data-theme="dark"]) .ui-button-default,
-:root:not([data-theme="dark"]) .primary {
-  background: linear-gradient(180deg, #17A06B, #0C8A5F) !important;
+/* ⑦ 活力绿主键：压哑光、减甜度——细刻边 + 几乎无大软阴影，像矿物铭牌（:not(.ofm_btn) 让位渠道共享纸面按钮） */
+:root:not([data-theme="dark"]) .ui-button-default:not(.ofm_btn),
+:root:not([data-theme="dark"]) .primary:not(.ofm_btn) {
+  background: linear-gradient(180deg, #0C8158, #0B7A54) !important;
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.22), inset 0 -1px 0 rgba(0,0,0,0.12), 0 1px 2px rgba(86,52,10,0.14) !important;
   border: 1px solid #0a7550 !important;
 }
-:root:not([data-theme="dark"]) .ui-button-default:hover,
-:root:not([data-theme="dark"]) .primary:hover {
-  background: linear-gradient(180deg, #21B183, #0E8F63) !important;
+:root:not([data-theme="dark"]) .ui-button-default:not(.ofm_btn):hover,
+:root:not([data-theme="dark"]) .primary:not(.ofm_btn):hover {
+  background: linear-gradient(180deg, #0B8056, #0A6E4B) !important;
   transform: translateY(-1px) !important;
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.28), inset 0 -1px 0 rgba(0,0,0,0.10), 0 3px 8px -3px rgba(86,52,10,0.22) !important;
 }
-:root:not([data-theme="dark"]) .ui-button-default:active,
-:root:not([data-theme="dark"]) .primary:active {
+:root:not([data-theme="dark"]) .ui-button-default:not(.ofm_btn):active,
+:root:not([data-theme="dark"]) .primary:not(.ofm_btn):active {
   box-shadow: inset 0 2px 4px rgba(0,0,0,0.18) !important;
 }
 /* ==== V5 DAY 补 END ==== */
