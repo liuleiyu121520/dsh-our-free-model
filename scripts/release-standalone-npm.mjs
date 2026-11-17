@@ -21,11 +21,12 @@ import os from 'node:os'
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const PRODUCT = 'our-free-model-standalone'
-const VERSION = '1.1.0'
+// 版本单点：与 packages/standalone/package.json 同源，避免逐版本手改（1.2.0 起动态取值）
+const VERSION = JSON.parse(fs.readFileSync(path.join(ROOT, 'packages/standalone/package.json'), 'utf8')).version
 const TARBALL = path.join(ROOT, 'dist', `${PRODUCT}-${VERSION}.tgz`)
-const RELEASE_NOTES = path.join(ROOT, 'docs/software-company/release-notes-1.1.0.md')
+const RELEASE_NOTES = path.join(ROOT, 'docs/software-company', `release-notes-${VERSION}.md`)
 const NPM_README = path.join(ROOT, 'packages/standalone/NPM-README.md')
-const RECORD = path.join(ROOT, 'docs/software-company/s11-release-record.md')
+const RECORD = path.join(ROOT, 'docs/software-company', `release-record-${VERSION}.md`)
 const S10_DIR = path.join(ROOT, 'docs/software-company')
 
 const log = message => console.log(message)
@@ -213,7 +214,7 @@ if (subcommand === 'record') {
   const sha256 = sh('sh', ['-c', `shasum -a 256 "${TARBALL}" | cut -d' ' -f1`]).trim()
   let viewText = '（npm view 未执行或包未发布）'
   try { viewText = npm(['view', `${PRODUCT}@${VERSION}`, 'version', 'dist-tags', '--json']) } catch { /* 未发布时如实记录 */ }
-  const body = `# S11 发布记录（${PRODUCT}@${VERSION}）
+  const body = `# 发布记录（${PRODUCT}@${VERSION}）
 
 - 时间：${new Date().toISOString()}
 - 版本：${VERSION}
