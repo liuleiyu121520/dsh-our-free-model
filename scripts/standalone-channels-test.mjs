@@ -8,7 +8,7 @@ import { signSealedRequest, lane } from '../src/eac.js'
 import { createStandaloneEac } from '../packages/standalone/eac.mjs'
 import { createCredentials } from '../packages/standalone/channels/credentials.mjs'
 import { attachments } from '../packages/standalone/channels/images.mjs'
-import { createSmartScheduler, isSmartAlias, isQuotaExhaustion } from '../packages/standalone/smart-schedule.mjs'
+import { createSmartScheduler, isSmartAlias, isQuotaExhaustion, hasImageInput } from '../packages/standalone/smart-schedule.mjs'
 
 const scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'ofm-channels-'))
 const dataDir = path.join(scratch, 'app')
@@ -21,6 +21,8 @@ let checks = 0, failures = 0
 let hold
 let cancelled = false
 let loginReady = true
+// R8O-001 时序闸门：非空时上游 /models 挂起，把 channels.ready（首份渠道清单）钉在未完成态。
+let holdModels
 const check = async (name, body) => {
   checks++
   try { await body(); console.log(`ok   ${name}`) }
@@ -82,6 +84,7 @@ const upstream = http.createServer(async (req, res) => {
   } else if (pathname.endsWith('/points/records')) {
     json(res, { code: '000000', data: { balance: 500, dailyBalance: 0, availableBalance: 500 } })
   } else if (pathname.endsWith('/models')) {
+    if (holdModels) await holdModels
     if (signed) json(res, { data: [{ id: 'fixture-eac-model' }] })
     else if (req.headers['x-ofm-fixture-host'] === 'api.cline.bot') json(res, { data: [{ id: 'cline-free/mimo-v2.6-flash' }] })
     else if (req.headers['x-ofm-fixture-host'] === 'loomyad.xunfei.cn') {
@@ -320,6 +323,96 @@ try {
     const invalidFailure = await allInvalid.complete({ model: 'ourfreemodel', openAi: { messages: [{ role: 'user', content: 'hi' }] } }).then(() => null, error => error)
     assert.equal(invalidFailure?.statusCode, 400)
     allInvalid.dispose()
+  })
+  await check('smart 视觉路由（FR-15/AC-41）：含图仅派发 vision 候选、池无视觉 400 指引、有但全耗尽 429 filteredBy、纯文本零变化', async () => {
+    // hasImageInput 三入口纯函数（worker.mjs:117 三形态锚点）+ 漏检安全
+    const png = 'data:image/png;base64,x'
+    assert.equal(hasImageInput({ openAi: { messages: [{ role: 'user', content: [{ type: 'text', text: '看' }, { type: 'image_url', image_url: { url: png } }] }] } }), true, '① OpenAI chat image_url')
+    assert.equal(hasImageInput({ openAi: { messages: [{ role: 'user', content: '纯文本' }] } }), false)
+    assert.equal(hasImageInput({ responsesBody: { input: [{ type: 'input_image', image_url: png }] } }), true, '② Responses 顶层 input_image')
+    assert.equal(hasImageInput({ responsesBody: { input: [{ role: 'user', content: [{ type: 'input_text', text: 'a' }, { type: 'input_image' }] }] } }), true, '② Responses 嵌套 content[]')
+    assert.equal(hasImageInput({ responsesBody: { input: '纯文本' } }), false)
+    assert.equal(hasImageInput({ messages: [{ role: 'user', content: [{ type: 'text', text: 'hi' }, { type: 'image', source: { type: 'base64' } }] }] }), true, '③ Anthropic harness image block')
+    assert.equal(hasImageInput({ messages: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }] }), false)
+    assert.equal(hasImageInput(undefined), false)
+    assert.equal(hasImageInput({}), false)
+
+    // 可编程假渠道：vision 布尔经 publicModelRows 注入（单一事实源同链），rateLimits 预置耗尽
+    const imageRequest = { model: 'auto', openAi: { messages: [{ role: 'user', content: [{ type: 'text', text: '看图' }, { type: 'image_url', image_url: { url: png } }] }] } }
+    const textRequest = { model: 'auto', openAi: { messages: [{ role: 'user', content: 'hi' }] } }
+    const visionPool = { get: () => ({ smartSchedulePool: { models: ['p/text-m', 'p/vision-m'] } }) }
+    const makeVisionChannels = ({ visionIds = [], rateLimits = {} } = {}) => {
+      const attempts = []
+      return {
+        attempts,
+        providers: ['p'],
+        ready: Promise.resolve(),
+        // 未标记的模型连 vision 键都没有（覆盖 AC-41 场景五：键不存在 = 不具备）
+        publicModelRows: () => [
+          { id: 'p/text-m', ...(visionIds.includes('p/text-m') ? { vision: true } : {}) },
+          { id: 'p/vision-m', ...(visionIds.includes('p/vision-m') ? { vision: true } : {}) },
+        ],
+        rpc: async body => body.method === 'model.list'
+          ? { ok: true, value: { models: [
+              { id: 'text-m', name: 'T', disabled: false, dead: false },
+              { id: 'vision-m', name: 'V', disabled: false, dead: false },
+            ] } }
+          : { ok: true, value: { accounts: [{ id: 'u1', enabled: true, modelRateLimits: rateLimits }] } },
+        complete: async request => { attempts.push(request.model); return { text: `${request.model}-ok`, toolCalls: [] } },
+      }
+    }
+
+    // 场景一：池 [M-text, M-vision] 含图 → 仅 M-vision 承接、M-text 零上游调用；同池纯文本 → M-text（与 1.2.0 一致）
+    const bothChannels = makeVisionChannels({ visionIds: ['p/vision-m'] })
+    const unitA = createSmartScheduler({ settings: visionPool, channels: bothChannels, logger: { warn() {}, info() {} } })
+    await unitA.refreshSnapshot()
+    assert.equal((await unitA.complete(imageRequest)).text, 'p/vision-m-ok')
+    assert.deepEqual(bothChannels.attempts, ['p/vision-m'], '含图请求只派发视觉候选')
+    assert.equal((await unitA.complete(textRequest)).text, 'p/text-m-ok')
+    assert.deepEqual(bothChannels.attempts, ['p/vision-m', 'p/text-m'])
+    unitA.dispose()
+
+    // 场景三：池内从未有 vision=true（含键不存在）→ 含图 400 配置指引；纯文本同池不受影响
+    const noVisionChannels = makeVisionChannels({})
+    const unitB = createSmartScheduler({ settings: visionPool, channels: noVisionChannels, logger: { warn() {}, info() {} } })
+    await unitB.refreshSnapshot()
+    const noVision = await unitB.complete(imageRequest).then(() => null, error => error)
+    assert.equal(noVision?.statusCode, 400)
+    assert.match(noVision?.message ?? '', /视觉/, '400 文案必须含视觉配置指引')
+    assert.equal((await unitB.complete(textRequest)).text, 'p/text-m-ok', '纯文本不被视觉路由影响')
+    unitB.dispose()
+
+    // 场景四：池有 vision 但当日全耗尽（modelRateLimits 预置）→ 429 + filteredBy='vision'，明细仅视觉候选
+    const later = Date.now() + 3600_000
+    const visionLocked = makeVisionChannels({ visionIds: ['p/vision-m'], rateLimits: { 'vision-m': later } })
+    const unitC = createSmartScheduler({ settings: visionPool, channels: visionLocked, logger: { warn() {}, info() {} } })
+    await unitC.refreshSnapshot()
+    const visionExhausted = await unitC.complete(imageRequest).then(() => null, error => error)
+    assert.equal(visionExhausted?.statusCode, 429)
+    assert.equal(visionExhausted?.code, 'RATE_LIMIT')
+    assert.equal(visionExhausted?.details?.type, 'smart_pool_exhausted')
+    assert.equal(visionExhausted?.details?.filteredBy, 'vision')
+    assert.deepEqual(visionExhausted?.details?.models, [{ model: 'p/vision-m', resetAtMs: later, resetAtIso: new Date(later).toISOString() }],
+      '429 明细仅列视觉候选')
+    // 同池纯文本 → M-text 可用照常承接（可用模型不受视觉耗尽影响）
+    assert.equal((await unitC.complete(textRequest)).text, 'p/text-m-ok')
+    // /smart/state：accounts.earliestResetAtMs 透出（FR-16.3，与 429 resetAtMs 同源派生）
+    const state = unitC.state()
+    assert.equal(state.statuses.find(row => row.modelId === 'p/vision-m')?.accounts.earliestResetAtMs, later)
+    assert.equal(state.statuses.find(row => row.modelId === 'p/text-m')?.accounts.earliestResetAtMs, undefined)
+    assert.equal(state.statuses.find(row => row.modelId === 'p/vision-m')?.vision, true)
+    unitC.dispose()
+
+    // 场景二（AC-41）：纯文本全池耗尽 → 429 信封与 1.2.0 逐字节一致（无 filteredBy、明细覆盖全池）
+    const allLocked = makeVisionChannels({ visionIds: ['p/vision-m'], rateLimits: { 'text-m': later, 'vision-m': later } })
+    const unitD = createSmartScheduler({ settings: visionPool, channels: allLocked, logger: { warn() {}, info() {} } })
+    await unitD.refreshSnapshot()
+    const textEnvelope = await unitD.complete(textRequest).then(() => null, error => error)
+    assert.equal(textEnvelope?.statusCode, 429)
+    assert.equal(textEnvelope?.details?.type, 'smart_pool_exhausted')
+    assert.equal('filteredBy' in (textEnvelope?.details ?? {}), false, '纯文本 429 不得出现 filteredBy 字段')
+    assert.deepEqual(textEnvelope?.details?.models.map(row => row.model), ['p/text-m', 'p/vision-m'])
+    unitD.dispose()
   })
   service = await startStandalone({ dataDir, port: 0, refresh: false, logger: { warn: message => warnings.push(message), info() {} } })
   await service.ready
@@ -711,11 +804,48 @@ try {
     assert.equal(afterRestart.response.status, 429)
     assert.equal(afterRestart.value.error.details?.type, 'smart_pool_exhausted')
     assert.equal(chatRequests().length, upstreamBefore)
+    // /smart/state（FR-16.3）：全耗尽行的 accounts 透出 earliestResetAtMs（与 429 resetAtMs 同源派生）
+    const smartView = (await api('/api/management/smart/state')).value
+    for (const row of smartView.statuses) {
+      assert.ok(Number.isFinite(row.accounts.earliestResetAtMs) && row.accounts.earliestResetAtMs > Date.now(),
+        `全耗尽行必须透出未来 earliestResetAtMs：${JSON.stringify(row)}`)
+      assert.equal(row.accounts.total > 0 && row.accounts.available === 0, true, '全耗尽行 available=0')
+      assert.equal(typeof row.vision, 'boolean', '池状态行带 vision 标记（FR-15）')
+    }
     // 还原：清空限流与调度池，后续既有用例（cline 取消传播等）不受影响
     rewriteState(state => { for (const row of state.accounts) delete row.modelRateLimits })
     rewriteSettings(settings => { settings.smartSchedulePool = { models: [] } })
     await restartService()
     assert.equal((await api('/v1/models')).value.data[0].id, 'auto')
+  })
+  await check('auto 含图启动时序（R8O-001）：渠道清单未就绪即收到含图请求不误报 400，等来 vision 快照后命中视觉模型', async () => {
+    // 池内只放视觉模型（fixture 的 cline 模型 input 含 image → publicModelRows().vision=true）。
+    rewriteSettings(settings => { settings.smartSchedulePool = { models: ['cline/cline-free/mimo-v2.6-flash'] } })
+    await service.close()
+    // 闸门钉住 /models：新实例的 channels.ready（首份渠道清单）保持未完成，
+    // publicModelRows 仍是 []——这正是 R8O-001 的启动空窗，含图请求不得在此误 400。
+    let releaseModels
+    holdModels = new Promise(resolve => { releaseModels = resolve })
+    service = await startStandalone({ dataDir, port: 0, refresh: false, logger: { warn() {}, info() {} } })
+    key = JSON.parse(fs.readFileSync(service.keyFile)).forwardKey
+    const png = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScLbtAAAAABJRU5ErkJggg=='
+    const immediate = fetch(`${service.url}/v1/chat/completions`, {
+      method: 'POST', headers: { authorization: `Bearer ${key}`, 'content-type': 'application/json' },
+      body: JSON.stringify({ model: 'auto', messages: [{ role: 'user', content: [
+        { type: 'text', text: 'what' }, { type: 'image_url', image_url: { url: `data:image/png;base64,${png}` } },
+      ] }] }),
+      signal: AbortSignal.timeout(30000),
+    }).then(async response => ({ response, value: await response.json() }))
+    await new Promise(resolve => setTimeout(resolve, 500))   // 请求确定落在 channels.ready 完成之前
+    releaseModels()
+    holdModels = undefined
+    const reply = await immediate
+    assert.equal(reply.response.status, 200, `启动空窗的含图请求不得误报 400：${JSON.stringify(reply.value)}`)
+    assert.equal(reply.value.choices[0].message.content, 'account-ok')
+    await service.ready
+    // 还原空池，后续用例不受影响
+    rewriteSettings(settings => { settings.smartSchedulePool = { models: [] } })
+    await restartService()
   })
   await check('客户端取消传播到真实渠道网络请求，服务关闭不会迟到写入凭据', async () => {
     const controller = new AbortController()

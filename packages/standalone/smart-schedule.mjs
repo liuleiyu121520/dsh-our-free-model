@@ -17,6 +17,13 @@
  * （channels/runtime.mjs 的既有 RPC 面），失败静默保留旧值（NFR-9）。
  * 刷新时机：启动拉取 → 30s 定时（unref）→ 请求时快照超过 60s 异步刷新 →
  * 运行时接力后即时刷新。
+ *
+ * 视觉路由（FR-15，方案 §V10.1）：含图请求（hasImageInput 三入口检测）只把
+ * `vision === true` 的池内模型纳入候选；vision 单一事实源 = channels.publicModelRows()
+ * 行的 vision 布尔（与接入页徽章同一份 rows，R14 零漂移），非显式 true 保守跳过（D31）。
+ * 池内不存在任何 vision=true → 400 配置指引（FR-15.4a）；存在但全耗尽/不可用 →
+ * 429 信封 details 增 filteredBy:'vision' 且 models 仅列视觉候选（FR-15.4b）。
+ * 纯文本路径（visionOnly === false）与 1.2.0 逐字节一致（AC-41 场景二）。
  */
 
 const SMART_ALIASES = new Set(['auto', 'ourfreemodel'])
@@ -37,6 +44,36 @@ export function isQuotaExhaustion(error) {
   return QUOTA_MESSAGE_PATTERN.test(String(error?.message ?? ''))
 }
 
+/**
+ * 含图检测（FR-15.3，纯函数）：调度器拿到的是 service 包装层的**原始** request，
+ * 三入口与 worker.mjs 的 `request.responsesBody ?? request.openAi ?? harnessBody(request)`
+ * 三形态一一对应，必须全部检查：
+ * ① OpenAI chat：openAi.messages[].content[] 元素 type === 'image_url'；
+ * ② Responses：responsesBody.input[] 元素 type === 'input_image'（含嵌套 content[] 递归一层）；
+ * ③ Anthropic harness：messages[].content[] 元素 type === 'image'（image block）。
+ * 漏检语义安全（SR-14）：检测遗漏 → 不过滤 → 行为与 1.2.0 纯文本路径一致（无回归面）。
+ */
+export function hasImageInput(request) {
+  const blocks = value => Array.isArray(value) ? value : []
+  for (const message of blocks(request?.openAi?.messages)) {
+    for (const part of blocks(message?.content)) {
+      if (part?.type === 'image_url') return true
+    }
+  }
+  for (const item of blocks(request?.responsesBody?.input)) {
+    if (item?.type === 'input_image') return true
+    for (const part of blocks(item?.content)) {
+      if (part?.type === 'input_image') return true
+    }
+  }
+  for (const message of blocks(request?.messages)) {
+    for (const part of blocks(message?.content)) {
+      if (part?.type === 'image') return true
+    }
+  }
+  return false
+}
+
 const fail = (statusCode, message) => Object.assign(new Error(message), { statusCode })
 
 /** 拆分首个 '/'：渠道模型 id 一律 `provider/model`。 */
@@ -53,7 +90,7 @@ const nowMs = () => Date.now()
  * `settings` 是 JsonStore（读 smartSchedulePool）。
  */
 export function createSmartScheduler({ settings, channels, logger = console }) {
-  let snapshot = { at: 0, models: new Map(), accounts: new Map() }
+  let snapshot = { at: 0, models: new Map(), accounts: new Map(), vision: new Map() }
   let refreshing
   let timer
 
@@ -66,20 +103,36 @@ export function createSmartScheduler({ settings, channels, logger = console }) {
   function refreshSnapshot() {
     if (refreshing) return refreshing
     const providers = [...(channels?.providers ?? [])]
-    refreshing = Promise.all(providers.map(async provider => {
-      const [models, accounts] = await Promise.all([
-        channels.rpc({ method: 'model.list', payload: { provider } }),
-        channels.rpc({ method: 'account.list', payload: { provider } }),
-      ])
-      return { provider, models: models?.ok === false ? [] : (models?.value?.models ?? []), accounts: accounts?.ok === false ? [] : (accounts?.value?.accounts ?? []) }
-    })).then(rows => {
+    const first = snapshot.at === 0
+    refreshing = Promise.all([
+      Promise.all(providers.map(async provider => {
+        const [models, accounts] = await Promise.all([
+          channels.rpc({ method: 'model.list', payload: { provider } }),
+          channels.rpc({ method: 'account.list', payload: { provider } }),
+        ])
+        return { provider, models: models?.ok === false ? [] : (models?.value?.models ?? []), accounts: accounts?.ok === false ? [] : (accounts?.value?.accounts ?? []) }
+      })),
+      // 视觉单一事实源（FR-15.1/R14）：publicModelRows 是内存函数（worker 'changed'
+      // 后 refresh 已更新），与接入页徽章读的是同一份 rows——结构上零漂移。
+      // 首次刷新先 await channels.ready 再读：启动空窗期 rows 仍为 []，会让含图
+      // 请求误判「池内无视觉模型」而 400（R8O-001 收口）。
+      (async () => {
+        if (first) { try { await channels?.ready } catch { /* 渠道未就绪：按当前 rows（可能为空）继续 */ } }
+        return channels?.publicModelRows?.() ?? []
+      })(),
+    ]).then(([rows, catalogRows]) => {
       const models = new Map()
       const accounts = new Map()
       for (const { provider, models: modelRows, accounts: accountRows } of rows) {
         models.set(provider, modelRows)
         accounts.set(provider, accountRows)
       }
-      snapshot = { at: nowMs(), models, accounts }
+      const vision = new Map()
+      for (const row of catalogRows) {
+        // 仅显式 true 肯定（D31）：false / undefined / 键不存在一律按无视觉保守跳过。
+        if (typeof row?.id === 'string' && row.id !== '') vision.set(row.id, row.vision === true)
+      }
+      snapshot = { at: nowMs(), models, accounts, vision }
     }).catch(() => {
       // 快照刷新失败不阻塞主流程（NFR-9）：保留旧快照，下一个周期再试。
     }).finally(() => { refreshing = undefined })
@@ -91,51 +144,72 @@ export function createSmartScheduler({ settings, channels, logger = console }) {
     if (nowMs() - snapshot.at > SNAPSHOT_STALE_MS) void refreshSnapshot()
   }
 
+  /**
+   * 某模型的启用账号集与其中仍在未来的解禁时刻。modelAvailability 的 429 resetAtMs
+   * 与 accountStats 的 accounts.earliestResetAtMs 共用这一份派生（SR-15 零第二实现）。
+   */
+  function enabledAccountsAndResets(provider, model, now) {
+    const enabled = (snapshot.accounts.get(provider) ?? []).filter(account => account.enabled !== false)
+    const resets = enabled
+      .map(account => Number(account.modelRateLimits?.[model] ?? 0))
+      .filter(resetAt => Number.isFinite(resetAt) && resetAt > now)
+    return { enabled, resets }
+  }
+
   /** 某模型按快照推导的可用性。预检纯内存计算，不发任何上游网络请求（AC-7/NFR-1）。 */
   function modelAvailability(modelId) {
     const now = nowMs()
     const { provider, model } = splitModelId(modelId)
     const row = (snapshot.models.get(provider) ?? []).find(entry => entry.id === model)
     if (!row || row.disabled === true || row.dead === true) return { usable: false, reason: 'invalid' }
-    const enabled = (snapshot.accounts.get(provider) ?? []).filter(account => account.enabled !== false)
+    const { enabled, resets } = enabledAccountsAndResets(provider, model, now)
     if (enabled.length === 0) return { usable: false, reason: 'invalid' }
-    const resets = enabled
-      .map(account => Number(account.modelRateLimits?.[model] ?? 0))
-      .filter(resetAt => Number.isFinite(resetAt) && resetAt > now)
     if (resets.length === enabled.length) return { usable: false, reason: 'exhausted', resetAtMs: Math.min(...resets) }
     return { usable: true }
   }
 
-  /** 绑定账号面统计：total/available 都只统计 enabled 账号。 */
+  /** 绑定账号面统计：total/available 都只统计 enabled 账号；earliestResetAtMs 为
+   *  可选新增字段（FR-16.3）——未来解禁时刻的最小值，无未来解禁时缺省。 */
   function accountStats(modelId) {
     const now = nowMs()
     const { provider, model } = splitModelId(modelId)
-    const enabled = (snapshot.accounts.get(provider) ?? []).filter(account => account.enabled !== false)
-    const available = enabled.filter(account => {
-      const resetAt = Number(account.modelRateLimits?.[model] ?? 0)
-      return !(Number.isFinite(resetAt) && resetAt > now)
-    }).length
-    return { total: enabled.length, available }
+    const { enabled, resets } = enabledAccountsAndResets(provider, model, now)
+    return {
+      total: enabled.length,
+      available: enabled.length - resets.length,
+      ...(resets.length > 0 ? { earliestResetAtMs: Math.min(...resets) } : {}),
+    }
   }
 
-  /** 全量池评估（单次遍历，不提前 return）：empty / hit（附 attemptOrder）/ exhausted。 */
-  function evaluatePool() {
+  /**
+   * 全量池评估（单次遍历，不提前 return）：empty / hit（附 attemptOrder）/ exhausted。
+   * visionOnly（FR-15，含图请求）：statuses 仍全量覆盖池并带 vision 标记，但
+   * usable/attemptOrder 仅含 vision === true 的候选（非显式 true 保守跳过，D31）；
+   * 池内不存在任何 vision=true 时按 empty 返回（→ 400 配置指引，FR-15.4a）。
+   */
+  function evaluatePool({ visionOnly = false } = {}) {
     const pool = poolModels()
     const statuses = []
     const usable = []
     for (const modelId of pool) {
       const availability = modelAvailability(modelId)
-      statuses.push({ modelId, ...availability, accounts: accountStats(modelId) })
-      if (availability.usable) usable.push(modelId)
+      const vision = snapshot.vision.get(modelId) === true
+      statuses.push({ modelId, ...availability, vision, accounts: accountStats(modelId) })
+      if (availability.usable && (!visionOnly || vision)) usable.push(modelId)
     }
     const allInvalid = pool.length > 0 && statuses.every(status => status.reason === 'invalid')
     if (pool.length === 0 || allInvalid) return { kind: 'empty', statuses }
+    if (visionOnly && statuses.every(status => !status.vision)) return { kind: 'empty', statuses }
     if (usable.length > 0) return { kind: 'hit', hit: usable[0], statuses, attemptOrder: usable }
     return { kind: 'exhausted', statuses }
   }
 
-  /** 全池耗尽的 429 信封（AC-8）。resetAtMs 已知的给 ms+ISO，积分型（运行时才发现）给 resetUnknown。 */
-  function exhaustedFailure(statuses) {
+  /**
+   * 全池耗尽的 429 信封（AC-8）。resetAtMs 已知的给 ms+ISO，积分型（运行时才发现）给 resetUnknown。
+   * filteredBy:'vision'（FR-15.4b）：含图场景细节仅列视觉候选时的标记——扩展字段，
+   * SDK 忽略，纯文本 429 形状不变。
+   */
+  function exhaustedFailure(statuses, { filteredBy } = {}) {
     const now = nowMs()
     const models = statuses.map(status => status.resetAtMs !== undefined && status.resetAtMs > now
       ? { model: status.modelId, resetAtMs: status.resetAtMs, resetAtIso: new Date(status.resetAtMs).toISOString() }
@@ -148,7 +222,7 @@ export function createSmartScheduler({ settings, channels, logger = console }) {
         statusCode: 429,
         code: 'RATE_LIMIT',
         ...(retryAfterMs !== undefined && retryAfterMs > 0 ? { providerRetryAfterMs: retryAfterMs } : {}),
-        details: { type: 'smart_pool_exhausted', models },
+        details: { type: 'smart_pool_exhausted', models, ...(filteredBy !== undefined ? { filteredBy } : {}) },
       },
     )
   }
@@ -164,12 +238,21 @@ export function createSmartScheduler({ settings, channels, logger = console }) {
    * 每次实际派发时写回 `context.model = 候选模型`，供 requestLog 记 `auto→真实模型`。
    */
   async function complete(request, onChunk, context) {
+    const visionOnly = hasImageInput(request)
     ensureSnapshot()
-    const evaluation = evaluatePool()
+    // R8O-001 收口：含图请求在首份快照落定前等待其完成（refreshSnapshot 内部已去重），
+    // 消除启动空窗对视觉 Map 的误读（误 400）；纯文本路径保持 1.2.0 的非阻塞语义。
+    if (visionOnly && snapshot.at === 0) await refreshSnapshot()
+    const evaluation = evaluatePool(visionOnly ? { visionOnly: true } : undefined)
     if (evaluation.kind === 'empty') {
-      throw fail(400, '调度池为空或无可用模型：请在管理台「智能调度」页配置调度池')
+      // 含图细分（FR-15.4a）：池空 / 全失效 / 池内不存在任何 vision=true → 400 配置指引（含图场景专属文案）。
+      throw fail(400, visionOnly
+        ? '调度池内没有支持视觉的模型，请在智能调度页将视觉模型加入调度池'
+        : '调度池为空或无可用模型：请在管理台「智能调度」页配置调度池')
     }
-    if (evaluation.kind === 'exhausted') throw exhaustedFailure(evaluation.statuses)
+    // 含图细分（FR-15.4b）：存在视觉候选但全部耗尽/不可用 → 429，明细仅列视觉候选并带 filteredBy。
+    const visionFailure = statuses => exhaustedFailure(statuses.filter(status => status.vision), { filteredBy: 'vision' })
+    if (evaluation.kind === 'exhausted') throw visionOnly ? visionFailure(evaluation.statuses) : exhaustedFailure(evaluation.statuses)
     let emitted = false
     const runtimeExhausted = []
     for (const candidate of evaluation.attemptOrder) {
@@ -186,7 +269,8 @@ export function createSmartScheduler({ settings, channels, logger = console }) {
         void refreshSnapshot()                        // 接力后即时刷新（A 类写盘的 modelRateLimits 尽快可见）
       }
     }
-    throw exhaustedFailure(markExhausted(evaluation.statuses, runtimeExhausted))
+    const finalStatuses = markExhausted(evaluation.statuses, runtimeExhausted)
+    throw visionOnly ? visionFailure(finalStatuses) : exhaustedFailure(finalStatuses)
   }
 
   /** 全池状态（S4 GET /smart/state 的数据面）：池、当前命中、全池明细、候选清单。 */

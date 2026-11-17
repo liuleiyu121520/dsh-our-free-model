@@ -520,6 +520,15 @@ try {
     cookie = await login({ key: getKey() })
     const persisted = await smartState()
     assert.deepEqual(persisted.pool, ['free/mimo-v2.6-flash-free'])
+    // FR-16.3/FR-16.5（S16 兼容回归）：accounts 仅**可选新增** earliestResetAtMs——
+    // 既有 total/available 原样保留；无未来解禁时刻时新字段必须缺省（不出现键）。
+    // 正向透出（有未来解禁 → earliestResetAtMs=最小值）在 standalone-channels-test
+    // 的真实渠道账号面覆盖（本套件无渠道账号，只能验证兼容半边）。
+    for (const row of [...(persisted.statuses ?? []), ...(persisted.candidates ?? [])]) {
+      assert.equal(typeof row.accounts.total, 'number', '既有字段 total 不得变化')
+      assert.equal(typeof row.accounts.available, 'number', '既有字段 available 不得变化')
+      assert.equal('earliestResetAtMs' in row.accounts, false, '无未来解禁时不得透出 earliestResetAtMs')
+    }
     const visible = await (await request('/v1/models', { headers: { authorization: `Bearer ${getKey()}` } })).json()
     assert.equal(visible.data?.[0]?.id, 'auto')
     assert.equal((visible.data ?? []).filter(row => row.id === 'auto').length, 1)
