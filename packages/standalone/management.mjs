@@ -160,8 +160,10 @@ export function createManagement({ stores, runtime, channels, requestLog, schedu
     return parts.map(value => value.trim()).find(value => value.startsWith(`${cookieName}=`))?.slice(cookieName.length + 1)
   }
   const clearCookie = () => `${cookieName}=; Path=${PREFIX}; HttpOnly; SameSite=Strict; Max-Age=0`
+  const revokedSessions = new Set()
+  const revokeSession = id => { if (id) { revokedSessions.add(id); sessions.delete(id) } }
   const pruneSessions = () => {
-    for (const [id, until] of sessions) if (until <= Date.now()) sessions.delete(id)
+    for (const [id, until] of sessions) if (until <= Date.now()) revokeSession(id)
   }
   /**
    * 本机直连（回环地址）且没开 LAN 时视为已登录。
@@ -200,7 +202,14 @@ export function createManagement({ stores, runtime, channels, requestLog, schedu
     if (matches(bearer, stores.settings.get().forwardKey)) return true
     if (localDirectAllowed(req)) return true
     pruneSessions()
-    return sessions.has(cookie(req))
+    if (sessions.has(cookie(req))) return true
+    // 免登录回落：本机直连（回环 + 未开 LAN）时，**未知**的失效会话 cookie（如旧进程
+    // 遗留）不应把本机用户锁在登录页——它与「不带任何凭证的回环请求」等价（261f953 边界）。
+    // 但本进程内明确吊销过的会话（到期/登出/轮换）不回落：那些语义要求旧凭证 401。
+    const sid = cookie(req)
+    if (sid && revokedSessions.has(sid)) return false
+    if (stores.settings.get().standaloneLanEnabled !== true && isLoopbackAddress(req.socket?.remoteAddress)) return true
+    return false
   }
   const persist = patch => {
     const previous = stores.settings.get()
@@ -281,7 +290,7 @@ export function createManagement({ stores, runtime, channels, requestLog, schedu
     if (!authenticated(req)) throw fail(401, '请先登录管理页面')
     if (method === 'POST' && pathname === `${PREFIX}/logout`) {
       await readBody(req)
-      sessions.delete(cookie(req))
+      revokeSession(cookie(req))
       json(res, 200, { ok: true }, { 'set-cookie': clearCookie() })
     } else if (method === 'GET' && pathname === `${PREFIX}/summary`) {
       json(res, 200, summary())
@@ -411,8 +420,10 @@ export function createManagement({ stores, runtime, channels, requestLog, schedu
       if (body.confirm !== true) throw fail(400, '请确认轮换 API Key')
       const id = cookie(req)
       persist({ forwardKey: generateKey() })
-      // 仅当前管理会话保留；旧密钥与其他会话立即失效。
+      // 仅当前管理会话保留；旧密钥与其他会话立即失效（且记入吊销——吊销过的
+      // 会话 cookie 不适用本机免登录回落，见 authenticated() 的注释）。
       const until = sessions.get(id)
+      for (const sid of sessions.keys()) revokeSession(sid)
       sessions.clear()
       if (until) sessions.set(id, until)
       bootstrap = null

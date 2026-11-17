@@ -467,8 +467,10 @@ try {
     assert.deepEqual(service.runtime.state().settings.hiddenModelIds, [model])
     assert.equal(service.runtime.state().settings.hideEacModels, true)
     assert.equal(service.runtime.state().settings.hideFreeModels, false)
-    // 重启清掉的是**会话**：带旧 cookie 必须 401；不带凭证走本机直连，仍可用。
-    assert.equal((await request('/api/management/summary')).status, 401)
+    // 重启清掉的是**会话**；浏览器遗留的旧 cookie 属于「未知」凭证——本机直连
+    // （回环 + 未开 LAN）免登录回落放行（1.2.1 语义：升级/重启后不再把本机用户
+    // 锁在登录页，用户 2026-11-17 明确要求；到期/登出/轮换的显式吊销仍严格 401）。
+    assert.equal((await request('/api/management/summary')).status, 200)
     assert.equal((await request('/api/management/summary', { cookie: '' })).status, 200)
     const token = new URLSearchParams(new URL(service.managementUrl).hash.slice(1)).get('login')
     const nativeNow = Date.now
