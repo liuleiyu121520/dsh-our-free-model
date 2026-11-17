@@ -25,3 +25,4 @@
 {"ts":"2026-11-17T07:08:08Z","event":"v121_published","registry":"latest=1.2.1","commits":"S16 480bf93/7f95aff + 验收修复 6e47cce/5a24e4e/67825d1/b578936 + bump","push":"origin/feat/standalone-lite","pm_audit_note":"FR-16 细化两点待 v3.2 标注（PM 提示）"}
 {"ts":"2026-11-17T08:00:15Z","event":"v122_published","registry":"latest=1.2.2","note":"README 截图更新版（4 张替身数据新界面截图）"}
 {"ts":"2026-11-17T12:13:29Z","event":"v123_published","registry":"latest=1.2.3","feature":"auto 动态 vision 标识"}
+{"ts":"2026-11-17T12:37:37Z","event":"v124_published","registry":"latest=1.2.4","note":"调度页横幅精简（用户裁定移除常驻说明）"}
