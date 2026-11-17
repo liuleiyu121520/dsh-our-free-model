@@ -106,6 +106,7 @@ export function Smart({ host, active }: { summary: Summary; stats: unknown; host
   const [dragging, setDragging] = useState<number | undefined>(undefined)
   const [candidateQuery, setCandidateQuery] = useState('')
   const [showDisabled, setShowDisabled] = useState(false)
+  const [showUnavailable, setShowUnavailable] = useState(false)
   const [busyCandidate, setBusyCandidate] = useState<string | undefined>(undefined)
   const dirty = useRef(false)
 
@@ -126,16 +127,25 @@ export function Smart({ host, active }: { summary: Summary; stats: unknown; host
   // 候选默认过滤已停用（FR-16.1）：停用条目不参与调度，不占候选位；恢复路径 =
   // 「显示已停用模型」开关（showDisabled，FR-16.2/D32），开启后灰显 + 仅「启用」动作。
   // 已下架（dead）与已在池内的条目始终过滤。
+  // 无可用账号默认隐藏（2a，独立开关 showUnavailable）：available===0 覆盖 0/0（未绑定）
+  // 与 0/N（当日全耗尽）两种；置于文本 query 过滤前，搜索只作用于可见集合。
   const candidates = useMemo(() => {
     const query = candidateQuery.trim().toLowerCase()
     return (view?.candidates ?? [])
       .filter(row => row.dead !== true && !draft.includes(row.id))
       .filter(row => showDisabled || row.disabled !== true)
+      .filter(row => showUnavailable || (row.accounts?.available ?? 0) > 0)
       .filter(row => query === '' || row.id.toLowerCase().includes(query) || row.provider.toLowerCase().includes(query)
         || (row.name ?? '').toLowerCase().includes(query))
-  }, [view, draft, candidateQuery, showDisabled])
+  }, [view, draft, candidateQuery, showDisabled, showUnavailable])
   const hiddenDisabledCount = useMemo(() => (view?.candidates ?? [])
     .filter(row => row.dead !== true && !draft.includes(row.id) && row.disabled === true).length, [view, draft])
+  // 被可用性过滤隐藏的行数：过 dead/池/停用三档后（停用档按当前 showDisabled 状态生效）
+  // available===0 的行数，供「显示无可用账号（N）」计数与空态提示使用。
+  const hiddenUnavailableCount = useMemo(() => (view?.candidates ?? [])
+    .filter(row => row.dead !== true && !draft.includes(row.id))
+    .filter(row => showDisabled || row.disabled !== true)
+    .filter(row => (row.accounts?.available ?? 0) === 0).length, [view, draft, showDisabled])
   const poolRows = draft.map(modelId => ({
     modelId,
     status: statusOf(statusList, modelId),
@@ -225,13 +235,15 @@ export function Smart({ host, active }: { summary: Summary; stats: unknown; host
       <Card className="smart-candidates-card">
         <div className="smart-card-head">
           <h2>候选模型</h2>
-          <p>来自账号渠道的模型目录（默认只列启用中的模型，已下架不展示）。绑定账号数与可用账号数实时推导。</p>
+          <p>来自账号渠道的模型目录（默认只列启用中且有可用账号的模型，已下架不展示）。绑定账号数与可用账号数实时推导。</p>
           <div className="smart-filter-row">
-            <label className="smart-filter-field">
+            {/* 单层输入（2b）：外壳 span 只定位图标，input 是唯一控件——全局输入层
+                （app.css 昼/夜 input 规则）负责边框/底色/焦点，杜绝框中框双焦点。 */}
+            <span className="smart-filter">
               <Search size={13} aria-hidden="true" />
               <input type="search" value={candidateQuery} placeholder={`筛选 ${candidates.length} 个候选（id / 渠道）`}
                 aria-label="筛选候选模型" onChange={event => setCandidateQuery(event.target.value)} />
-            </label>
+            </span>
             <span className={`smart-toggle-view${showDisabled ? ' is-on' : ''}`}>
               <Switch checked={showDisabled} onCheckedChange={setShowDisabled} aria-label="显示已停用模型" />
               {/* 文案独立成按钮：Switch 的 {...props} 展开在内部 onClick 之后，外层
@@ -241,12 +253,21 @@ export function Smart({ host, active }: { summary: Summary; stats: unknown; host
                 显示已停用模型{hiddenDisabledCount > 0 && !showDisabled ? `（${hiddenDisabledCount}）` : ''}
               </button>
             </span>
+            <span className={`smart-toggle-view${showUnavailable ? ' is-on' : ''}`}>
+              <Switch checked={showUnavailable} onCheckedChange={setShowUnavailable} aria-label="显示无可用账号" />
+              {/* 同上：文案按钮独立 onClick，禁止把 onClick 传进 Switch（S16 踩过的坑）。 */}
+              <button type="button" className="smart-toggle-view-text"
+                onClick={() => setShowUnavailable(!showUnavailable)}>
+                显示无可用账号{hiddenUnavailableCount > 0 && !showUnavailable ? `（${hiddenUnavailableCount}）` : ''}
+              </button>
+            </span>
           </div>
         </div>
         {candidates.length === 0 ? <p className="smart-candidates-empty" role="status">
           {candidateQuery ? '没有匹配筛选条件的候选。'
-            : view?.candidates.length ? (showDisabled ? '目录中的模型都已在池内或已下架。' : '没有启用中的候选：已停用模型不参与调度，可打开「显示已停用模型」查看并恢复。')
-              : '渠道目录暂无模型，可稍后重试。'}
+            : !view?.candidates.length ? '渠道目录暂无模型，可稍后重试。'
+              : hiddenUnavailableCount > 0 && !showUnavailable ? `没有可用账号的候选已隐藏（${hiddenUnavailableCount} 个）：可打开「显示无可用账号」查看。`
+                : showDisabled ? '目录中的模型都已在池内或已下架。' : '没有启用中的候选：已停用模型不参与调度，可打开「显示已停用模型」查看并恢复。'}
           <Button variant="ghost" size="sm" onClick={() => void load()}><RefreshCw size={13} />刷新</Button>
         </p> : <ul className="smart-candidate-list">
           {candidates.map(row => <CandidateRow key={row.id} candidate={row} busy={busyCandidate === row.id} showDisabled={showDisabled} onAdd={add} onToggleDisabled={(candidate, disabled) => void toggleDisabled(candidate, disabled)} />)}

@@ -1,26 +1,6 @@
 /* ── channels.css: EAC Router & Channels Console Styles ── */
 
-/* ── 1. Page Header & Sub-Tabs ── */
-.channel-console-header {
-  margin-bottom: 20px;
-}
-.channel-console-header h1 {
-  font-size: 24px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  color: var(--ink);
-  margin: 0 0 6px 0;
-  text-transform: none !important;
-}
-.channel-console-header h1::before {
-  display: none !important;
-}
-.channel-console-header p {
-  font-size: 13px;
-  color: var(--muted);
-  margin: 0;
-  line-height: 1.5;
-}
+/* ── 1. Sub-Tabs（页头介绍块已随项 4 移除，样式不留死区；页面顶部直接进 tab 区） ── */
 
 /* Tab Bar */
 .channel-console-tabs {

@@ -330,7 +330,7 @@ th:first-child, td:first-child { text-align: left; overflow-wrap: anywhere; }
 .field-label { display: block; font-size: 12px; color: var(--dsw-alias-label-secondary); margin: 18px 0 8px; }
 .copy-field { display: flex; flex-wrap: wrap; gap: 8px; }
 .copy-field input { flex: 1; font-family: Consolas, monospace; }
-.connection-browser { max-width: 900px; }
+.connection-browser { max-width: 1440px; }
 .connection-card { margin-bottom: 18px; }
 .connection-card-heading { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; color: var(--dsw-alias-label-secondary); }
 .connection-card-heading > div { flex: 1; min-width: 0; }
@@ -408,10 +408,11 @@ th:first-child, td:first-child { text-align: left; overflow-wrap: anywhere; }
 .cx-picker-close:hover { color: var(--ink); background: var(--hover); }
 
 .cx-picker-item {
-  display: grid; width: 100%; text-align: left; cursor: pointer;
-  grid-template-columns: 20px minmax(0, 1fr) auto;
-  grid-template-areas: "mark name meta" "mark id meta";
-  gap: 2px 10px; padding: 8px 12px;
+  /* 项 5：grid 三列在窄卡里被 nowrap 徽章组挤压——模型名折成多行、行高错落。
+     改 flex：名/ID 主列 min-width:0 走省略号，徽章组限宽换行、右对齐，行高恒定。 */
+  display: flex; align-items: center; gap: 8px;
+  width: 100%; text-align: left; cursor: pointer;
+  padding: 8px 12px;
   border: 0; border-bottom: 1px solid var(--line-soft, var(--line));
   background: none; color: var(--ink);
   transition: background-color 120ms var(--ease-out-expo);
@@ -421,13 +422,17 @@ th:first-child, td:first-child { text-align: left; overflow-wrap: anywhere; }
 .cx-picker-item:focus-visible { outline: 2px solid var(--green, #0E9F6E); outline-offset: -2px; }
 .cx-picker-item.is-selected { background: var(--accent-soft); }
 .cx-picker-mark {
-  grid-area: mark; align-self: center; display: flex;
+  flex: none; width: 20px; display: flex;
   align-items: center; justify-content: center; color: var(--green-ink, #0B7A54);
 }
-.cx-picker-item-name { grid-area: name; font-size: 12.5px; font-weight: 600; line-height: 1.35; }
+.cx-picker-item-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.cx-picker-item-name {
+  font-size: 12.5px; font-weight: 600; line-height: 1.35;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
 .cx-picker-item.is-selected .cx-picker-item-name { color: var(--accent-hover, var(--accent)); }
 .cx-picker-item-id {
-  grid-area: id; font-size: 11px;
+  font-size: 11px;
   /* 三级色在深色面板上只有 4.32:1，低于正文 4.5:1 的下限。
      直接给一个提亮过的固定色（≈4.6:1），而不是用 color-mix 叠前景色：
      构建会把 color-mix 拆进 @supports 块，容易被后续同选择器规则压回去。 */
@@ -437,7 +442,9 @@ th:first-child, td:first-child { text-align: left; overflow-wrap: anywhere; }
 }
 [data-theme="dark"] .cx-picker-item-id { color: #a09a8e; }
 .cx-picker-item-meta {
-  grid-area: meta; align-self: center; white-space: nowrap;
+  flex: none; align-self: center;
+  display: flex; flex-wrap: wrap; gap: 4px; justify-content: flex-end;
+  max-width: 55%;
   font-size: 11px; color: var(--dsw-alias-label-secondary);
 }
 
@@ -3323,8 +3330,11 @@ input:disabled, select:disabled, textarea:disabled, .ui-input:disabled {
   pointer-events: none !important;
   z-index: 1 !important;
 }
-/* 卡片内容不被纹理遮住 */
-:root:not([data-theme="dark"]) .ui-card > * {
+/* 卡片内容不被纹理遮住。:not(.cx-picker) —— 项 5 根因修复：本规则 !important 曾把
+   接入页模型下拉宿主也钉在 z:2，popover 的 z 阶（--z-raised/--z-popover）被压平后，
+   DOM 靠后的「当前模型信息条」盖住展开面板（用户截图：复制 ID 行压住选项列表）。
+   下拉宿主自管 z 阶，不参与纸纹抬升；其余子元素语义不变。 */
+:root:not([data-theme="dark"]) .ui-card > :not(.cx-picker) {
   position: relative !important;
   z-index: 2 !important;
 }
@@ -3549,6 +3559,10 @@ input:disabled, select:disabled, textarea:disabled, .ui-input:disabled {
 }
 :root:not([data-theme="dark"]) .channel-search input:focus { border-color: #0E9F6E !important; box-shadow: 0 0 0 3px rgba(14,159,110,0.14), 0 0 14px -6px rgba(14,159,110,0.35) !important; }
 :root:not([data-theme="dark"]) .channel-search input:hover:not(:focus) { border-color: #a9d8c2 !important; }
+/* 单层输入（2b/5）：smart 筛选与接入页凭据输入的外壳已零绘制，input 即唯一控件；
+   焦点/悬停语言与渠道页搜索同源，统一收口在本层（悬停取 --accent-line token）。夜主题由 S12-B 的 input:hover/:focus 规则覆盖，无需重复。 */
+:root:not([data-theme="dark"]) .smart-filter input:focus, :root:not([data-theme="dark"]) .cx-input-wrap input:focus { border-color: #0E9F6E !important; box-shadow: 0 0 0 3px rgba(14,159,110,0.14), 0 0 14px -6px rgba(14,159,110,0.35) !important; }
+:root:not([data-theme="dark"]) .smart-filter input:hover:not(:focus), :root:not([data-theme="dark"]) .cx-input-wrap input:hover:not(:focus) { border-color: var(--accent-line) !important; }
 
 /* ---- 3. 原生件（滚动条 / selection / caret / focus ring） ---- */
 :root:not([data-theme="dark"]) * { scrollbar-color: rgba(140,110,70,0.28) transparent !important; }

@@ -4,8 +4,10 @@
    ========================================================================== */
 
 /* ── 容器与间距 ── */
+/* 页宽统一 1440（项 3）：与 app.css .page 标准对齐，左右缘与其他页一致；
+   内部窄栏（如 .cx-header-sub 620px）按内容自持，不受影响。 */
 .connection-browser {
-  max-width: 960px;
+  max-width: 1440px;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
@@ -207,44 +209,46 @@
   gap: 8px;
   align-items: center;
 }
+/* 单层凭据输入（2b 根因同修）：旧外壳自带边框/底色/focus-within，被全局 input
+   !important（app.css 昼/夜）击穿后嵌套 input 自成第二层框——框中框、双焦点。
+   现外壳零绘制只定位图标，input 即唯一控件；边框/底色/焦点全交全局输入层。 */
 .cx-input-wrap {
+  position: relative;
   flex: 1;
   min-width: 0;
-  display: flex;
-  align-items: center;
-  position: relative;
-  border: 1px solid var(--line);
-  border-radius: 7px;
-  background: var(--surface, #ffffff);
-  padding: 0 10px;
-  gap: 8px;
-  color: var(--muted);
-  transition: border-color 160ms var(--ease-out-expo), box-shadow 160ms var(--ease-out-expo);
 }
-.cx-input-wrap:focus-within {
-  border-color: var(--green, #0E9F6E);
-  box-shadow: 0 0 0 3px var(--accent-glow, rgba(14, 159, 110, 0.14));
-  color: var(--green-ink, #0B7A54);
+.cx-input-wrap > svg {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted);
+  pointer-events: none;
 }
 .cx-input-wrap input {
-  flex: 1;
-  min-width: 0;
-  border: 0;
-  padding: 9px 0;
+  width: 100%;
+  height: 39px;
+  padding: 0 12px 0 34px;
   font-family: var(--mono-font, Consolas, monospace);
   font-size: 12px;
   color: var(--ink);
-  background: transparent;
-  outline: none;
 }
 .cx-input-wrap input:read-only {
   cursor: text;
 }
-.cx-input-wrap.cx-revealed {
-  border-color: var(--green-ink, #0B7A54);
+/* 「密钥已显示」绿框语义转移到 input 本体与图标；全局输入层带 !important，
+   此处以同权重接管（昼绿墨 / 夜薄荷，与原外壳绿框语义一致）。 */
+.cx-input-wrap.cx-revealed input {
+  border-color: var(--green-ink, #0B7A54) !important;
 }
-[data-theme="dark"] .cx-input-wrap.cx-revealed {
-  border-color: #34D399;
+.cx-input-wrap.cx-revealed > svg {
+  color: var(--green-ink, #0B7A54);
+}
+[data-theme="dark"] .cx-input-wrap.cx-revealed input {
+  border-color: #34D399 !important;
+}
+[data-theme="dark"] .cx-input-wrap.cx-revealed > svg {
+  color: #34D399;
 }
 
 /* 按钮点击复制后的反馈状态 */
@@ -304,6 +308,7 @@
   background: var(--accent-soft, #e8f5ee);
   color: var(--accent-hover, #0C8A5F);
   border: 1px solid var(--accent-line, #bfe3d2);
+  white-space: nowrap;
 }
 [data-theme="dark"] .cx-pill-channel {
   background: rgba(52, 211, 153, 0.12);
@@ -319,6 +324,7 @@
   background: var(--hover, #f2ede3);
   color: var(--muted);
   border: 1px solid var(--line);
+  white-space: nowrap;
 }
 [data-theme="dark"] .cx-pill-ctx {
   background: rgba(255, 255, 255, 0.06);
@@ -330,6 +336,7 @@
   padding: 2px 7px;
   border-radius: 4px;
   font-weight: 500;
+  white-space: nowrap;
 }
 .cx-pill-cap.is-vision {
   background: var(--accent-soft);
@@ -363,12 +370,13 @@
   z-index: var(--z-popover-panel, 1001) !important;
   margin-top: 0 !important;
   border: 1px solid var(--line) !important;
-  border-radius: 10px !important;
+  border-radius: var(--radius-control, 10px) !important;
   background: var(--surface) !important;
   overflow: hidden !important;
   max-height: min(48vh, 380px) !important;
   overflow-y: auto !important;
-  box-shadow: 0 16px 40px -6px rgba(0, 0, 0, 0.28), 0 4px 14px rgba(0, 0, 0, 0.12) !important;
+  /* 项 5：昼侧投影换全站暖棕 token（--shadow-lg），替换冷黑大投影；夜侧下方同构保留 */
+  box-shadow: var(--shadow-lg) !important;
 }
 [data-theme="dark"] .cx-picker-panel {
   background: #1c1b17 !important;
@@ -424,32 +432,27 @@
   color: #a8a196;
 }
 
+/* 单层搜索输入（项 5）：外壳零绘制只定位图标，input 即唯一控件；
+   边框/底色/圆角/焦点全交全局输入层（app.css 昼墨环 / 夜 S12-B），昼夜自适应。 */
 .cx-picker-search-field {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 7px;
-  background: var(--surface-hover, #f5f2eb);
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  padding: 0 8px;
   flex: 1;
   max-width: 280px;
 }
-[data-theme="dark"] .cx-picker-search-field {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(255, 255, 255, 0.12);
-}
 .cx-picker-search-icon {
+  position: absolute;
+  left: 10px;
   color: var(--muted);
+  pointer-events: none;
 }
 .cx-picker-search-input {
-  border: 0;
-  background: transparent;
-  outline: none;
-  font-size: 11px;
-  padding: 5px 0;
-  color: var(--ink);
   width: 100%;
+  height: 32px;
+  padding: 0 10px 0 31px;
+  font-size: 11.5px;
+  color: var(--ink);
 }
 .cx-picker-empty {
   padding: 24px;

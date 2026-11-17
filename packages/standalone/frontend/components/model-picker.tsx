@@ -62,7 +62,9 @@ export function ModelPicker({ models, selectedId, channelName, capacity, onSelec
     </button>
     {open && <div className="cx-picker-panel" role="listbox" aria-label="选择模型">
       <div className="cx-picker-panel-head">
-        <div className="cx-picker-search-field">
+        {/* 单层输入（项 5）：外壳只定位图标，input 即唯一控件——旧外壳自带边框/底色，
+            被全局 input !important 击穿后框中框、双绿描边。边框/焦点全交全局输入层。 */}
+        <span className="cx-picker-search-field">
           <Search size={13} className="cx-picker-search-icon" aria-hidden="true" />
           <input
             type="search"
@@ -73,7 +75,7 @@ export function ModelPicker({ models, selectedId, channelName, capacity, onSelec
             onClick={e => e.stopPropagation()}
             autoFocus
           />
-        </div>
+        </span>
         <button type="button" className="cx-picker-close" onClick={() => { setOpen(false); setQuery('') }}>收起</button>
       </div>
       <div className="cx-picker-list">
@@ -81,8 +83,10 @@ export function ModelPicker({ models, selectedId, channelName, capacity, onSelec
           className={`cx-picker-item${row.id === current.id ? ' is-selected' : ''}`}
           onClick={() => { onSelect(row.id); setOpen(false); setQuery('') }}>
           <span className="cx-picker-mark" aria-hidden="true">{row.id === current.id && <Check size={14} />}</span>
-          <span className="cx-picker-item-name">{row.name}</span>
-          <code className="cx-picker-item-id">{row.id}</code>
+          <span className="cx-picker-item-main">
+            <span className="cx-picker-item-name">{row.name}</span>
+            <code className="cx-picker-item-id">{row.id}</code>
+          </span>
           <span className="cx-picker-item-meta">
             <span className="cx-pill-channel">{channelName(row.channel)}</span>
             {row.contextWindow ? <span className="cx-pill-ctx">{capacity(row.contextWindow)}</span> : null}

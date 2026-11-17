@@ -124,10 +124,7 @@ function ChannelConsole({ summary }) {
     ['tools', '供应商与备份', Database],
   ]
   return h(React.Fragment, null,
-    h('header', { className: 'dashboard-heading channel-console-header' },
-      h('div', null,
-        h('h1', null, 'EAC router'),
-        h('p', null, '连接你的账号，把各家的免费额度汇集到一个 API。'))),
+    /* 页头介绍块已移除（项 4）：页面顶部直接进 tab 区；侧边栏已标明当前页，标题不重复占位。 */
     h('nav', { className: 'channel-console-tabs', role: 'tablist', 'aria-label': '渠道管理页面' },
       tabs.map(([id, name, Icon]) =>
         h('button', {
