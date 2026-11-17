@@ -24,3 +24,4 @@
 {"ts":"2026-11-17T05:25:40Z","event":"hotfix_local_login","change":"management.mjs authenticated() 免登录回落：未知失效 cookie（跨进程遗留）+回环+未开LAN → 放行；到期/登出/轮换的显式吊销（revokedSessions）仍 401；测试断言按新语义更新（用户 2026-11-17 明确要求）","tests":"management 23/23"}
 {"ts":"2026-11-17T07:08:08Z","event":"v121_published","registry":"latest=1.2.1","commits":"S16 480bf93/7f95aff + 验收修复 6e47cce/5a24e4e/67825d1/b578936 + bump","push":"origin/feat/standalone-lite","pm_audit_note":"FR-16 细化两点待 v3.2 标注（PM 提示）"}
 {"ts":"2026-11-17T08:00:15Z","event":"v122_published","registry":"latest=1.2.2","note":"README 截图更新版（4 张替身数据新界面截图）"}
+{"ts":"2026-11-17T12:13:29Z","event":"v123_published","registry":"latest=1.2.3","feature":"auto 动态 vision 标识"}
