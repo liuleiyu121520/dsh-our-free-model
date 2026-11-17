@@ -298,14 +298,27 @@ export function createSmartScheduler({ settings, channels, logger = console }) {
     }
   }
 
-  /** `/v1/models` 头部注入的 auto 条目（始终暴露，即使池空；字段形态与渠道行一致）。 */
+  /**
+   * `/v1/models` 头部注入的 auto 条目（始终暴露，即使池空；字段形态与渠道行一致）。
+   *
+   * 动态多模态标识：`vision` 是**能力位**而非可用位——调度池内存在 vision=true 的
+   * 模型即 true（哪怕当日全部耗尽，含图请求仍可能被接力承接）；池空 / 全非视觉 /
+   * 能力未知（vision 键不存在，D31 保守语义）一律 false。外部客户端（IDE / SDK）
+   * 普遍按该位过滤多模态模型，auto 必须与池内容实时一致。每次调用实时计算：
+   * 池从 settings 现读、视觉来自最新快照 vision Map（S16），`/v1/models` 每请求
+   * 都会走到这里，池变更（如管理台 smart/pool 保存）下一个请求即生效。
+   * `input` 模态数组同步镜像渠道行（worker.mjs 的 `vision = input.includes('image')`）。
+   */
   function autoRow() {
+    const vision = poolModels().some(modelId => snapshot.vision.get(modelId) === true)
     return {
       id: 'auto',
       object: 'model',
       created: Math.floor(nowMs() / 1000),
       owned_by: 'our-free-model',
       name: 'OurFreeModel 智能调度',
+      vision,
+      input: ['text', ...(vision ? ['image'] : [])],
     }
   }
 

@@ -725,6 +725,9 @@ try {
     assert.equal(list.value.data.filter(row => row.id === 'auto').length, 1)
     assert.equal(list.value.data.some(row => row.id === 'ourfreemodel'), false)
     assert.equal(list.value.data[0].owned_by, 'our-free-model')
+    // 动态多模态标识：此刻调度池为空（本文件首次触碰调度池之前）→ auto 行不标视觉
+    assert.equal(list.value.data[0].vision, false, '池空：auto 行 vision=false')
+    assert.deepEqual(list.value.data[0].input, ['text'], '池空：auto 行 input 模态镜像不含 image')
     assert.equal(list.value.data.some(row => row.id === 'loomy/fixture-free'), true)
     for (const model of ['auto', 'ourfreemodel', 'AUTO']) {
       const reply = await api('/v1/chat/completions', { model, messages: [{ role: 'user', content: 'hi' }] })
@@ -735,6 +738,43 @@ try {
     // 注入面只在对外网关：管理台 summary/catalog 不含 auto（方案 §3.8）
     const summary = (await api('/api/management/summary')).value
     assert.equal(summary.catalog.some(row => row.id === 'auto'), false)
+  })
+  await check('auto /v1/models 动态视觉位：池含 vision=true 即标（能力位，当日耗尽仍 true），仅非视觉不标，池保存后即时生效', async () => {
+    const autoRowOf = async () => (await api('/v1/models')).value.data.find(row => row.id === 'auto')
+    // 池含视觉模型（fixture 的 cline 行 input 含 image → vision=true）→ true。
+    // 走管理台 smart/pool 保存（与页面同链）：autoRow 每请求实时读 settings，无需重启。
+    await api('/api/management/smart/pool', { models: ['loomy/fixture-free', 'cline/cline-free/mimo-v2.6-flash'] })
+    const withVision = await autoRowOf()
+    assert.equal(withVision.vision, true, '池含 vision=true 模型 → auto 行 vision=true')
+    assert.ok(withVision.input.includes('image'), 'auto 行 input 模态镜像含 image')
+    // 池仅非视觉模型（vision 键不存在 = 不具备，D31 保守语义）→ false（调度器单元面）
+    const textOnlyChannels = {
+      providers: ['p'],
+      publicModelRows: () => [{ id: 'p/text-m' }],
+      rpc: async body => body.method === 'model.list'
+        ? { ok: true, value: { models: [{ id: 'text-m', name: 'T', disabled: false, dead: false }] } }
+        : { ok: true, value: { accounts: [{ id: 'u1', enabled: true }] } },
+    }
+    const textOnly = createSmartScheduler({ settings: { get: () => ({ smartSchedulePool: { models: ['p/text-m'] } }) }, channels: textOnlyChannels, logger: { warn() {}, info() {} } })
+    await textOnly.refreshSnapshot()
+    assert.equal(textOnly.autoRow().vision, false, '池仅非视觉模型 → auto 行 vision=false')
+    // 能力位而非可用位：池内视觉模型当日全耗尽（modelRateLimits 预置）仍标 true
+    const lockedVisionChannels = {
+      providers: ['p'],
+      publicModelRows: () => [{ id: 'p/vision-m', vision: true }],
+      rpc: async body => body.method === 'model.list'
+        ? { ok: true, value: { models: [{ id: 'vision-m', name: 'V', disabled: false, dead: false }] } }
+        : { ok: true, value: { accounts: [{ id: 'u1', enabled: true, modelRateLimits: { 'vision-m': Date.now() + 3600_000 } }] } },
+    }
+    const lockedVision = createSmartScheduler({ settings: { get: () => ({ smartSchedulePool: { models: ['p/vision-m'] } }) }, channels: lockedVisionChannels, logger: { warn() {}, info() {} } })
+    await lockedVision.refreshSnapshot()
+    assert.equal(lockedVision.state().statuses[0]?.reason, 'exhausted', '前置：池内该视觉模型当日确已耗尽')
+    assert.equal(lockedVision.autoRow().vision, true, '视觉是能力位：当日耗尽仍标 true')
+    textOnly.dispose()
+    lockedVision.dispose()
+    // 还原空池 → false；后续用例（auto 顺序接力等）自写各自的池，不受影响
+    await api('/api/management/smart/pool', { models: [] })
+    assert.equal((await autoRowOf()).vision, false, '还原空池 → auto 行 vision=false')
   })
   await check('auto 顺序接力：预检跳过已耗尽模型（零上游请求）、命中第一可用、别名等价、日志记 auto→真实模型、用量计入真实模型桶', async () => {
     rewriteSettings(settings => { settings.smartSchedulePool = { models: ['loomy/fixture-free', 'cline/cline-free/mimo-v2.6-flash'] } })

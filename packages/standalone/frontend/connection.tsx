@@ -60,13 +60,36 @@ export function Connection({ summary, host, active }: { summary: Summary; host: 
   const [testing, setTesting] = useState(false)
   const [testResult, setTestResult] = useState<TestResult | null>(null)
   const [modelFlashing, setModelFlashing] = useState(false)
+  // auto 的动态视觉位：服务端 /v1/models 的 auto 行按调度池实时计算
+  // （池内含视觉模型即多模态）。页面激活时拉取一次，取 auto 行的 vision；
+  // 拉取失败或找不到 auto 行一律回退 false（与渠道行 vision 缺省语义一致）。
+  const [autoVision, setAutoVision] = useState(false)
 
   // 模型选择：auto（智能调度）置顶固定一项（FR-6.1），其余为直连模型；
   // 留空时自动落到 auto。auto 是网关保留名，即使调度池为空也始终可选。
   const [picked, setPicked] = useState('')
   const routable = useMemo(() => summary.catalog.filter(row => row.routable), [summary.catalog])
-  const options = useMemo<Model[]>(() => [AUTO_MODEL, ...routable], [routable])
+  const options = useMemo<Model[]>(() => [{ ...AUTO_MODEL, vision: autoVision }, ...routable], [autoVision, routable])
   const selected = options.find(row => row.id === picked) ?? options[0]
+
+  // auto 视觉位随池动态变化：每次进入本页都重新拉取 /v1/models（外部网关面才
+  // 注入 auto 行），ModelPicker / 当前模型徽章据此显示「视觉支持」。
+  useEffect(() => {
+    if (!active) return
+    let cancelled = false
+    void (async () => {
+      try {
+        const key = await host.getApiKey()
+        const response = await fetch(`${summary.baseUrl}/v1/models`, { headers: { authorization: `Bearer ${key}` } })
+        if (!response.ok) throw new Error(`HTTP ${response.status}`)
+        const rows: { id?: string; vision?: boolean }[] = (await response.json())?.data ?? []
+        if (!cancelled) setAutoVision(rows.find(row => row?.id === 'auto')?.vision === true)
+      } catch {
+        if (!cancelled) setAutoVision(false)
+      }
+    })()
+    return () => { cancelled = true }
+  }, [active, summary.baseUrl, host])
 
   // 目录刷新后原选择可能消失：把 picked 校正回实际存在的 id
   useEffect(() => {
