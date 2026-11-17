@@ -41,7 +41,7 @@
 }
 
 [data-theme="dark"] .channel-console-tabs {
-  background: rgba(15, 20, 30, 0.85);
+  background: rgba(26, 24, 19, 0.85);
   border-color: rgba(255, 255, 255, 0.08);
   box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.4);
 }
@@ -88,7 +88,7 @@
   color: #34D399;
   background: rgba(52, 211, 153, 0.12);
   border-color: rgba(52, 211, 153, 0.32);
-  box-shadow: 0 2px 12px -2px rgba(52, 211, 153, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
 .channel-tab-icon {
@@ -183,7 +183,7 @@
 [data-theme="dark"] .ofm_root .ofm_hero .ofm_seg,
 [data-theme="dark"] .ofm_root .ofm_pagehead .ofm_seg,
 [data-theme="dark"] .ofm_root .ofm_page .ofm_seg {
-  background: rgba(18, 24, 34, 0.9) !important;
+  background: rgba(28, 26, 21, 0.9) !important;
   border-color: rgba(255, 255, 255, 0.08) !important;
   box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.4) !important;
 }
@@ -395,8 +395,8 @@
 }
 
 .ofm_root .ofm_num {
+  /* S12-B：渠道统计数字回归正文字体，tabular-nums 保留（数据对齐） */
   font-variant-numeric: tabular-nums;
-  font-family: var(--mono-font, ui-monospace, monospace);
   font-size: 11.5px;
 }
 

@@ -605,7 +605,7 @@
 }
 .cx-dot-red { background: #ff5f56; }
 .cx-dot-yellow { background: #ffbd2e; }
-.cx-dot-green { background: #27c93f; }
+.cx-dot-green { background: #34D399; }
 
 .cx-editor-filename {
   font-family: var(--mono-font, monospace);
@@ -646,7 +646,7 @@
 /* 模型名脉冲反馈（当用户在下拉选新模型时，代码里的 model 闪烁一次） */
 .tok-model {
   color: color-mix(in srgb, var(--green, #0E9F6E) 72%, white);
-  background: rgba(56, 189, 248, 0.15);
+  background: rgba(52, 211, 153, 0.15);
   padding: 1px 6px;
   border-radius: 4px;
   font-weight: 600;
@@ -657,12 +657,12 @@
 }
 @keyframes cx-model-pulse {
   0% {
-    background: rgba(56, 189, 248, 0.45);
-    box-shadow: 0 0 12px rgba(56, 189, 248, 0.8);
+    background: rgba(52, 211, 153, 0.45);
+    box-shadow: 0 0 12px rgba(52, 211, 153, 0.8);
     transform: scale(1.05);
   }
   100% {
-    background: rgba(56, 189, 248, 0.15);
+    background: rgba(52, 211, 153, 0.15);
     box-shadow: none;
     transform: scale(1);
   }

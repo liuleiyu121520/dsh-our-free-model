@@ -120,5 +120,5 @@ export function Sidebar({ page, summary, host, onDisclaimer }: { page: Page; sum
 }
 export function Topbar({ page, summary }: { page: Page; summary?: Summary }) {
   return <><div className="console-breadcrumb"><span>工作空间</span><ChevronRight size={14} /><strong key={page} className="console-breadcrumb-current">{pageNames[page]}</strong></div>
-    <div className="console-topbar-status"><span className="status-dot" /><span>{summary?.settings.enabled === false ? '推理已暂停' : '本地服务'}</span><span className="topbar-divider" /><span>LOCAL</span></div></>
+    <div className="console-topbar-status"><span className="status-dot" /><span>{summary?.settings.enabled === false ? '推理已暂停' : '本地服务'}</span></div></>
 }
