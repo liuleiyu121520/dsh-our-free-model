@@ -40,7 +40,11 @@ const context = {
   navigationPages: ['channels', 'smart', 'connection', 'calendar', 'requests', 'settings'],
   // App() 里的渲染数组从模块级 LAZY_PAGES 推导；切片只取函数体，这里补上同名集合。
   LAZY_PAGES: new Set(['smart', 'calendar', 'settings']), API: '/api/management',
-  messageOf: error => error.message, AbortSignal, URLSearchParams, location: { hash: '' }, history: {},
+  // hash 路由（项 C）的模块级辅助也住在切片外：沙箱提供空 hash（初始页=落地页）
+  // 与 no-op replaceState（navigate 同步 #/page 用），真实 hash 行为由 nav/react-ui
+  // 浏览器套件覆盖。
+  pageFromHash: () => undefined, syncPageHash: () => {},
+  messageOf: error => error.message, AbortSignal, URLSearchParams, location: { hash: '' }, history: { replaceState() {} },
   window: { scrollTo() {}, addEventListener() {}, removeEventListener() {}, setInterval() { return 1 }, clearInterval() {} },
   document: { hidden: false }, navigator: { clipboard: { writeText: async () => {} } },
   fetch: async url => ({ ok: true, json: async () => url.endsWith('/summary') ? summary : { models: [], days: [] } }),

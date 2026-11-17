@@ -30,6 +30,35 @@
 .smart-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: start; }
 @media (max-width: 1080px) { .smart-grid { grid-template-columns: minmax(0, 1fr); } }
 
+/* —— 项 A：桌面双列（>1080px，与上方单列断点互补）视口内自适应 ——
+   现状候选列表 max-height:560px 固定，行数一多就把 .page 撑高、整页出纵向
+   滚动条。改为高度链 .app-shell(100vh) → main(min-height:0) → .page(flex:1)
+   → 懒加载包装 div → .smart-browser → .smart-grid 全程 min-height:0，
+   页面本身不滚，滚动收进候选卡与池卡内部（卡头/保存行钉住不动）。
+   data-active-page 由 app.tsx 写在 #app 上：切到别的页整套规则自动失效，
+   其他页保持页面滚动。窄屏（≤1080px 单列）不启用——单列内容天然超高，
+   卡内滚动反而难用，保留页面滚动 + 560px 列表限高的既有断点行为。 */
+@media (min-width: 1081px) {
+  .app-shell[data-active-page='smart'] { height: 100vh; }
+  .app-shell[data-active-page='smart'] main { min-height: 0; }
+  /* flex 需 !important 对抗昼主题修复层（app.css:4384 `:root:not([data-theme="dark"])
+     .app-shell main > section.page { flex: 1 0 auto !important }`，特异性 (0,4,2)，
+     把 shrink 钉死为 0，内容一高 .page 就撑破 main 顶出页面滚动条）；此处仅
+     smart 页改回可缩，选择器带 :root + main > section 抬到 (0,4,2) 同级、
+     且 smart.css 在打包顺序上更晚，稳定压过。 */
+  :root .app-shell[data-active-page='smart'] main > section.page { flex: 1 1 auto !important; min-height: 0; display: flex; flex-direction: column; }
+  .app-shell[data-active-page='smart'] .page > div { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+  .app-shell[data-active-page='smart'] .smart-browser { flex: 1 1 auto; min-height: 0; }
+  .app-shell[data-active-page='smart'] .smart-grid { flex: 1 1 auto; min-height: 0; grid-template-rows: minmax(0, 1fr); align-items: stretch; }
+  .app-shell[data-active-page='smart'] .smart-candidates-card,
+  .app-shell[data-active-page='smart'] .smart-pool-card { display: flex; flex-direction: column; min-height: 0; }
+  .app-shell[data-active-page='smart'] .smart-card-head { flex: none; }
+  /* 桌面态不限 560px：候选列表吃满卡片剩余高度，出滚动条也只在卡内 */
+  .app-shell[data-active-page='smart'] .smart-candidate-list { max-height: none; flex: 1 1 auto; min-height: 0; }
+  .app-shell[data-active-page='smart'] .smart-pool-list { flex: 1 1 auto; min-height: 0; overflow-y: auto; scrollbar-gutter: stable; }
+  .app-shell[data-active-page='smart'] .smart-save-row { flex: none; }
+}
+
 .smart-card-head { padding-bottom: 10px; border-bottom: 1px solid var(--line-soft); margin-bottom: 12px; }
 .smart-card-head h2 { font-size: 15px; font-weight: 600; color: var(--ink); }
 .smart-card-head p { margin-top: 4px; font-size: 12px; line-height: 1.65; color: var(--muted); }
@@ -94,7 +123,27 @@
 .smart-save-btn { min-width: 128px; }
 .smart-save-hint { font-size: 11.5px; color: var(--ink-quiet); }
 
+/* —— 项 B：保存成功轻 toast ——
+   底部居中、不占版面（fixed + pointer-events:none 不遮挡操作）、暖调成功
+   token（与接入页复制反馈 .connection-feedback 同语言）；2.8s 生命期动画，
+   smart.tsx 同步 2800ms 定时移除 DOM。失败仍走上方常驻 error-notice。 */
+.smart-toast {
+  position: fixed; left: 50%; bottom: 30px; transform: translateX(-50%);
+  z-index: 60; pointer-events: none;
+  padding: 9px 16px; border-radius: 999px; font-size: 12.5px; white-space: nowrap;
+  color: var(--success-ink); background: var(--success-soft); border: 1px solid var(--success-line);
+  box-shadow: var(--shadow-md);
+  animation: smart-toast-life 2800ms var(--ease-out-expo) forwards;
+}
+@keyframes smart-toast-life {
+  0% { opacity: 0; transform: translateX(-50%) translateY(8px); }
+  7% { opacity: 1; transform: translateX(-50%) translateY(0); }
+  82% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
 /* 池状态独立区块已随 FR-16.3 内联化移除（DOM 与样式均不留死区）；降级动效保持全站一致。 */
 @media (prefers-reduced-motion: reduce) {
   .smart-candidate, .smart-pool-row { transition: none; }
+  .smart-toast { animation: none; }
 }

@@ -102,7 +102,16 @@ export function Smart({ host, active }: { summary: Summary; stats: unknown; host
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
-  const [notice, setNotice] = useState('')
+  // 保存成功反馈是轻 toast（项 B）：显示 ~2.8s 后自动消失，不常驻占位；
+  // 失败仍走上方常驻 error（错误需要持续可见，用户可处置后再消失）。
+  const [toast, setToast] = useState('')
+  const toastTimer = useRef<number | undefined>(undefined)
+  const showToast = useCallback((message: string) => {
+    setToast(message)
+    if (toastTimer.current !== undefined) window.clearTimeout(toastTimer.current)
+    toastTimer.current = window.setTimeout(() => setToast(''), 2800)
+  }, [])
+  useEffect(() => () => { if (toastTimer.current !== undefined) window.clearTimeout(toastTimer.current) }, [])
   const [dragging, setDragging] = useState<number | undefined>(undefined)
   const [candidateQuery, setCandidateQuery] = useState('')
   const [showDisabled, setShowDisabled] = useState(false)
@@ -179,13 +188,13 @@ export function Smart({ host, active }: { summary: Summary; stats: unknown; host
     }
   }
   const save = async () => {
-    setSaving(true); setNotice(''); setError('')
+    setSaving(true); setError('')
     try {
       const next = await host.saveSmartPool(draft)
       dirty.current = false
       setView(next)
       setDraft(next.pool)
-      setNotice('调度池已保存，顺序与勾选已持久化。')
+      showToast('调度池已保存，顺序与勾选已持久化。')
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : '保存调度池失败，请重试。')
     } finally { setSaving(false) }
@@ -193,7 +202,6 @@ export function Smart({ host, active }: { summary: Summary; stats: unknown; host
   const revert = () => {
     dirty.current = false
     setDraft(view?.pool ?? [])
-    setNotice('')
   }
 
   if (!active) return null
@@ -222,7 +230,7 @@ export function Smart({ host, active }: { summary: Summary; stats: unknown; host
     </Card>
 
     {error && <div className="notice error-notice" role="alert">{error}<button className="text-button" onClick={() => void load()}>重试</button></div>}
-    {notice && <div className="notice" role="status">{notice}<button className="text-button" onClick={() => setNotice('')}>关闭</button></div>}
+    {toast && <div className="smart-toast" role="status">{toast}</div>}
 
     {loading && !view ? <p className="smart-loading" role="status">正在读取调度池状态…</p> : !hasChannel ? (
       <Card className="smart-empty">

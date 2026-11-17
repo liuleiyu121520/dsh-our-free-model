@@ -87,6 +87,16 @@ check('and shell.tsx actually exports it', () => {
   assert.match(shell, /export const navigationPages: Page\[\] = navigation\.flatMap\(/, 'shell.tsx must export `navigationPages` derived from `navigation`')
 })
 
+// ── hash routing: refresh lands on the current page (C 项) ─────────────────
+// 页面切换从纯内存 state 升级为 #/page-id 双向同步：navigate 写 hash、启动读
+// hash、hashchange 兜底。白名单必须仍从 navigationPages 推导（不另写名单）。
+check('hash routing syncs #/page-id without restating the page list', () => {
+  assert.match(app, /navigationPages\.includes\(id as Page\)/, '合法页判定必须复用 navigationPages，不得另写 hash 白名单')
+  assert.match(app, /useState<Page>\(\(\) => pageFromHash\(\) \?\? 'channels'\)/, '初始页必须从 location.hash 读取，非法/缺失回落 channels')
+  assert.match(app, /history\.replaceState\(null, '', `#\/\$\{next\}`\)/, 'navigate 必须用 replaceState 同步 #/page（不产生多余历史记录）')
+  assert.match(app, /addEventListener\('hashchange'/, '必须监听 hashchange 兜底切页')
+})
+
 // ── dual-mode architecture is gone ─────────────────────────────────────────
 check('no lite/full dual-mode symbols anywhere in the console sources', () => {
   for (const rel of ['components/shell.tsx', 'app.tsx', 'types.ts']) {

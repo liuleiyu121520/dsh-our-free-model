@@ -16,6 +16,18 @@ const terminalName = platform === 'windows' ? 'PowerShell' : '终端'
 type Request = <T = any>(path: string, body?: unknown, timeoutMs?: number, signal?: AbortSignal) => Promise<T>
 const messageOf = (error: unknown) => error instanceof Error ? error.name === 'TimeoutError' ? '请求超时，请检查服务是否仍在运行。' : error.message : '请求失败，请重试。'
 
+/** hash 路由（刷新定位当前页）：`#/smart` 等 6 页 id 与内存 page 双向同步，刷新/直达链接
+ *  可回到对应页。合法页白名单仍从侧边栏推导（navigationPages），不另写名单；
+ *  非法/缺失 hash 回落落地页（channels）。写 hash 用 history.replaceState——
+ *  切页不产生多余历史记录（与原内存切换语义一致，也不触发 hashchange 回环）；
+ *  需要前进/后退时再升级 pushState。登录引导 hash（#login=token）不匹配页 id，
+ *  天然走回落逻辑，启动时原有的清 hash 行为不受影响。 */
+const pageFromHash = (): Page | undefined => {
+  const id = /^#\/([a-z-]+)/.exec(location.hash)?.[1]
+  return id !== undefined && navigationPages.includes(id as Page) ? id as Page : undefined
+}
+const syncPageHash = (next: Page) => { history.replaceState(null, '', `#/${next}`) }
+
 function LoginScreen({ request }: { request: Request }) {
   const [key, setKey] = useState(''), [error, setError] = useState(''), [status, setStatus] = useState(''), [busy, setBusy] = useState(false)
   const command = platform === 'windows'
@@ -53,19 +65,35 @@ function LazyPage({ name, snapshot, host, active }: { name: LazyPageName; snapsh
   if (!module) return <p role="status">正在加载页面…</p>; const Component = module[LAZY_COMPONENT[name]]; return <Component summary={snapshot.summary} stats={snapshot.stats} host={host} active={active} />
 }
 function App() {
-  const [mode, setMode] = useState<'loading' | 'login' | 'ready'>('loading'), [snapshot, setSnapshot] = useState<Snapshot>(), [page, setPage] = useState<Page>('channels'), [notice, setNotice] = useState(''), [error, setError] = useState('')
-  const [visited, setVisited] = useState<Page[]>([])
+  // 初始页从 hash 读（项 C）：合法页 id 直达，非法/缺失维持落地页 channels；
+  // 懒加载页还需登记 visited，否则首个渲染周期内容为空。
+  const [mode, setMode] = useState<'loading' | 'login' | 'ready'>('loading'), [snapshot, setSnapshot] = useState<Snapshot>(), [page, setPage] = useState<Page>(() => pageFromHash() ?? 'channels'), [notice, setNotice] = useState(''), [error, setError] = useState('')
+  const [visited, setVisited] = useState<Page[]>(() => { const initial = pageFromHash(); return initial ? [initial] : [] })
   // The disclaimer reads once on the first console visit and is reopenable from
   // the sidebar. It never gates the lanes: acknowledging only writes a setting.
   const [disclaimer, setDisclaimer] = useState<{ acknowledged?: boolean } | undefined>(undefined)
   const [disclaimerOpen, setDisclaimerOpen] = useState(false)
   const generation = useRef(0), loading = useRef<Promise<void> | undefined>(undefined), authenticated = useRef(false), settingsRevision = useRef(0)
-  const enterLogin = (reason = '') => { generation.current++; loading.current = undefined; authenticated.current = false; setSnapshot(undefined); setVisited([]); setPage('channels'); setError(reason); setNotice(''); setMode('login') }
+  const enterLogin = (reason = '') => { generation.current++; loading.current = undefined; authenticated.current = false; setSnapshot(undefined); setVisited([]); setPage('channels'); setError(reason); setNotice(''); setMode('login'); syncPageHash('channels') }
+  // navigate 与 hashchange 共用的切页路径：登记 visited（懒加载页渲染依赖）、清错误/提示。
+  const switchPage = (next: Page) => {
+    setPage(next)
+    setVisited(previous => previous.includes(next) ? previous : [...previous, next])
+    setError('')
+    setNotice('')
+  }
   const request: Request = async (path, body, timeoutMs = 10000, signal) => { const current = generation.current; const response = await fetch(API + path, { method: body === undefined ? 'GET' : 'POST', credentials: 'same-origin', cache: 'no-store', headers: body === undefined ? {} : { 'content-type': 'application/json' }, body: body === undefined ? undefined : JSON.stringify(body), signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(timeoutMs)]) : AbortSignal.timeout(timeoutMs) }); const value = await response.json(); if (!response.ok) { const reason = Object.assign(new Error(value.error ?? `请求失败（${response.status}）`), { status: response.status }); if (current === generation.current && response.status === 401 && path !== '/session') enterLogin(reason.message); throw reason } if (current !== generation.current) throw new Error('管理会话已变化，请重新操作。'); return value }
   const loadData = async () => { if (loading.current) return loading.current; const current = generation.current, revision = settingsRevision.current; const pending = Promise.all([request('/summary'), request('/stats')]).then(([summary, stats]) => { if (current !== generation.current) return; setSnapshot(previous => ({ summary: revision !== settingsRevision.current && previous ? { ...summary, settings: previous.summary.settings } : summary, stats })); authenticated.current = true; setMode('ready'); setError('') }).finally(() => { if (loading.current === pending) loading.current = undefined }); loading.current = pending; return pending }
-  const host = useMemo<Host>(() => ({ navigate: next => { if (navigationPages.includes(next)) { setPage(next); setVisited(previous => previous.includes(next) ? previous : [...previous, next]); setError(''); setNotice('') } }, refresh: async () => { await loadData() }, copy: async value => { await navigator.clipboard.writeText(value); setNotice('已复制到剪贴板') }, getApiKey: async () => (await request<{ key: string }>('/key')).key, rotateKey: async () => (await request<{ key: string }>('/key/rotate', { confirm: true })).key, logout: async () => { await request('/logout', {}); enterLogin('已退出管理') }, error: reason => setError(messageOf(reason)), setModelDisabled: async (provider, modelId, disabled) => { await request('/channels/rpc', { method: 'model.setDisabled', payload: { provider, modelId, disabled } }, 20000); void loadData().catch(() => {}) }, saveSettings: async (settings: Partial<ServiceSettings>) => { const value = await request<{ settings: ServiceSettings }>('/settings', settings); settingsRevision.current++; setSnapshot(previous => previous ? { ...previous, summary: { ...previous.summary, settings: value.settings } } : previous); return value.settings }, smartState: () => request<SmartState>('/smart/state', undefined, 20000), saveSmartPool: async models => { const value = await request<SmartState>('/smart/pool', { models }, 20000); void loadData().catch(() => {}); return value }, claimsHistory: (from, to) => request<ClaimsQuery>(`/claims/history?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`, undefined, 20000) }), [page])
+  const host = useMemo<Host>(() => ({ navigate: next => { if (navigationPages.includes(next)) { switchPage(next); syncPageHash(next) } }, refresh: async () => { await loadData() }, copy: async value => { await navigator.clipboard.writeText(value); setNotice('已复制到剪贴板') }, getApiKey: async () => (await request<{ key: string }>('/key')).key, rotateKey: async () => (await request<{ key: string }>('/key/rotate', { confirm: true })).key, logout: async () => { await request('/logout', {}); enterLogin('已退出管理') }, error: reason => setError(messageOf(reason)), setModelDisabled: async (provider, modelId, disabled) => { await request('/channels/rpc', { method: 'model.setDisabled', payload: { provider, modelId, disabled } }, 20000); void loadData().catch(() => {}) }, saveSettings: async (settings: Partial<ServiceSettings>) => { const value = await request<{ settings: ServiceSettings }>('/settings', settings); settingsRevision.current++; setSnapshot(previous => previous ? { ...previous, summary: { ...previous.summary, settings: value.settings } } : previous); return value.settings }, smartState: () => request<SmartState>('/smart/state', undefined, 20000), saveSmartPool: async models => { const value = await request<SmartState>('/smart/pool', { models }, 20000); void loadData().catch(() => {}); return value }, claimsHistory: (from, to) => request<ClaimsQuery>(`/claims/history?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`, undefined, 20000) }), [page])
   useEffect(() => { window.scrollTo({ top: 0, behavior: 'instant' }) }, [page])
   useEffect(() => { const onUnauthorized = () => enterLogin('管理会话已失效，请重新登录'); window.addEventListener('ofm:unauthorized', onUnauthorized); return () => window.removeEventListener('ofm:unauthorized', onUnauthorized) }, [])
+  // hashchange 兜底：用户手改地址栏 hash（或外部链接带 hash）时同步切页；
+  // 非法/清空 hash 回落地页。replaceState 不触发本事件，无回环。
+  useEffect(() => {
+    const onHashChange = () => switchPage(pageFromHash() ?? 'channels')
+    window.addEventListener('hashchange', onHashChange)
+    return () => window.removeEventListener('hashchange', onHashChange)
+  }, [])
   useEffect(() => { const token = new URLSearchParams(location.hash.slice(1)).get('login'); if (token) history.replaceState(null, '', location.pathname + location.search); void (async () => { try { if (token) await request('/session', { bootstrapToken: token }); await loadData() } catch (reason) { enterLogin((reason as any)?.status === 401 && !token ? '' : messageOf(reason)) } })() }, [])
   useEffect(() => { if (mode !== 'ready') return; const timer = window.setInterval(() => { if (!document.hidden) void loadData().catch(reason => setError(messageOf(reason))) }, 15000); return () => window.clearInterval(timer) }, [mode])
   useEffect(() => {
@@ -81,6 +109,7 @@ function App() {
   const content: ReactNode = snapshot && page === 'connection' ? <Connection summary={snapshot.summary} host={host} active /> : snapshot && page === 'requests' ? <Requests summary={snapshot.summary} host={host} active request={request} /> : snapshot && page === 'channels' ? <ChannelMount summary={{ ...snapshot.summary, reload: () => { void loadData() } }} /> : null
   if (mode === 'loading') return <LoadingScreen />
   if (mode === 'login') return <LoginScreen request={async (...args) => { const result = await request(...args); if (args[0] === '/session') await loadData(); return result }} />
-  return <div id="app" className="app-shell"><aside className="sidebar"><Sidebar page={page} summary={snapshot?.summary} host={host} onDisclaimer={() => setDisclaimerOpen(true)} /></aside><main><header className="topbar"><Topbar page={page} summary={snapshot?.summary} /></header>{snapshot?.summary.networkMode === 'fixture' && <div className="notice test-mode-notice notice-enter" role="alert">当前为本机替身测试模式：账号、模型回答与额度均为测试数据。</div>}{notice && <div className="notice notice-enter" role="status">{notice}<button className="text-button" onClick={() => setNotice('')}>关闭</button></div>}{error && <div className="notice error-notice notice-enter" role="alert"><AlertCircle size={16} /><span>{error}</span><button className="text-button" onClick={() => { setError(''); void loadData() }}>重试</button></div>}<section className="page">{content}{snapshot && navigationPages.filter((name): name is LazyPageName => LAZY_PAGES.has(name) && visited.includes(name)).map(name => <div key={name} hidden={page !== name}><LazyPage name={name} snapshot={snapshot} host={host} active={page === name} /></div>)}</section><footer>本地运行 <span>·</span> 由你掌控</footer></main>{snapshot && <DshImportDialog request={request} onDone={() => { void loadData() }} />}<DisclaimerDialog open={disclaimerOpen} onClose={() => { setDisclaimerOpen(false); setDisclaimer(current => current ? { ...current, acknowledged: true } : current) }} /></div>
+  // data-active-page 供页面级样式挂钩（smart 页视口内自适应布局，smart.css）。
+  return <div id="app" className="app-shell" data-active-page={page}><aside className="sidebar"><Sidebar page={page} summary={snapshot?.summary} host={host} onDisclaimer={() => setDisclaimerOpen(true)} /></aside><main><header className="topbar"><Topbar page={page} summary={snapshot?.summary} /></header>{snapshot?.summary.networkMode === 'fixture' && <div className="notice test-mode-notice notice-enter" role="alert">当前为本机替身测试模式：账号、模型回答与额度均为测试数据。</div>}{notice && <div className="notice notice-enter" role="status">{notice}<button className="text-button" onClick={() => setNotice('')}>关闭</button></div>}{error && <div className="notice error-notice notice-enter" role="alert"><AlertCircle size={16} /><span>{error}</span><button className="text-button" onClick={() => { setError(''); void loadData() }}>重试</button></div>}<section className="page">{content}{snapshot && navigationPages.filter((name): name is LazyPageName => LAZY_PAGES.has(name) && visited.includes(name)).map(name => <div key={name} hidden={page !== name}><LazyPage name={name} snapshot={snapshot} host={host} active={page === name} /></div>)}</section><footer>本地运行 <span>·</span> 由你掌控</footer></main>{snapshot && <DshImportDialog request={request} onDone={() => { void loadData() }} />}<DisclaimerDialog open={disclaimerOpen} onClose={() => { setDisclaimerOpen(false); setDisclaimer(current => current ? { ...current, acknowledged: true } : current) }} /></div>
 }
 createRoot(document.getElementById('root')!).render(<App />)
