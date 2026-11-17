@@ -341,7 +341,9 @@ try {
     assert.equal(JSON.stringify(summary).includes('fixture-refresh'), false)
     assert.equal(fs.readFileSync(path.join(dshHome, '.credentials.yaml'), 'utf8'), 'SENTINEL_DO_NOT_READ')
     assert.equal(fs.existsSync(path.join(dshHome, 'channel-pack')), false)
-    assert.equal((await api('/api/management/eac/status')).value.local, false)
+    // 未登录 EAC 时清单不得出现 sealed 行（sentinel 也不得被自动读取）。
+    await service.runtime.refreshCatalog()
+    assert.equal(service.runtime.catalog.some(row => row.channel === 'eac'), false)
   })
   await check('未知渠道保留历史账号与凭据，但不注册、不列模型、不允许旧 RPC 或网关请求', async () => {
     assertUnsupportedDataPreserved()
@@ -374,11 +376,11 @@ try {
     assert.equal(requests.length, before, '未知渠道请求不得触达任何上游端点')
     assertUnsupportedDataPreserved()
   })
-  await check('同源鉴权覆盖渠道与 EAC 操作，跨域访问失败、本机直连放行', async () => {
+  await check('同源鉴权覆盖渠道与管理读取，跨域访问失败、本机直连放行', async () => {
     // 本机回环 + 未开 LAN：不再要求令牌（该页面只监听本机）。
     // 本机直连可达（不再 401）。这两个端点对空载荷各自有正常响应，
     // 所以这里只断言「不是鉴权失败」，不规定具体业务码。
-    for (const endpoint of ['/api/management/eac/status', '/api/management/channels/rpc']) {
+    for (const endpoint of ['/api/management/summary', '/api/management/channels/rpc']) {
       const direct = await fetch(service.url + endpoint, { method: endpoint.endsWith('rpc') ? 'POST' : 'GET', headers: { 'content-type': 'application/json' }, ...endpoint.endsWith('rpc') ? { body: '{}' } : {} })
       assert.notEqual(direct.status, 401, `${endpoint} 本机直连不应要求登录`)
     }
@@ -463,6 +465,12 @@ try {
     const before = requests.filter(row => row.pathname.endsWith('/chat/completions')).length
     assert.equal((await api('/v1/chat/completions', { model: 'cline/cline-free/mimo-v2.6-flash', messages: [{ role: 'user', content: 'hi' }] })).response.status, 404)
     assert.equal(requests.filter(row => row.pathname.endsWith('/chat/completions')).length, before)
+    // S12-A（A4/FR-13.4）：「模型与开关」页删除后，smart 页行内启停走的就是这条
+    // RPC 往返——停用必须联动进 smart 候选状态（页面据此显示「已停用/启用」）。
+    const smartState = async () => (await api('/api/management/smart/state')).value
+    const disabledView = await smartState()
+    assert.equal(disabledView.candidates.find(row => row.id === 'cline/cline-free/mimo-v2.6-flash')?.disabled, true,
+      '停用必须联动进 smart 候选状态')
     await rpc('provider.setEnabled', { provider: 'cline', enabled: false })
     assert.equal((await rpc('account.list', { provider: 'cline' })).accounts[0].enabled, false)
     await rpc('provider.setEnabled', { provider: 'cline', enabled: true })
@@ -485,31 +493,41 @@ try {
     await rpc('model.setAllDisabled', { provider: 'cline', disabled: false })
     await service.channels.refresh()
     assert.ok((await api('/v1/models')).value.data.some(model => model.id === 'cline/cline-free/mimo-v2.6-flash'))
+    const restoredView = await (await api('/api/management/smart/state')).value
+    assert.equal(restoredView.candidates.find(row => row.id === 'cline/cline-free/mimo-v2.6-flash')?.disabled, false,
+      '启用必须恢复 smart 候选状态')
     const restored = JSON.parse(fs.readFileSync(path.join(dataDir, 'channel-pack/state.json'), 'utf8'))
     assert.equal(Object.keys(restored.disabledModels.cline ?? {}).length, 0)
     assert.equal((await rpc('credits.permanentLock', { provider: 'loomy' })).locked, true)
   })
   await check('EAC 原 GitHub 登录、签名、用户 token、清单及退出链路可用', async () => {
-    const start = await api('/api/management/eac/login/start', {})
-    assert.equal(start.response.status, 200)
-    assert.match(start.value.link, /^[\w-]{32}$/)
-    assert.equal(start.value.opened, false)
-    const poll = await api(`/api/management/eac/login/poll?link=${start.value.link}`)
-    assert.equal(poll.value.status, 'ok')
-    assert.equal(JSON.stringify(poll.value).includes('fixture-eac-user'), false)
-    await service.runtime.refreshCatalog()
-    assert.ok(service.runtime.catalog.some(row => row.channel === 'eac'))
-    const model = service.runtime.catalog.find(row => row.channel === 'eac').id
-    const reply = await api('/v1/chat/completions', { model, messages: [{ role: 'user', content: 'hi' }] })
-    assert.equal(reply.response.status, 200)
-    assert.equal(reply.value.choices[0].message.content, 'eac-ok')
-    assert.equal(requests.at(-1).headers['x-ofm-user'], 'fixture-eac-user')
-    assert.equal((await api('/api/management/eac/pool')).value.inflight, 3)
-    assert.equal((await api('/api/management/eac/logout', {})).value.ok, true)
-    await service.runtime.refreshSealedLane()
-    assert.equal(service.runtime.catalog.some(row => row.channel === 'eac'), false)
-    assert.equal(fs.existsSync(path.join(dataDir, 'eac-user.json')), false)
-    assert.equal(JSON.parse(fs.readFileSync(path.join(dshHome, 'our-free-model/eac-user.json'))).token, 'dsh-sentinel')
+    // /eac/* 六管理端点已随 EAC 页删除（S12-A，消费面=被删的 EacPage）；eac.mjs
+    // 本体因推理链（sealedCredential）保留，这里用同 dataDir 的直连实例驱动
+    // 登录/资源池/登出，服务侧经 refreshCatalog / refreshSealedLane 感知凭据变化。
+    const login = createStandaloneEac({ dataDir, openExternal: async () => false })
+    try {
+      const start = await login.start()
+      assert.ok(start.link && /^[\w-]{32}$/.test(start.link))
+      assert.equal(start.opened, false)
+      const poll = await login.poll(start.link)
+      assert.equal(poll.status, 'ok')
+      assert.equal(JSON.stringify(poll).includes('fixture-eac-user'), false)
+      await service.runtime.refreshCatalog()
+      assert.ok(service.runtime.catalog.some(row => row.channel === 'eac'))
+      const model = service.runtime.catalog.find(row => row.channel === 'eac').id
+      const reply = await api('/v1/chat/completions', { model, messages: [{ role: 'user', content: 'hi' }] })
+      assert.equal(reply.response.status, 200)
+      assert.equal(reply.value.choices[0].message.content, 'eac-ok')
+      assert.equal(requests.at(-1).headers['x-ofm-user'], 'fixture-eac-user')
+      assert.equal((await login.pool()).inflight, 3)
+      assert.equal((await login.logout()).ok, true)
+      await service.runtime.refreshSealedLane()
+      assert.equal(service.runtime.catalog.some(row => row.channel === 'eac'), false)
+      assert.equal(fs.existsSync(path.join(dataDir, 'eac-user.json')), false)
+      assert.equal(JSON.parse(fs.readFileSync(path.join(dshHome, 'our-free-model/eac-user.json'))).token, 'dsh-sentinel')
+    } finally {
+      login.dispose()
+    }
   })
   await check('账号轮询完成后凭据只在后端落盘，可修改、备份和删除', async () => {
     const started = await rpc('account.create', { provider: 'cline' })

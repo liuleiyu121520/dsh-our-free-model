@@ -232,9 +232,6 @@ try {
     assert.equal((await request('/v1/models', { headers: { authorization: `Bearer ${key}` } })).status, 503)
     assert.equal((await request('/')).status, 200)
     assert.equal((await request('/api/management/summary')).status, 200)
-    const before = calls
-    assert.equal((await request('/api/management/models/test', { body: { model } })).status, 503)
-    assert.equal(calls, before)
     assert.equal((await request('/api/management/settings', { body: { enabled: true } })).status, 200)
     assert.equal((await request('/v1/models', { headers: { authorization: `Bearer ${key}` } })).status, 200)
   })
@@ -254,17 +251,16 @@ try {
     assert.equal((await request('/api/management/settings', { body: { enabled: true } })).status, 200)
   })
   await check('刷新不默认推理，主动探测和单模型测试执行核心并写入统计', async () => {
+    // /models/refresh 与 /models/test 管理端点已随「模型与开关」页删除（S12-A）；
+    // 运行时行为（刷新/探测/单测）仍由 service.runtime 直接承载，此处直连验证。
     const before = calls
-    assert.equal((await request('/api/management/models/refresh', { body: {} })).status, 200)
+    await service.runtime.refreshCatalog({ probe: false })
     assert.equal(calls, before)
     const models = (await (await request('/api/management/summary')).json()).catalog
     assert.deepEqual(models.map(row => row.id), [model, kilo])
-    assert.equal((await request('/api/management/models/refresh', { body: { probe: true } })).status, 200)
+    await service.runtime.refreshCatalog({ probe: true })
     assert.equal(calls, before + 1)
-    assert.equal((await request('/api/management/models/refresh', { body: { probe: 'yes' } })).status, 400)
-    const tested = await request('/api/management/models/test', { body: { model } })
-    assert.equal(tested.status, 200)
-    const testResult = await tested.json()
+    const testResult = await service.runtime.testModel(model)
     assert.equal(testResult.text, 'OK')
     assert.equal(testResult.persisted, true)
     const measured = (await (await request('/api/management/summary')).json()).catalog.find(row => row.id === model)
@@ -275,7 +271,7 @@ try {
     const saved = JSON.parse(fs.readFileSync(path.join(dataDir, 'availability.json'), 'utf8'))
     assert.equal(saved.manualResults[model].ttftMs, testResult.ttftMs)
     assert.equal(calls, before + 2)
-    assert.equal((await request('/api/management/models/test', { body: { model: 'missing' } })).status, 404)
+    await assert.rejects(service.runtime.testModel('missing'), '未知模型不得静默成功')
     assert.equal(calls, before + 2)
     const stats = await (await request('/api/management/stats')).json()
     assert.equal(stats.requests, 1)
@@ -286,13 +282,11 @@ try {
   await check('刷新逐来源报告失败与保留的行数，恢复后不残留失败状态', async () => {
     const before = calls
     const refresh = async () => {
-      const response = await request('/api/management/models/refresh', { body: {} })
-      assert.equal(response.status, 200)
-      const result = await response.json()
-      assert.deepEqual(result.catalog.map(row => row.id), [model, kilo])
-      assert.equal(result.dataDir, dataDir)
-      assert.ok(!JSON.stringify(result).includes(key))
-      return result.sources
+      const sources = (await service.runtime.refreshCatalog({ report: true })).sources
+      const models = (await (await request('/api/management/summary')).json()).catalog
+      assert.deepEqual(models.map(row => row.id), [model, kilo])
+      assert.ok(!JSON.stringify(sources).includes(key))
+      return sources
     }
     try {
       for (const source of ['free', 'kilo']) {
@@ -332,18 +326,14 @@ try {
       for (const failed of [false, true, false]) {
         fixture.trae.fail = failed
         save()
-        const response = await fetch(instance.url + '/api/management/models/refresh', {
-          method: 'POST', headers: { authorization: `Bearer ${forwardKey}`, 'content-type': 'application/json' },
-          body: '{}', signal: AbortSignal.timeout(10000),
-        })
-        assert.equal(response.status, 200)
-        const result = await response.json()
+        const result = await instance.runtime.refreshCatalog({ report: true })
         assert.deepEqual(result.sources.trae, { ok: !failed, count: failed ? 0 : 1 })
         assert.deepEqual(result.sources.qodercn, { ok: true, count: 1 })
         assert.deepEqual(result.sources.free, { ok: true, count: 1 })
-        assert.equal(result.catalog.filter(row => row.channel === 'trae').length, failed ? 0 : 1)
-        assert.equal(JSON.stringify(result).includes('fixture-private-token'), false)
+        assert.equal(instance.runtime.state().catalog.filter(row => row.channel === 'trae').length, failed ? 0 : 1)
+        assert.equal(JSON.stringify(result.sources).includes('fixture-private-token'), false)
       }
+      assert.equal(forwardKey, JSON.parse(fs.readFileSync(instance.keyFile, 'utf8')).forwardKey)
       const listing = instance.channels.refresh()
       const report = instance.channels.refresh({ report: true })
       assert.ok(Array.isArray(await listing), '既有渠道调用仍返回模型数组')
@@ -388,10 +378,7 @@ try {
     const controller = new AbortController()
     const before = calls
     holdNextCall = true
-    const pending = fetch(`${service.url}/api/management/models/test`, {
-      method: 'POST', headers: { cookie, 'content-type': 'application/json' },
-      body: JSON.stringify({ model }), signal: controller.signal,
-    })
+    const pending = service.runtime.testModel(model, undefined, { signal: controller.signal })
     const cancelled = pending.then(() => null, error => error)
     const deadline = AbortSignal.timeout(5000)
     const wait = promise => Promise.race([promise, new Promise((_, reject) => {
@@ -417,8 +404,7 @@ try {
     assert.equal(summary.catalog.find(row => row.id === model).hiddenByUser, true)
     assert.equal(summary.catalog.find(row => row.id === model).routable, false)
     assert.equal(JSON.stringify(summary).includes(key), false)
-    assert.equal((await request('/api/management/models/test', { body: { model } })).status, 200,
-      'hidden history ids remain callable')
+    assert.equal((await service.runtime.testModel(model)).ok, true, 'hidden history ids remain callable')
     assert.equal((await request('/api/management/settings', { body: { hiddenModelIds: [], hideFreeModels: true, hideEacModels: true } })).status, 200)
     assert.deepEqual(await listing(), [])
     assert.equal((await (await request('/api/management/summary')).json()).catalog.length, 2)
@@ -540,6 +526,24 @@ try {
     // 清理：恢复空池，不影响后续用例
     await request('/api/management/smart/pool', { body: { models: [] } })
     assert.deepEqual((await smartState()).pool, [])
+  })
+  await check('渠道模型启停 RPC 通道（FR-13.4 唯一入口）：载荷直达渠道包，smart 状态面完整', async () => {
+    // 「模型与开关」页删除后，启停唯一入口 = smart 页行内开关 → /channels/rpc
+    // 的 model.setDisabled（payload {provider, modelId, disabled}）。真实往返
+    // （落盘 + 候选联动）在 standalone-channels-test 的渠道替身下覆盖；这里钉住
+    // 管理面的通道完整性与候选状态形状。
+    const rejected = await request('/api/management/channels/rpc', { body: { method: 'model.setDisabled', payload: { provider: 'no-such-provider', modelId: 'x', disabled: true } } })
+    assert.equal(rejected.status, 200)
+    const reply = await rejected.json()
+    assert.equal(reply.ok, false, '未知供应商必须由渠道包结构化拒绝')
+    assert.equal(reply.error.code, 'provider-unsupported')
+    const state = await (await request('/api/management/smart/state')).json()
+    assert.ok(Array.isArray(state.candidates), 'smart 状态必须始终暴露候选数组')
+    for (const row of state.candidates ?? []) {
+      assert.equal(typeof row.disabled, 'boolean', '候选必须带 disabled 标记（行内启停的 UI 依据）')
+      assert.equal(typeof row.dead, 'boolean')
+      assert.ok(typeof row.provider === 'string' && typeof row.model === 'string', '启停 RPC 需要 provider/model 字段')
+    }
   })
   await check('claims 领取历史：claimAll 包装落记录（AC-17）、人为推进 lastAt 落记录（AC-18）、范围校验 400、auto-checkin.json 零触碰', async () => {
     const localDay = (at = Date.now()) => {

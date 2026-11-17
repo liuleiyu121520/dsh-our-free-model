@@ -485,12 +485,12 @@ try {
     const source = fs.readFileSync(new URL('../packages/standalone/cli.mjs', import.meta.url), 'utf8')
       .replace(/^#![^\n]*\n/, '').replace(/^import .+\r?\n/gm, '')
     for (const [flags, expected] of [
-      // 默认是精简页面 + 自动开浏览器；`--full` / `--no-open` 是关掉它们的唯一开关。
-      [[], { lite: true, open: true }],
-      [['--full', '--no-open'], { lite: false, open: false }],
-      [['--lan', '--lan-port', '18901'], { lite: true, open: true, lanEnabled: true, lanPort: 18901 }],
-      [['--no-lan', '--lan-port', '0'], { lite: true, open: true, lanEnabled: false, lanPort: 0 }],
-      [['--lan-port', '18901'], { lite: true, open: true, lanPort: 18901 }],
+      // S12-A：--lite/--full 双模旗标已删除；默认自动开浏览器，`--no-open` 是唯一开关。
+      [[], { open: true }],
+      [['--no-open'], { open: false }],
+      [['--lan', '--lan-port', '18901'], { open: true, lanEnabled: true, lanPort: 18901 }],
+      [['--no-lan', '--lan-port', '0'], { open: true, lanEnabled: false, lanPort: 0 }],
+      [['--lan-port', '18901'], { open: true, lanPort: 18901 }],
     ]) {
       let received
       let output = ''

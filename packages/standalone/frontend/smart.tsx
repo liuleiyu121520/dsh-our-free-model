@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { ArrowDown, ArrowUp, GripVertical, Info, ListPlus, RefreshCw, Search, Sparkles, Trash2, X } from 'lucide-react'
+import { ArrowDown, ArrowUp, CircleSlash, GripVertical, Info, ListPlus, RefreshCw, Search, Sparkles, Trash2, X } from 'lucide-react'
 import { Button, Card } from './components/ui'
 import type { Host, SmartCandidate, SmartState, SmartStatus, Summary } from './types'
 import './smart.css'
@@ -15,10 +15,10 @@ const statusOf = (statuses: SmartStatus[] | undefined, modelId: string): SmartSt
 const isInvalid = (statuses: SmartStatus[] | undefined, modelId: string) =>
   statusOf(statuses, modelId)?.reason === 'invalid'
 
-function CandidateRow({ candidate, onAdd }: { candidate: SmartCandidate; onAdd(id: string): void }) {
+function CandidateRow({ candidate, busy, onAdd, onToggleDisabled }: { candidate: SmartCandidate; busy: boolean; onAdd(id: string): void; onToggleDisabled(candidate: SmartCandidate, disabled: boolean): void }) {
   const exhausted = candidate.accounts.total > 0 && candidate.accounts.available === 0
   const zeroAccounts = candidate.accounts.total === 0
-  return <li className="smart-candidate">
+  return <li className={`smart-candidate${candidate.disabled ? ' is-disabled' : ''}`}>
     <div className="smart-candidate-main">
       <span className="smart-candidate-id" title={candidate.id}>{candidate.id}</span>
       <span className="smart-candidate-name">{candidate.name && candidate.name !== candidate.model ? candidate.name : ''}</span>
@@ -27,9 +27,16 @@ function CandidateRow({ candidate, onAdd }: { candidate: SmartCandidate; onAdd(i
       <span className={`smart-accounts ${exhausted ? 'is-exhausted' : zeroAccounts ? 'is-neutral' : 'is-ok'}`}>
         {candidate.accounts.available}/{candidate.accounts.total} 账号可用
       </span>
-      <Button variant="ghost" size="sm" className="smart-add-btn" aria-label={`把 ${candidate.id} 加入调度池`}
+      {candidate.disabled && <span className="smart-tag is-disabled-tag">已停用</span>}
+      {!candidate.disabled && <Button variant="ghost" size="sm" className="smart-add-btn" aria-label={`把 ${candidate.id} 加入调度池`}
         title="加入调度池" onClick={() => onAdd(candidate.id)}>
         <ListPlus size={15} />加入
+      </Button>}
+      <Button variant="ghost" size="sm" className="smart-toggle-btn"
+        aria-label={candidate.disabled ? `启用 ${candidate.id}` : `停用 ${candidate.id}`}
+        title={candidate.disabled ? '启用（恢复进入候选与调度）' : '停用（从候选与调度中移除）'}
+        disabled={busy} onClick={() => onToggleDisabled(candidate, !candidate.disabled)}>
+        <CircleSlash size={14} />{candidate.disabled ? '启用' : '停用'}
       </Button>
     </div>
   </li>
@@ -80,6 +87,7 @@ export function Smart({ summary, host, active }: { summary: Summary; stats: unkn
   const [notice, setNotice] = useState('')
   const [dragging, setDragging] = useState<number | undefined>(undefined)
   const [candidateQuery, setCandidateQuery] = useState('')
+  const [busyCandidate, setBusyCandidate] = useState<string | undefined>(undefined)
   const dirty = useRef(false)
 
   const load = useCallback(async () => {
@@ -96,10 +104,12 @@ export function Smart({ summary, host, active }: { summary: Summary; stats: unkn
   useEffect(() => { if (active && !view) void load() }, [active, view, load])
 
   const statusList = view?.statuses
+  // 候选清单保留「已停用」条目（配行内「启用」动作，FR-13.4 启停唯一入口），
+  // 只过滤已下架（dead）与已在池内的条目。
   const candidates = useMemo(() => {
     const query = candidateQuery.trim().toLowerCase()
     return (view?.candidates ?? [])
-      .filter(row => row.disabled !== true && row.dead !== true && !draft.includes(row.id))
+      .filter(row => row.dead !== true && !draft.includes(row.id))
       .filter(row => query === '' || row.id.toLowerCase().includes(query) || row.provider.toLowerCase().includes(query)
         || (row.name ?? '').toLowerCase().includes(query))
   }, [view, draft, candidateQuery])
@@ -119,6 +129,21 @@ export function Smart({ summary, host, active }: { summary: Summary; stats: unkn
     ;[next[index], next[target]] = [next[target], next[index]]
     dirty.current = true
     setDraft(next)
+  }
+  // 行内启停（FR-13.4 唯一入口）：调 model.setDisabled RPC（经 /channels/rpc），
+  // 成功后重读调度状态——停用的条目不再进入候选与调度，启用即恢复。
+  const toggleDisabled = async (candidate: SmartCandidate, disabled: boolean) => {
+    if (busyCandidate !== undefined) return
+    setBusyCandidate(candidate.id)
+    setError('')
+    try {
+      await host.setModelDisabled(candidate.provider, candidate.model, disabled)
+      await load()
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : '更新模型启停失败，请重试。')
+    } finally {
+      setBusyCandidate(undefined)
+    }
   }
   const save = async () => {
     setSaving(true); setNotice(''); setError('')
@@ -177,7 +202,7 @@ export function Smart({ summary, host, active }: { summary: Summary; stats: unkn
       <Card className="smart-candidates-card">
         <div className="smart-card-head">
           <h2>候选模型</h2>
-          <p>来自账号渠道的模型目录（已过滤停用与下架条目）。绑定账号数与可用账号数实时推导。</p>
+          <p>来自账号渠道的模型目录（已过滤下架条目；停用条目可在此重新启用）。绑定账号数与可用账号数实时推导。</p>
           <label className="smart-filter-field">
             <Search size={13} aria-hidden="true" />
             <input type="search" value={candidateQuery} placeholder={`筛选 ${candidates.length} 个候选（id / 渠道）`}
@@ -185,10 +210,10 @@ export function Smart({ summary, host, active }: { summary: Summary; stats: unkn
           </label>
         </div>
         {candidates.length === 0 ? <p className="smart-candidates-empty" role="status">
-          {candidateQuery ? '没有匹配筛选条件的候选。' : view?.candidates.length ? '目录中的模型都已在池内或已停用。' : '渠道目录暂无模型，可稍后重试。'}
+          {candidateQuery ? '没有匹配筛选条件的候选。' : view?.candidates.length ? '目录中的模型都已在池内或已下架。' : '渠道目录暂无模型，可稍后重试。'}
           <Button variant="ghost" size="sm" onClick={() => void load()}><RefreshCw size={13} />刷新</Button>
         </p> : <ul className="smart-candidate-list">
-          {candidates.map(row => <CandidateRow key={row.id} candidate={row} onAdd={add} />)}
+          {candidates.map(row => <CandidateRow key={row.id} candidate={row} busy={busyCandidate === row.id} onAdd={add} onToggleDisabled={(candidate, disabled) => void toggleDisabled(candidate, disabled)} />)}
         </ul>}
       </Card>
 

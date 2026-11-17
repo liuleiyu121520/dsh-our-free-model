@@ -3,12 +3,10 @@ import fs from 'node:fs'
 import vm from 'node:vm'
 import { buildStats } from '../src/core/stats.js'
 import { filterModels } from '../packages/standalone/frontend/models-data.mjs'
-import { usageDays, usageModels } from '../packages/standalone/frontend/usage-data.mjs'
 import { settingsDraft, settingsChanged, syncSettings, validateSettingsDraft } from '../packages/standalone/frontend/settings-data.mjs'
 import { verifySettingsHost } from './standalone-settings-host-test.mjs'
 import { verifyModelOperation } from './standalone-model-operation-test.mjs'
 import { verifyChannelFilters } from './standalone-channel-filter-test.mjs'
-import { spawnSync } from 'node:child_process'
 
 const web = new URL('../packages/standalone/web/', import.meta.url)
 const assets = JSON.parse(fs.readFileSync(new URL('assets.json', web), 'utf8'))
@@ -92,12 +90,17 @@ const app = fs.readFileSync(new URL('app.js', web), 'utf8')
 const channel = assets.find(name => name.startsWith('channels-'))
 assert.ok(channel, '渠道必须是独立分包')
 assert.ok(app.includes(channel) && app.includes('import('), '入口必须动态导入渠道')
-const modelsChunk = assets.find(name => name.startsWith('models-'))
-assert.ok(modelsChunk && app.includes(modelsChunk), '入口必须按需导入模型页面')
-const usageChunk = assets.find(name => name.startsWith('usage-'))
-assert.ok(usageChunk && app.includes(usageChunk), '入口必须按需导入用量页面')
+// 懒加载页 = smart / calendar / settings 三页（LAZY_PAGE_NAMES 单一来源）。
+const smartChunk = assets.find(name => name.startsWith('smart-'))
+assert.ok(smartChunk && app.includes(smartChunk), '入口必须按需导入智能调度')
+const calendarChunk = assets.find(name => name.startsWith('calendar-'))
+assert.ok(calendarChunk && app.includes(calendarChunk), '入口必须按需导入用量日历')
 const settingsChunk = assets.find(name => name.startsWith('settings-'))
 assert.ok(settingsChunk && app.includes(settingsChunk), '入口必须按需导入服务设置')
+// 被删页面不得再产出分包（S12-A 裁剪面判零）。
+for (const gone of ['models-', 'usage-', 'workspace-', 'providers-', 'routing-', 'library-', 'sponsor-', 'desktop-update-']) {
+  assert.equal(assets.some(name => name.startsWith(gone)), false, `被删页面不得残留分包：${gone}`)
+}
 for (const [_, name] of html.matchAll(/(?:src|href)="\/assets\/([^"]+)"/g)) {
   assert.ok(assets.includes(name), `HTML 资源未登记：${name}`)
 }
@@ -130,52 +133,12 @@ assert.equal(filterModels(catalog, { channel: 'lobsterai', availability: 'availa
 assert.equal(filterModels(catalog, { access: 'hidden' }).length + filterModels(catalog, { access: 'routable' }).length, catalog.length)
 assert.equal(filterModels([{ id: 'unknown', name: '未知状态', routable: false }], { availability: 'unknown' }).length, 1)
 assert.deepEqual(catalog, baseline, '视图筛选不得改变目录、公开状态或模型开关')
-const usageRows = Array.from({ length: 47 }, (_, index) => ({
-  model: `fixture/usage-${index}`, name: `用量模型 ${index}`, calls: index + 1, turns: index,
-  input: index * 10, output: (46 - index) * 20, failedTurns: index % 4,
-}))
-const usageBaseline = structuredClone(usageRows)
-const first = usageModels(usageRows)
-assert.equal(first.total, 47)
-assert.equal(first.pages, 3)
-assert.equal(first.rows.length, 20)
-assert.equal(first.rows[0].model, 'fixture/usage-46')
-assert.equal(usageModels(usageRows, { page: 3 }).rows.length, 7)
-assert.equal(usageModels(usageRows, { page: 999 }).page, 3)
-assert.equal(usageModels(usageRows, { page: -1 }).page, 1)
-assert.equal(usageModels([], { page: 3 }).page, 1)
-assert.equal(usageModels(usageRows, { search: '  FIXTURE/USAGE-46  ', page: 3 }).rows[0].model, 'fixture/usage-46')
-assert.equal(usageModels(usageRows, { search: '用量模型 46' }).total, 1)
-assert.equal(usageModels(usageRows, { search: '没有这个模型' }).total, 0)
-assert.equal(usageModels(usageRows, { sort: 'tokens' }).rows[0].model, 'fixture/usage-0')
-assert.equal(usageModels(usageRows, { sort: 'failedTurns' }).rows[0].failedTurns, 3)
-assert.equal(usageModels(usageRows, { sort: 'name' }).rows[0].name, '用量模型 0')
-assert.deepEqual(usageRows, usageBaseline, '筛选排序不得修改累计统计')
-const series = [{ day: '2025-12-31', total: 18 }, { day: '2026-01-02', total: 7 }, { day: '2026-01-03', total: 999 }]
-const seriesBaseline = structuredClone(series)
-assert.deepEqual(usageDays(series, 3, new Date(2026, 0, 2, 1)), [
-  { day: '2025-12-31', total: 18 }, { day: '2026-01-01', total: 0 }, { day: '2026-01-02', total: 7 },
-])
-assert.deepEqual(usageDays([], 1, new Date(2026, 9, 9)), [{ day: '2026-10-09', total: 0 }])
-assert.equal(usageDays(series, 30, new Date(2026, 0, 2)).length, 30)
-assert.deepEqual(series, seriesBaseline)
-// 跨夏令时不能按固定 24 小时回退；本地日期在两个时区均应连续且不重复。
-for (const timezone of ['Asia/Shanghai', 'America/New_York']) {
-  const result = spawnSync(process.execPath, ['--input-type=module', '-e', `
-    import assert from 'node:assert/strict'
-    import { usageDays } from './packages/standalone/frontend/usage-data.mjs'
-    assert.deepEqual(usageDays([], 3, new Date(2026, 2, 9, 1)).map(row => row.day),
-      ['2026-03-07', '2026-03-08', '2026-03-09'])
-  `], { cwd: new URL('../', import.meta.url), env: { ...process.env, TZ: timezone }, encoding: 'utf8' })
-  assert.equal(result.status, 0, `${timezone}: ${result.stderr}`)
-}
 const cumulative = buildStats({
   requests: 50, failedRequests: 3, logical: { turns: 40, failed: 2, recovered: 4, estimated: true, models: {} },
   models: { old: { input: 9000, output: 1000, reasoning: 10, calls: 50, failed: 3 } },
   days: { '2026-01-01': { total: 18, models: {} } },
 }, [])
 assert.equal(cumulative.grand.input + cumulative.grand.output, 10000)
-assert.equal(usageDays(cumulative.days, 14, new Date(2026, 9, 9)).reduce((sum, row) => sum + row.total, 0), 0)
 assert.equal(cumulative.turns, 40)
 assert.equal(cumulative.requests, 50)
 assert.equal(cumulative.logicalEstimated, true)
@@ -247,4 +210,4 @@ assert.match(pickerPanel.body, /position\s*:\s*absolute/, '面板必须使用 ab
 assert.ok(!/@keyframes\s+settingsIn\s*\{\s*(?:from|0%)[^}]*opacity\s*:\s*0/.test(sheet),
   'settingsIn 首帧不得是 opacity:0（隐藏标签页会让动画冻结在透明首帧）')
 assert.ok(!/@keyframes\s+cp5-boot-in/.test(sheet), '内容可见性不应依赖页载入动画')
-console.log('standalone-frontend: 资源登记、四页面分包、模型筛选、统计日期分页、设置校验与草稿同步、迟到摘要、退出保存与网关模型选择器检查通过')
+console.log('standalone-frontend: 资源登记、懒加载三页分包（smart/calendar/settings）、模型筛选、统计累计、设置校验与草稿同步、迟到摘要、退出保存与网关模型选择器检查通过')

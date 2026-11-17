@@ -152,7 +152,8 @@ const request = (base, endpoint, options = {}) => fetch(`${base}${endpoint}`, {
   ...options, signal: AbortSignal.timeout(10000),
 })
 async function start() {
-  const child = spawn(path.join(root, 'start.command'), ['--port', '0', '--data-dir', dataDir, '--no-refresh'], {
+  // 启动即自刷新（fixture 上游）：/models/refresh 管理端点已删除，清单靠启动加载。
+  const child = spawn(path.join(root, 'start.command'), ['--port', '0', '--data-dir', dataDir], {
     cwd: scratch, env, stdio: ['ignore', 'pipe', 'pipe'],
   })
   let output = ''
@@ -257,13 +258,16 @@ try {
     const summary = await (await request(service.url, '/api/management/summary', { headers: authorization })).json()
     assert.equal(summary.channels.state, 'ready')
   })
-  await check('the extracted package completes a local model refresh and real HTTP generation', async () => {
-    const refresh = await request(service.url, '/api/management/models/refresh', {
-      method: 'POST', headers: { ...authorization, 'content-type': 'application/json' }, body: '{}',
-    })
-    assert.equal(refresh.status, 200)
-    const models = await (await request(service.url, '/v1/models', { headers: authorization })).json()
-    assert.ok(models.data.some(entry => entry.id === model))
+  await check('the extracted package boots with a local model listing and completes a real HTTP generation', async () => {
+    // /models/refresh 管理端点已随「模型与开关」页删除（S12-A）：清单加载回到
+    // 启动自刷新（fixture 上游），这里轮询等待清单就绪后做真实生成冒烟。
+    let listed = false
+    for (let attempt = 0; attempt < 100 && !listed; attempt++) {
+      const models = await (await request(service.url, '/v1/models', { headers: authorization })).json()
+      listed = models.data.some(entry => entry.id === model)
+      if (!listed) await new Promise(resolve => setTimeout(resolve, 100))
+    }
+    assert.ok(listed, '启动自刷新应把 fixture 模型载入网关清单')
     const response = await request(service.url, '/v1/chat/completions', {
       method: 'POST', headers: { ...authorization, 'content-type': 'application/json' },
       body: JSON.stringify({ model, messages: [{ role: 'user', content: 'local smoke test' }] }),
@@ -284,8 +288,9 @@ try {
       const errors = []
       page.on('pageerror', error => errors.push(error.message))
       await page.goto(service.managementUrl)
-      await page.getByTestId('overview-ready').waitFor()
-      await page.locator('.console-nav-item').filter({ hasText: '免费账号渠道' }).click()
+      // S12 后落地页即「账号渠道」；等待渠道子页真正挂载。
+      await page.getByRole('tab', { name: '登录与账号池' }).waitFor()
+      await page.locator('.console-nav-item').filter({ hasText: '账号渠道' }).click()
       await page.getByLabel('搜索渠道').waitFor()
       await page.getByText('LobsterAI', { exact: false }).first().waitFor()
       await page.screenshot({ path: `${source}.smoke.png`, fullPage: true })

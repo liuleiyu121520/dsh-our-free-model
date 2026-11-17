@@ -1,6 +1,5 @@
 import assert from 'node:assert/strict'
 import { buildComboCatalog, comboChain, normalizeCombos, resetRotation } from '../src/combos.js'
-import { createRoutingManagement } from '../packages/standalone/routing.mjs'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
@@ -78,43 +77,9 @@ check('nested cycles and every dependent group fail closed without recursion or 
   const malicious = { id: 'combo:x', channel: 'combo', combo: ['combo:x'] }
   assert.deepEqual(comboChain(malicious, [malicious]), [])
 })
-let settings = { combos: [] }, writes = 0
-const runtime = {
-  get catalog() { return [...models, ...buildComboCatalog(normalizeCombos(settings.combos), models)] },
-  state() { return { catalog: this.catalog, routing: { quota: { second: reading([quotaWindow(80, 30)]) }, now } } },
-  syncAggregateCatalog() { return this.catalog },
-}
-const management = createRoutingManagement({
-  runtime, stores: { settings: { get: () => settings } },
-  persist: patch => { settings = { ...settings, ...patch }; writes++ },
-})
-check('routing management stores validated groups and exposes all real strategies', () => {
-  management.save({ combo: { name: 'Daily', models: ['first', 'second'], strategy: 'smart', stickyLimit: 1, enabled: true } })
-  assert.equal(writes, 1)
-  assert.ok(management.list().strategies.includes('pace'))
-  assert.ok(management.list().combos[0].id.startsWith('combo:'))
-  assert.deepEqual(management.preview({ models: ['first', 'second'], strategy: 'smart' }).order.map(row => row.id), ['second', 'first'])
-})
-check('invalid fields and unknown IDs fail without losing the saved groups', () => {
-  const before = structuredClone(settings)
-  for (const combo of [
-    { name: '', models: ['first'], strategy: 'smart', stickyLimit: 1, enabled: true },
-    { name: 'New', models: ['unknown'], strategy: 'smart', stickyLimit: 1, enabled: true },
-    { name: 'New', models: ['first', 'first'], strategy: 'smart', stickyLimit: 1, enabled: true },
-    { name: 'New', models: ['first'], strategy: 'bad', stickyLimit: 1, enabled: true },
-  ]) assert.throws(() => management.save({ combo }))
-  assert.deepEqual(settings, before)
-})
-check('management rejects nesting cycles and refuses removal of a referenced group', () => {
-  const first = settings.combos[0]
-  management.save({ combo: { name: 'Outer', models: [first.id, 'third'], strategy: 'fallback', stickyLimit: 1, enabled: true } })
-  const outer = settings.combos[1]
-  assert.throws(() => management.save({ combo: { ...first, models: [outer.id] } }), /循环/)
-  assert.throws(() => management.remove({ id: first.id }), /仍在引用/)
-  management.remove({ id: outer.id })
-  management.remove({ id: first.id })
-  assert.deepEqual(settings.combos, [])
-})
+// S12-A：路由组管理端（createRoutingManagement / routing.mjs）已随「路由组」页
+// 删除；其 save/list/remove 管理面检查随之移除。src/combos.js 与共享内核的
+// 配额路由行为仍是运行时功能（settings.combos 直读），以下保留其覆盖。
 const scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'ofm-quota-routing-'))
 let core, stores
 try {

@@ -12,10 +12,6 @@ import { createChannelRuntime } from './channels/runtime.mjs'
 import { createSmartScheduler } from './smart-schedule.mjs'
 import { createClaimsHistory } from './claims-history.mjs'
 import { createRequestLog } from './request-log.mjs'
-import { createSubscriptions } from '../../src/subscriptions.js'
-import { createSubscriptionRuntime } from '../../src/subscription-completion.js'
-import { createMagpieEngine } from '../../src/magpie-engine.js'
-import { combineSubscriptionRuntimes, createMagpieModels } from '../../src/magpie-models.js'
 
 const PRODUCT = 'our-free-model-standalone'
 const VERSION = JSON.parse(fs.readFileSync(new URL('./package.json', import.meta.url), 'utf8')).version
@@ -114,16 +110,7 @@ async function acquireServiceLock(dataDir) {
 export async function startStandalone({
   dataDir = resolveStandaloneDataDir(), host = '127.0.0.1', port,
   logger = console, refresh = true, probe, lanEnabled, lanPort,
-  // 精简页面：只把模型、渠道与网关三页交给网页，其余页面仍在后端可用，
-  // 用 `--full` 启动即可回到完整控制台。这里是页面可见性，不是功能裁剪。
-  lite = false,
   startRelay = startLanRelay,
-  workbenchOptions, subscriptionOptions,
-  // The desktop updater judges the host it runs on (`win32` + `x64` only). It
-  // already takes `platform`/`arch` at its own boundary, so they are threaded
-  // through here rather than re-derived: a test runner is never a Windows x64
-  // host, and the update flow has to be exercisable where CI actually runs.
-  desktopPlatform = process.platform, desktopArch = process.arch,
 } = {}) {
   if (!isLoopbackHost(host)) throw new TypeError('the standalone service binds a loopback address only')
   if (typeof dataDir !== 'string' || !path.isAbsolute(dataDir)) throw new TypeError('dataDir must be an absolute path')
@@ -134,8 +121,6 @@ export async function startStandalone({
   if (lanPort !== undefined && (!Number.isInteger(lanPort) || lanPort < 0 || lanPort > 65535)) {
     throw new TypeError('lanPort must be an integer between 0 and 65535')
   }
-  if (typeof desktopPlatform !== 'string' || desktopPlatform === '') throw new TypeError('desktopPlatform must be a non-empty string')
-  if (typeof desktopArch !== 'string' || desktopArch === '') throw new TypeError('desktopArch must be a non-empty string')
   fs.mkdirSync(dataDir, { recursive: true, mode: 0o700 })
   const releaseLock = await acquireServiceLock(dataDir)
   let stores
@@ -146,9 +131,6 @@ export async function startStandalone({
   let scheduler
   let claims
   let gatewayModelRows
-  let subscriptions
-  let magpieEngine
-  let magpieModels
   let eac
   let requestLog
   let timer
@@ -263,21 +245,10 @@ export async function startStandalone({
       ...process.env.OFM_TEST_UPSTREAM ? { openExternal: async () => false } : {},
       onSaved: () => { void runtime?.refreshSealedLane().catch(error => logger.warn?.(`EAC 清单刷新失败：${error.message}`)) },
     })
-    subscriptions = createSubscriptions({ dataDir, ...subscriptionOptions })
-    const subscriptionRuntime = createSubscriptionRuntime({ subscriptions, stats: stores.stats, logger })
-    // The model workspace: the same embedded engine the plugin's settings page
-    // uses, so both products answer "which providers, which models" the same way.
-    magpieEngine = createMagpieEngine({ dataDir, logger })
-    magpieModels = createMagpieModels({
-      engine: magpieEngine, stats: stores.stats, logger,
-      onChanged: () => runtime?.syncAggregateCatalog?.(),
-    })
-    const combinedSubscriptionRuntime = combineSubscriptionRuntimes(magpieModels, subscriptionRuntime)
     requestLog = createRequestLog({ dataDir, logger })
     runtime = createModelRuntime({
       ...stores, logger, attributionUserAgent: `${PRODUCT}/${VERSION}`,
       sealedCredential: eac.credential,
-      subscriptionRuntime: combinedSubscriptionRuntime,
     })
     channels = await createChannelRuntime({ dataDir, logger, stats: stores.stats })
     // 智能调度器：auto / ourfreemodel 保留名的顺序接力（方案 §3）。
@@ -344,18 +315,14 @@ export async function startStandalone({
       },
     }
     management = createManagement({
-      stores, runtime, channels, eac, subscriptions, workbenchOptions, requestLog,
-      magpieEngine, magpieModels, scheduler, claims,
-      desktopPlatform, desktopArch,
-      onEngineStarted: () => { settings.update({ magpieEnabled: true }); settings.flush() },
-      onSubscriptionsChanged: () => runtime?.syncAggregateCatalog?.(),
+      stores, runtime, channels, requestLog,
+      scheduler, claims,
       info: () => ({
         product: PRODUCT, version: VERSION, dataDir,
         baseUrl: `http://${host === '::1' ? '[::1]' : host}:${listener?.port ?? requestedPort}`,
         automaticRefresh: refresh,
-        lite,
         networkMode: process.env.OFM_TEST_UPSTREAM ? 'fixture' : 'live',
-        capabilities: { anonymous: true, kilo: true, eac: true, accountChannels: true, webUi: true, lan: true, modelWorkspace: true },
+        capabilities: { anonymous: true, kilo: true, eac: true, accountChannels: true, webUi: true, lan: true },
         lan: lanState(),
       }),
       onSettingsChanged: async () => {
@@ -377,14 +344,6 @@ export async function startStandalone({
     management.setPort(listener.port)
     settings.update({ standalonePort: listener.port })
     settings.flush()
-    // Resume the workspace only when it was running at the last shutdown: the
-    // engine is a child process, and starting one nobody asked for would spend
-    // memory on every launch.
-    if (settings.get().magpieEnabled === true) {
-      void magpieEngine.start().then(() => magpieModels.refresh()).catch(() => {
-        logger.warn?.('our-free-model standalone: model workspace could not resume')
-      })
-    }
     await reconcileRelay()
 
     function scheduleRefresh() {
@@ -422,15 +381,13 @@ export async function startStandalone({
         clearTimeout(timer)
         const managementClosing = management.dispose()
         eac.dispose()
-        magpieModels?.close()
-        const engineClosing = magpieEngine?.close()
         scheduler?.dispose()
         claims?.dispose()
         runtime.dispose()
         closing = (async () => {
           try {
             await relayChanges
-            await Promise.all([managementClosing, closeRelay(), listener.close(), channels.close(), engineClosing])
+            await Promise.all([managementClosing, closeRelay(), listener.close(), channels.close()])
           } finally {
             try { stores.dispose() } finally { await releaseLock() }
           }
@@ -443,8 +400,6 @@ export async function startStandalone({
     clearTimeout(timer)
     await management?.dispose()
     eac?.dispose()
-    magpieModels?.close()
-    await magpieEngine?.close()
     scheduler?.dispose()
     claims?.dispose()
     runtime?.dispose()

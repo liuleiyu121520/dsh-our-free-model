@@ -1,4 +1,4 @@
-export type Page = 'overview' | 'workspace' | 'agents' | 'providers' | 'library' | 'routing' | 'models' | 'usage' | 'channels' | 'eac' | 'settings' | 'updates' | 'connection' | 'requests' | 'smart' | 'calendar'
+export type Page = 'channels' | 'smart' | 'connection' | 'calendar' | 'requests' | 'settings'
 export interface Model {
   id: string
   name: string
@@ -17,7 +17,6 @@ export interface Model {
   availability?: string
   ttftMs?: number | null
 }
-export interface ModelTestResult { ok: boolean; text: string; latencyMs: number; ttftMs?: number; persisted?: boolean }
 export interface ServiceSettings {
   enabled: boolean
   exposeRegionModels: boolean
@@ -37,12 +36,9 @@ export interface Summary {
   dataDir: string
   networkMode: string
   automaticRefresh: boolean
-  /** 精简页面：只显示模型、渠道与网关三页。缺省视为 false。 */
-  lite?: boolean
   catalogSyncedAt: number
   settings: ServiceSettings
   channels: { state: string; error?: string }
-  eacAuth?: { local?: boolean; authorized?: boolean; login?: string }
   /** 智能调度徽标：池内模型数与当前可用（未当日耗尽）数。 */
   smart?: { pool: number; available: number }
   catalog: Model[]
@@ -120,8 +116,8 @@ export interface Host {
   rotateKey(): Promise<string>
   logout(): Promise<void>
   error(error: Error): void
-  testModel(model: string, signal: AbortSignal): Promise<ModelTestResult>
-  refreshModels(probe: boolean, signal: AbortSignal): Promise<void>
+  /** 渠道模型启停（FR-13.4 唯一入口）：经 /channels/rpc 调 model.setDisabled。 */
+  setModelDisabled(provider: string, modelId: string, disabled: boolean): Promise<void>
   saveSettings(settings: Partial<ServiceSettings>): Promise<ServiceSettings>
   /** 智能调度：读取池状态与候选清单。 */
   smartState(): Promise<SmartState>

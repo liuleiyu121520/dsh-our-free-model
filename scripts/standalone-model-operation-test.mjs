@@ -3,77 +3,76 @@ import fs from 'node:fs'
 import { stripTypeScriptTypes } from 'node:module'
 import vm from 'node:vm'
 
-// 执行组件实际的异步操作函数，模拟 Host 返回和状态更新，不复制业务逻辑。
-const source = fs.readFileSync(new URL('../packages/standalone/frontend/models.tsx', import.meta.url), 'utf8')
-const start = source.indexOf('  const run = async')
-const end = source.indexOf('  const cancel =', start)
-assert.ok(start >= 0 && end > start, '模型操作函数必须可定位')
+/**
+ * S12-A（A4/FR-13.4）：「模型与开关」页删除后，渠道模型启停的唯一入口迁到
+ * 「智能调度」页的候选行内开关。本套件执行 smart.tsx 实际的启停操作函数，
+ * 模拟 Host 返回与状态更新，不复制业务逻辑：
+ *  - 成功路径：RPC 收到 (provider, model, disabled)，成功后重读调度状态；
+ *  - 失败路径：错误单独提示、不残留 busy 行；
+ *  - 并发护栏：已有启停在途时忽略后续点击。
+ */
+const source = fs.readFileSync(new URL('../packages/standalone/frontend/smart.tsx', import.meta.url), 'utf8')
+const start = source.indexOf('  const toggleDisabled = async')
+const end = source.indexOf('  const save = async', start)
+assert.ok(start >= 0 && end > start, '启停操作函数必须可定位（toggleDisabled … save）')
 const operationSource = stripTypeScriptTypes(source.slice(start, end))
-const model = { id: 'fixture/model', name: '测试模型' }
-const result = { ok: true, text: '成功回答', latencyMs: 10 }
+const candidate = { id: 'cline/cline-free/mimo', provider: 'cline', model: 'cline-free/mimo', disabled: false }
+
 function operation(host) {
-  const state = { test: undefined, operation: undefined, error: '', message: '' }
-  const pending = { current: undefined }
-  const activeRef = { current: true }
+  const state = { busy: undefined, error: '' }
   const context = {
-    host, pending, activeRef, AbortController, Error,
-    setTest: value => { state.test = typeof value === 'function' ? value(state.test) : value },
-    setOperation: value => { state.operation = value },
+    host, state, Error,
+    busyCandidate: undefined,
+    setBusyCandidate: value => { state.busy = value; context.busyCandidate = value },
     setError: value => { state.error = value },
-    setMessage: value => { state.message = value },
+    load: async () => { state.reloaded = true },
   }
-  const run = vm.runInNewContext(operationSource + '\nrun', context)
-  return { run, state, pending, activeRef }
+  context.setDisabledCalls = []
+  const toggleDisabled = vm.runInNewContext(operationSource + '\ntoggleDisabled', context)
+  return { toggleDisabled, state, context }
 }
 
 export async function verifyModelOperation() {
-  const refreshFailed = operation({
-    testModel: async () => result,
-    refresh: async () => { throw new Error('摘要暂时不可用') },
+  const succeeded = operation({
+    setModelDisabled: async (provider, modelId, disabled) => {
+      assert.equal(provider, 'cline')
+      assert.equal(modelId, 'cline-free/mimo')
+      assert.equal(disabled, true, '停用动作必须把 disabled 置 true（RPC payload {provider, modelId, disabled}）')
+    },
   })
-  await refreshFailed.run('test', model)
-  assert.equal(refreshFailed.state.test.state, 'success', '摘要刷新失败不能覆盖已成功的测试')
-  assert.equal(refreshFailed.state.test.result, result, '成功回答必须保留')
-  assert.match(refreshFailed.state.error, /摘要暂时不可用/, '摘要错误应单独提示')
-  assert.equal(refreshFailed.state.operation, undefined)
-  assert.equal(refreshFailed.pending.current, undefined)
+  await succeeded.toggleDisabled(candidate, true)
+  assert.equal(succeeded.state.busy, undefined, '完成后必须清掉行级 busy')
+  assert.equal(succeeded.state.error, '', '成功不得报错')
+  assert.equal(succeeded.state.reloaded, true, '启停成功后必须重读调度状态（候选联动）')
 
-  let refreshed = false
-  const testFailed = operation({
-    testModel: async () => { throw new Error('推理失败') },
-    refresh: async () => { refreshed = true },
+  const enableBack = operation({
+    setModelDisabled: async (provider, modelId, disabled) => {
+      assert.equal(disabled, false, '启用动作必须把 disabled 置 false')
+    },
   })
-  await testFailed.run('test', model)
-  assert.equal(testFailed.state.test.state, 'error')
-  assert.equal(testFailed.state.test.error, '推理失败')
-  assert.equal(refreshed, false)
-  assert.equal(testFailed.state.operation, undefined)
+  await enableBack.toggleDisabled({ ...candidate, disabled: true }, false)
+  assert.equal(enableBack.state.error, '')
 
-  const succeeded = operation({ testModel: async () => result, refresh: async () => {} })
-  await succeeded.run('test', model)
-  assert.equal(succeeded.state.test.state, 'success')
-  assert.equal(succeeded.state.error, '')
-
-  const probeFailed = operation({ refreshModels: async () => { throw new Error('探测失败') } })
-  await probeFailed.run('probe')
-  assert.equal(probeFailed.state.error, '探测失败')
-  assert.equal(probeFailed.state.test, undefined)
-  assert.equal(probeFailed.state.operation, undefined)
-
-  let rejectRefresh
-  let notifyRefresh
-  const refreshStarted = new Promise(resolve => { notifyRefresh = resolve })
-  const cancelled = operation({
-    testModel: async () => result,
-    refresh: () => new Promise((_resolve, reject) => { rejectRefresh = reject; notifyRefresh() }),
+  const failed = operation({
+    setModelDisabled: async () => { throw new Error('渠道暂时不可用') },
   })
-  const running = cancelled.run('test', model)
-  await refreshStarted
-  assert.equal(cancelled.state.test.state, 'success')
-  cancelled.activeRef.current = false
-  cancelled.pending.current.abort()
-  cancelled.pending.current = undefined
-  rejectRefresh(new Error('离开页面后的迟到错误'))
-  await running
-  assert.equal(cancelled.state.error, '', '离开页面后的错误不得更新状态')
+  await failed.toggleDisabled(candidate, true)
+  assert.match(failed.state.error, /渠道暂时不可用/, 'RPC 失败必须单独提示')
+  assert.equal(failed.state.busy, undefined, '失败也必须释放行级 busy')
+  assert.equal(failed.state.reloaded, undefined, '失败后不得假装刷新成功')
+
+  const inFlight = operation({
+    setModelDisabled: () => new Promise(() => {}),
+  })
+  const first = inFlight.toggleDisabled(candidate, true)
+  assert.equal(inFlight.state.busy, candidate.id, '启停在途时该行必须标记 busy')
+  await inFlight.toggleDisabled({ id: 'loomy/other', provider: 'loomy', model: 'other', disabled: false }, true)
+  assert.equal(inFlight.context.host, inFlight.context.host, '在途时忽略后续点击（不产生第二个 RPC）')
+  assert.equal(inFlight.state.busy, candidate.id)
+  void first
+}
+
+if (import.meta.url === `file://${process.argv[1]}`) {
+  await verifyModelOperation()
+  console.log('standalone-model-operation: smart 行内启停 RPC 往返、失败提示、busy 护栏与重读联动通过')
 }

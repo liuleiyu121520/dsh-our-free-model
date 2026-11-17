@@ -19,7 +19,7 @@ const browser = await chromium.launch({ headless: true })
 const settings = { enabled: true, exposeRegionModels: true, streamRecovery: true, standaloneProbe: false, defaultMaxTokens: 32768, probeIntervalMinutes: 15 }
 let loggedIn = false, key = 'ofm-ui-isolated-key', summaryReads = 0
 const summary = () => ({ version: 'test', baseUrl, dataDir: 'isolated', networkMode: 'fixture', automaticRefresh: false,
-  catalogSyncedAt: 0, settings: { ...settings }, channels: { state: 'ready' }, eacAuth: { local: false },
+  catalogSyncedAt: 0, settings: { ...settings }, channels: { state: 'ready' }, smart: { pool: 0, available: 0 },
   catalog: [{ id: 'fixture/model', name: '测试模型', channel: 'anonymous', routable: true, availability: 'available' }] })
 const errors = []
 try {
@@ -38,8 +38,9 @@ try {
     if (endpoint === '/key') return answer({ key })
     if (endpoint === '/key/rotate') { key = 'ofm-ui-rotated-key'; return answer({ key }) }
     if (endpoint === '/logout') { loggedIn = false; return answer({ ok: true }) }
-    if (endpoint === '/eac/status') return answer({ available: true, authorized: false, local: false, login: '' })
-    if (endpoint === '/eac/pool') return answer({ inflight: 0, pool: 100, active24h: 0 })
+    if (endpoint === '/claims/history') return answer({ schema: 'standalone/claims-history/v1', since: null, days: {} })
+    if (endpoint === '/requests') return answer({ total: 0, entries: [] })
+    if (endpoint === '/smart/state') return answer({ pool: [], hit: null, statuses: [], candidates: [] })
     if (endpoint === '/channels/rpc') {
       const value = body.method === 'provider.status' ? { statuses: Object.fromEntries(body.payload.providers.map(id => [id, { accounts: { total: 0, enabled: 0 } }])) }
         : body.method === 'usage.autoCheckin' ? { autoCheckin: { enabled: false } }
@@ -55,15 +56,17 @@ try {
   await page.getByText('登录令牌无效', { exact: true }).waitFor()
   await page.locator('#login-key').fill(key)
   await page.getByRole('button', { name: '进入控制台' }).click()
-  await page.getByTestId('overview-ready').waitFor()
-  await nav('模型清单'); await page.getByTestId('models-ready').waitFor()
-  await nav('用量统计'); await page.getByTestId('usage-ready').waitFor()
+  // 落地页 = 账号渠道（导航首位）；渠道页由独立 React 根挂载。
+  await page.getByRole('tab', { name: '登录与账号池' }).waitFor()
+  await nav('智能调度'); await page.getByTestId('smart-ready').waitFor()
+  await nav('用量日历'); await page.getByTestId('calendar-ready').waitFor()
+  await nav('请求日志'); await page.getByTestId('requests-ready').waitFor()
   await nav('服务设置'); await page.getByTestId('settings-ready').waitFor()
   await page.locator('#setting-defaultMaxTokens').fill('8192')
   await page.getByRole('button', { name: '保存设置', exact: true }).click()
   await page.getByText('设置已保存并生效', { exact: true }).waitFor()
   assert.equal(settings.defaultMaxTokens, 8192)
-  await nav('概览'); await nav('服务设置')
+  await nav('智能调度'); await nav('服务设置')
   assert.equal(await page.locator('#setting-defaultMaxTokens').inputValue(), '8192', '保存后的设置应在切页后保持')
   await nav('API 接入'); await page.getByTestId('connection-ready').waitFor()
   await page.getByRole('button', { name: '查看密钥', exact: true }).click()
@@ -76,7 +79,7 @@ try {
   page.once('dialog', dialog => dialog.accept())
   await page.getByRole('button', { name: '轮换密钥', exact: true }).click()
   await page.waitForFunction(() => document.getElementById('connection-key').value === 'ofm-ui-rotated-key')
-  await nav('免费账号渠道'); await page.getByLabel('搜索渠道').waitFor()
+  await nav('账号渠道'); await page.getByRole('tab', { name: '登录与账号池' }).waitFor()
   await page.getByRole('tab', { name: '请求日志', exact: true }).click()
   // 等待轮询真实执行；刷新不应重置渠道子页。
   const previousReads = summaryReads
@@ -85,7 +88,6 @@ try {
   while (summaryReads === previousReads && Date.now() < deadline) await new Promise(resolve => setTimeout(resolve, 250))
   assert.ok(summaryReads > previousReads, '15 秒自动轮询应执行')
   assert.equal(await page.getByRole('tab', { name: '请求日志', exact: true }).getAttribute('aria-selected'), 'true', '刷新不得重置渠道子页')
-  await nav('EAC 协付渠道'); await page.getByRole('heading', { name: 'EAC 协付渠道', exact: true }).waitFor()
   await nav('API 接入')
   const imageDir = process.env.OFM_UI_SCREENSHOT_DIR
   if (imageDir) fs.mkdirSync(imageDir, { recursive: true })
@@ -97,7 +99,7 @@ try {
   await page.getByRole('button', { name: '退出管理', exact: true }).click()
   await page.getByTestId('login-screen').waitFor()
   assert.deepEqual(errors, [])
-  console.log('react UI: 登录失败/成功、七页面导航、草稿保留/保存、密钥显隐/复制/轮换、轮询保持子页、三种视口、退出通过')
+  console.log('react UI: 登录失败/成功、六页面导航、草稿保留/保存、密钥显隐/复制/轮换、轮询保持子页、三种视口、退出通过')
 } finally {
   await browser.close(); management.dispose(); server.closeAllConnections(); await new Promise(resolve => server.close(resolve))
 }

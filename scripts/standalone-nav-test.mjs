@@ -5,13 +5,17 @@
  * 却拿另一份手写数组当白名单，`navigate('workspace')` 被 `includes` 直接短路，
  * 于是点击无反应、无报错、无 loading（#678）。
  *
- * 修法不是往白名单里补一个字符串，而是让它**从侧边栏推导**。这个脚本守住两件事：
+ * 修法不是往白名单里补一个字符串，而是让它**从侧边栏推导**。S12 之后控制台
+ * 收缩为 6 页（FR-13），双模（--lite/--full）架构删除，这份脚本守住：
  *
  * 1. `Page` 联合类型与侧边栏条目是同一个集合 —— 类型允许的页面必须真的能点到，
- *    侧边栏也不能列出类型里没有的页面；
- * 2. `app.tsx` 不再自己写一份名单，而是用 `shell.tsx` 导出的 `navigationPages`。
+ *    侧边栏也不能列出类型里没有的页面（未知 page 不可达）；
+ * 2. `app.tsx` 不再自己写一份名单，而是用 `shell.tsx` 导出的 `navigationPages`；
+ * 3. 导航是三分组六页（D30）：渠道与模型 / 数据 / 管理；
+ * 4. 双模符号（LITE_PAGES / liteNavigationPages / --lite / --full / hasDesktopBridge）清零；
+ * 5. 懒加载集合 = smart / calendar / settings，且从 LAZY_PAGE_NAMES 单一来源推导。
  *
- * 纯静态检查：不需要浏览器，也不构建前端产物。
+ * 纯静态检查：不需要浏览器，不构建前端产物。
  *
  * Run: node scripts/standalone-nav-test.mjs
  */
@@ -37,6 +41,8 @@ const pageUnion = /export type Page\s*=([\s\S]*?)\n/.exec(types)
 assert.ok(pageUnion, 'types.ts must declare `export type Page = ...`')
 const declared = new Set([...pageUnion[1].matchAll(/'([a-z-]+)'/g)].map(match => match[1]))
 assert.ok(declared.size > 0, 'the Page union must list at least one page')
+assert.deepEqual([...declared], ['channels', 'smart', 'connection', 'calendar', 'requests', 'settings'],
+  'Page 联合必须收缩为 6 页（FR-13.1）')
 
 // ── the sidebar ─────────────────────────────────────────────────────────────
 const shell = read('components/shell.tsx')
@@ -60,32 +66,54 @@ check('the sidebar has no duplicate entries', () => {
   assert.deepEqual([...new Set(duplicates)], [], `duplicated: ${[...new Set(duplicates)].join(', ')}`)
 })
 
+// ── three groups, six pages, in order (D30) ────────────────────────────────
+check('navigation is the three-group six-page layout', () => {
+  const groups = [...navigationBlock[1].matchAll(/label:\s*'([^']+)'/g)].map(match => match[1])
+  assert.deepEqual(groups, ['渠道与模型', '数据', '管理'], `分组应为三分组，实际：${groups.join(' / ')}`)
+  assert.deepEqual(listed, ['channels', 'smart', 'connection', 'calendar', 'requests', 'settings'],
+    `页面顺序应为 channels→smart→connection→calendar→requests→settings，实际：${listed.join(' → ')}`)
+})
+
 // ── the whitelist must be derived, never restated ───────────────────────────
 const app = read('app.tsx')
 
 check('App navigates against the sidebar-derived list', () => {
   assert.match(app, /from '\.\/components\/shell'/, 'app.tsx must import from the shell')
-  // 白名单可以按 `lite` 收窄，但必须是侧边栏的函数：`liteNavigationPages`
-  // 仍从 `navigation` 推导，`app.tsx` 自己不维护名单。
-  assert.match(app, /\bliteNavigationPages\b/, 'app.tsx must use `liteNavigationPages`')
+  assert.match(app, /\bnavigationPages\b/, 'app.tsx must use `navigationPages`')
   assert.doesNotMatch(app, /\bpageNames\b/, 'app.tsx must not keep its own page-name list')
 })
 
 check('and shell.tsx actually exports it', () => {
   assert.match(shell, /export const navigationPages: Page\[\] = navigation\.flatMap\(/, 'shell.tsx must export `navigationPages` derived from `navigation`')
-  assert.match(shell, /export const liteNavigationPages = \(lite: boolean\): Page\[\] =>\s*\n?\s*lite \? navigationPages\.filter/, '`liteNavigationPages` must filter `navigationPages`, never a new list')
 })
 
-// ── 精简导航的页面集合 ──────────────────────────────────────────────────────
-// 精简模式只剩「账号渠道 / 网关与 API 接入 / 请求日志」三页：模型清单已并入
-// 网关页（在那里选模型看示例），独立的「模型与开关」页不再需要。
-check('the lite navigation drops 模型与开关 but keeps the other three', () => {
-  const lite = /const LITE_PAGES: ReadonlySet<string> = new Set\(\[([^\]]*)\]\)/.exec(shell)
-  assert.ok(lite, 'shell.tsx must declare LITE_PAGES')
-  const ids = [...lite[1].matchAll(/'([a-z-]+)'/g)].map(([, id]) => id)
-  assert.deepEqual(ids.sort(), ['channels', 'connection', 'requests'],
-    `精简导航只应有账号渠道/网关/请求日志，实际：${ids.join(', ')}`)
-  assert.ok(!ids.includes('models'), '「模型与开关」不得出现在精简导航里')
+// ── dual-mode architecture is gone ─────────────────────────────────────────
+check('no lite/full dual-mode symbols anywhere in the console sources', () => {
+  for (const rel of ['components/shell.tsx', 'app.tsx', 'types.ts']) {
+    const source = read(rel)
+    for (const symbol of ['LITE_PAGES', 'liteNavigationPages', 'hasDesktopBridge']) {
+      assert.equal(source.includes(symbol), false, `${rel} must not contain ${symbol}`)
+    }
+  }
+  const cli = fs.readFileSync(path.join(root, 'packages', 'standalone', 'cli.mjs'), 'utf8')
+  assert.equal(cli.includes('--lite'), false, 'cli.mjs must not document --lite')
+  assert.equal(cli.includes('--full'), false, 'cli.mjs must not document --full')
+})
+
+// ── lazy pages: single source of truth ──────────────────────────────────────
+check('the lazy-page set is smart/calendar/settings and drives both type and render', () => {
+  const names = /const LAZY_PAGE_NAMES = \[([^\]]*)\] as const/.exec(app)
+  assert.ok(names, 'app.tsx must declare `const LAZY_PAGE_NAMES = [...] as const`')
+  const lazy = [...names[1].matchAll(/'([a-z-]+)'/g)].map(([, id]) => id)
+  assert.deepEqual(lazy.sort(), ['calendar', 'settings', 'smart'],
+    `懒加载集合应为 smart/calendar/settings，实际：${lazy.join(', ')}`)
+  for (const page of lazy) {
+    assert.ok(declared.has(page), `lazy page ${page} must be a Page`)
+    assert.ok(listed.includes(page), `lazy page ${page} must be reachable from the sidebar`)
+  }
+  // 渲染数组必须由 navigationPages ∩ LAZY_PAGES 推导，而不是另一份手写枚举。
+  assert.match(app, /navigationPages\.filter\(\(name\): name is LazyPageName => LAZY_PAGES\.has\(name\)/,
+    '渲染数组必须从 navigationPages.filter + LAZY_PAGES 推导')
 })
 
 console.log(`\nok ${checks}/${checks} navigation invariants hold`)

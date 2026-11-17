@@ -117,10 +117,9 @@ async function setup(variant, options = {}) {
       const part = endpoint.slice('/api/management'.length)
       state.requests.push({ endpoint, method: route.request().method() })
       const settings = { enabled: true, exposeRegionModels: true, streamRecovery: true, standaloneProbe: false, defaultMaxTokens: 32768, probeIntervalMinutes: 15, hiddenModelIds: [] }
-      const summary = { version: 'fixture', baseUrl: origin, dataDir: 'isolated-fixture', networkMode: 'fixture', automaticRefresh: false, settings, channels: { state: 'ready' }, eacAuth: { local: false }, catalog: [] }
+      const summary = { version: 'fixture', baseUrl: origin, dataDir: 'isolated-fixture', networkMode: 'fixture', automaticRefresh: false, settings, channels: { state: 'ready' }, catalog: [] }
       if (part === '/summary') { if (state.summaryGate) await state.summaryGate.promise; return json(summary) }
       if (part === '/stats') return json(buildStats({}, []))
-      if (part === '/eac/status') return json({ available: true, authorized: false, local: false })
       report.unexpectedApiRequests.push({ scenario: currentScenario.name, endpoint }); return json({ error: 'unimplemented fixture endpoint' }, 501)
     }
     return route.continue()
