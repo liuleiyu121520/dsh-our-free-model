@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { ArrowDown, ArrowUp, CircleSlash, GripVertical, Info, ListPlus, RefreshCw, Search, Sparkles, Trash2, X } from 'lucide-react'
+import { ArrowDown, ArrowUp, CircleSlash, GripVertical, ListPlus, RefreshCw, Search, Sparkles, Trash2, X } from 'lucide-react'
 import { Button, Card, Switch } from './components/ui'
 import type { Host, SmartCandidate, SmartState, SmartStatus, Summary } from './types'
 import './smart.css'
@@ -221,13 +221,6 @@ export function Smart({ host, active }: { summary: Summary; stats: unknown; host
         <span className="smart-alias-note">别名 <code>ourfreemodel</code> 与 <code>auto</code> 等价</span>
       </div>
     </header>
-
-    <Card className="smart-note-card">
-      <span className="smart-note-icon" aria-hidden="true"><Info size={16} /></span>
-      <p><strong>auto 的接力语义：</strong>网关按调度池顺序优先调用第一个可用模型，其内部多账号轮换规则不变；
-        某模型当日配额全部耗尽后自动落到下一个，且当天不再重复尝试已耗尽的模型；
-        全池耗尽时返回 429 并附各模型解禁时刻；非配额错误（网络、5xx 等）不接力。</p>
-    </Card>
 
     {error && <div className="notice error-notice" role="alert">{error}<button className="text-button" onClick={() => void load()}>重试</button></div>}
     {toast && <div className="smart-toast" role="status">{toast}</div>}
