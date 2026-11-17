@@ -33,15 +33,23 @@
 .smart-card-head { padding-bottom: 10px; border-bottom: 1px solid var(--line-soft); margin-bottom: 12px; }
 .smart-card-head h2 { font-size: 15px; font-weight: 600; color: var(--ink); }
 .smart-card-head p { margin-top: 4px; font-size: 12px; line-height: 1.65; color: var(--muted); }
-.smart-filter-field { display: flex; align-items: center; gap: 7px; margin-top: 10px; padding: 7px 10px; border: 1px solid var(--line-soft); border-radius: var(--radius-control); background: var(--surface); color: var(--muted); transition: border-color 150ms var(--ease-out-expo); }
+/* 筛选框与「显示已停用模型」开关同行（FR-16.2）：开关不换行占高，候选可视行数最大化。 */
+.smart-filter-row { display: flex; align-items: center; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
+.smart-filter-field { display: flex; align-items: center; gap: 7px; flex: 1; min-width: 200px; padding: 7px 10px; border: 1px solid var(--line-soft); border-radius: var(--radius-control); background: var(--surface); color: var(--muted); transition: border-color 150ms var(--ease-out-expo); }
 .smart-filter-field:focus-within { border-color: var(--accent-line); }
 .smart-filter-field input { flex: 1; min-width: 0; border: 0; background: transparent; padding: 0; font-size: 12.5px; color: var(--ink); }
 .smart-filter-field input:focus-visible { outline: none; box-shadow: none; }
 .smart-filter-field input::placeholder { color: var(--ink-quiet); }
+.smart-toggle-view { display: inline-flex; align-items: center; gap: 7px; font-size: 12px; color: var(--muted); white-space: nowrap; user-select: none; }
+.smart-toggle-view.is-on { color: var(--ink); }
+.smart-toggle-view .ui-switch { flex-shrink: 0; }
+.smart-toggle-view-text { border: 0; background: transparent; padding: 0; font: inherit; color: inherit; cursor: pointer; }
+.smart-toggle-view-text:focus-visible { outline: 2px solid var(--accent-line); outline-offset: 2px; border-radius: 4px; }
+.smart-toggle-view-text:hover { color: var(--ink); }
 
-/* —— 候选清单：限高滚动，保证首屏双列平衡（左候选右池互不推挤） —— */
-.smart-candidate-list, .smart-pool-list, .smart-status-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
-.smart-candidate-list { max-height: 380px; overflow-y: auto; scrollbar-gutter: stable; padding-right: 2px; }
+/* —— 候选清单：限高滚动（FR-16.4：池状态区内联化后高度重分配，候选可视行数多于 1.2.0） —— */
+.smart-candidate-list, .smart-pool-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.smart-candidate-list { max-height: 560px; overflow-y: auto; scrollbar-gutter: stable; padding-right: 2px; }
 .smart-candidate { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 12px; border: 1px solid var(--line-soft); border-radius: var(--radius-control); background: var(--surface); transition: border-color 150ms var(--ease-out-expo), background 150ms var(--ease-out-expo); }
 .smart-candidate:hover { border-color: var(--accent-line); background: var(--surface-hover); }
 .smart-candidate-main { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
@@ -69,6 +77,8 @@
 .smart-pool-grip { color: var(--ink-quiet); cursor: grab; flex-shrink: 0; }
 .smart-pool-id { flex: 1; min-width: 0; font-family: var(--mono-font, monospace); font-size: 12.5px; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .smart-pool-row.is-invalid .smart-pool-id { color: var(--ink-quiet); text-decoration: line-through; text-decoration-color: var(--dsw-alias-border-l2); text-decoration-thickness: 1px; }
+/* 池行内联账号状态（FR-16.3）：已消耗 M/N（账号），全耗尽时附最早解禁 HH:mm。 */
+.smart-pool-accounts { font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; flex-shrink: 0; }
 .smart-tag { font-size: 11px; padding: 3px 8px; border-radius: 999px; white-space: nowrap; flex-shrink: 0; }
 .smart-tag.is-ok-tag { color: var(--success-ink); background: var(--success-soft); border: 1px solid var(--success-line); }
 .smart-tag.is-skipped-tag { color: var(--warning); background: var(--warning-soft); border: 1px solid var(--warning-line); }
@@ -83,19 +93,7 @@
 .smart-save-btn { min-width: 128px; }
 .smart-save-hint { font-size: 11.5px; color: var(--ink-quiet); }
 
-/* —— 池状态区 —— */
-.smart-status-row { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border: 1px solid var(--line-soft); border-radius: var(--radius-control); background: var(--surface); }
-.smart-status-row.is-invalid { background: var(--hover); }
-.smart-status-id { flex: 1; min-width: 0; font-family: var(--mono-font, monospace); font-size: 12.5px; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.smart-state { font-size: 11.5px; white-space: nowrap; }
-.smart-state.is-ok { color: var(--success-ink); }
-.smart-state.is-exhausted { color: var(--warning); }
-.smart-state.is-invalid { color: var(--ink-quiet); }
-.smart-status-accounts { font-size: 11.5px; color: var(--muted); font-variant-numeric: tabular-nums; flex-shrink: 0; }
-.smart-status-empty { margin: 0; font-size: 12.5px; color: var(--muted); }
-.smart-status-footnote { margin: 10px 0 0; font-size: 11.5px; line-height: 1.7; color: var(--ink-quiet); }
-
-/* 降级动效（prefers-reduced-motion 与全站一致：仅透明度/边框过渡，无需关闭） */
+/* 池状态独立区块已随 FR-16.3 内联化移除（DOM 与样式均不留死区）；降级动效保持全站一致。 */
 @media (prefers-reduced-motion: reduce) {
   .smart-candidate, .smart-pool-row { transition: none; }
 }

@@ -64,7 +64,7 @@ export interface SmartCandidate {
   name?: string
   disabled: boolean
   dead: boolean
-  accounts: { total: number; available: number }
+  accounts: { total: number; available: number; earliestResetAtMs?: number }
 }
 /** 智能调度：池内单模型状态（invalid=失效 / exhausted=当日已跳过）。 */
 export interface SmartStatus {
@@ -72,7 +72,9 @@ export interface SmartStatus {
   usable?: boolean
   reason?: 'invalid' | 'exhausted'
   resetAtMs?: number
-  accounts: { total: number; available: number }
+  /** 视觉能力（FR-15）：含图请求的候选过滤依据，与接入页徽章同源。 */
+  vision?: boolean
+  accounts: { total: number; available: number; earliestResetAtMs?: number }
 }
 export interface SmartState {
   pool: string[]

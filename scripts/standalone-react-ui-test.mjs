@@ -40,7 +40,18 @@ try {
     if (endpoint === '/logout') { loggedIn = false; return answer({ ok: true }) }
     if (endpoint === '/claims/history') return answer({ schema: 'standalone/claims-history/v1', since: null, days: {} })
     if (endpoint === '/requests') return answer({ total: 0, entries: [] })
-    if (endpoint === '/smart/state') return answer({ pool: [], hit: null, statuses: [], candidates: [] })
+    // 免责声明已在替身外确认：不补这条路由时兜底 {ok:true} 会被当成未确认，
+    // 首次进入控制台自动弹出的模态会拦住后续导航点击（基线即有的时序隐患，S16 一并收口）。
+    if (endpoint === '/disclaimer') return answer({ acknowledged: true })
+    if (endpoint === '/smart/state') return answer({
+      pool: ['fixture/model'], hit: 'fixture/model',
+      statuses: [{ modelId: 'fixture/model', usable: false, reason: 'exhausted', resetAtMs: Date.now() + 3600_000, vision: true, accounts: { total: 2, available: 0, earliestResetAtMs: Date.now() + 3600_000 } }],
+      candidates: [
+        { id: 'fixture/model', provider: 'fixture', model: 'model', name: '测试模型', disabled: false, dead: false, accounts: { total: 1, available: 1 } },
+        { id: 'fixture/on-model', provider: 'fixture', model: 'on-model', name: '启用中模型', disabled: false, dead: false, accounts: { total: 1, available: 1 } },
+        { id: 'fixture/off-model', provider: 'fixture', model: 'off-model', name: '停用模型', disabled: true, dead: false, accounts: { total: 1, available: 1 } },
+      ],
+    })
     if (endpoint === '/channels/rpc') {
       const value = body.method === 'provider.status' ? { statuses: Object.fromEntries(body.payload.providers.map(id => [id, { accounts: { total: 0, enabled: 0 } }])) }
         : body.method === 'usage.autoCheckin' ? { autoCheckin: { enabled: false } }
@@ -59,6 +70,22 @@ try {
   // 落地页 = 账号渠道（导航首位）；渠道页由独立 React 根挂载。
   await page.getByRole('tab', { name: '登录与账号池' }).waitFor()
   await nav('智能调度'); await page.getByTestId('smart-ready').waitFor()
+  // S16（AC-42/43，FR-16）：候选默认过滤已停用；开关开启后可见且仅「启用」动作；
+  // 独立池状态区块不存在（DOM 断言）；池行内联「已消耗 M/N（账号）」与最早解禁。
+  await page.locator('.smart-candidate').filter({ hasText: 'fixture/on-model' }).waitFor()
+  assert.equal(await page.locator('.smart-candidate').filter({ hasText: 'fixture/off-model' }).count(), 0, '已停用模型默认不得出现在候选列表')
+  await page.getByRole('switch', { name: '显示已停用模型' }).click()
+  const disabledRow = page.locator('.smart-candidate').filter({ hasText: 'fixture/off-model' })
+  await disabledRow.waitFor()
+  assert.equal(await disabledRow.locator('.smart-tag.is-disabled-tag').count(), 1, '开关视图内必须显示「已停用」标记')
+  assert.equal(await page.getByRole('button', { name: '启用 fixture/off-model' }).count(), 1, '开关视图内的行内动作必须收敛为「启用」')
+  await page.getByRole('switch', { name: '显示已停用模型' }).click()
+  assert.equal(await page.locator('.smart-candidate').filter({ hasText: 'fixture/off-model' }).count(), 0, '开关关闭后已停用模型回到隐藏')
+  assert.equal(await page.locator('.smart-status-card, .smart-status-list, .smart-status-row').count(), 0, '独立池状态区块必须不存在')
+  assert.equal(await page.getByText('池状态', { exact: true }).count(), 0, '「池状态」区块标题不得残留')
+  const poolRow = page.locator('.smart-pool-row').filter({ hasText: 'fixture/model' })
+  assert.match(await poolRow.locator('.smart-pool-accounts').innerText(), /已消耗 2\/2（账号） · 最早解禁 \d{2}:\d{2}/,
+    '池行必须内联已消耗 M/N（账号）与最早解禁 HH:mm（本地时区）')
   await nav('用量日历'); await page.getByTestId('calendar-ready').waitFor()
   await nav('请求日志'); await page.getByTestId('requests-ready').waitFor()
   await nav('服务设置'); await page.getByTestId('settings-ready').waitFor()

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ArrowDown, ArrowUp, CircleSlash, GripVertical, Info, ListPlus, RefreshCw, Search, Sparkles, Trash2, X } from 'lucide-react'
-import { Button, Card } from './components/ui'
+import { Button, Card, Switch } from './components/ui'
 import type { Host, SmartCandidate, SmartState, SmartStatus, Summary } from './types'
 import './smart.css'
 
@@ -9,13 +9,22 @@ const fmtReset = (ms?: number) => Number.isFinite(ms) && (ms as number) > 0
   ? new Date(ms as number).toLocaleString('zh-CN', { hour12: false })
   : ''
 
+/** 「最早解禁 HH:mm」（FR-16.3）：本地时区、仅时分。 */
+const fmtClock = (ms?: number) => Number.isFinite(ms) && (ms as number) > 0
+  ? new Date(ms as number).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', hour12: false })
+  : ''
+
 const statusOf = (statuses: SmartStatus[] | undefined, modelId: string): SmartStatus | undefined =>
   statuses?.find(row => row.modelId === modelId)
 
 const isInvalid = (statuses: SmartStatus[] | undefined, modelId: string) =>
   statusOf(statuses, modelId)?.reason === 'invalid'
 
-function CandidateRow({ candidate, busy, onAdd, onToggleDisabled }: { candidate: SmartCandidate; busy: boolean; onAdd(id: string): void; onToggleDisabled(candidate: SmartCandidate, disabled: boolean): void }) {
+/**
+ * 候选行（FR-16.1/16.2）：默认视图只含启用中的模型；「显示已停用模型」开关
+ * 开启后（showDisabled），停用条目灰显 + 仅「启用」动作（恢复路径，D32）。
+ */
+function CandidateRow({ candidate, busy, showDisabled, onAdd, onToggleDisabled }: { candidate: SmartCandidate; busy: boolean; showDisabled: boolean; onAdd(id: string): void; onToggleDisabled(candidate: SmartCandidate, disabled: boolean): void }) {
   const exhausted = candidate.accounts.total > 0 && candidate.accounts.available === 0
   const zeroAccounts = candidate.accounts.total === 0
   return <li className={`smart-candidate${candidate.disabled ? ' is-disabled' : ''}`}>
@@ -27,17 +36,18 @@ function CandidateRow({ candidate, busy, onAdd, onToggleDisabled }: { candidate:
       <span className={`smart-accounts ${exhausted ? 'is-exhausted' : zeroAccounts ? 'is-neutral' : 'is-ok'}`}>
         {candidate.accounts.available}/{candidate.accounts.total} 账号可用
       </span>
-      {candidate.disabled && <span className="smart-tag is-disabled-tag">已停用</span>}
+      {showDisabled && candidate.disabled && <>
+        <span className="smart-tag is-disabled-tag">已停用</span>
+        <Button variant="ghost" size="sm" className="smart-toggle-btn"
+          aria-label={`启用 ${candidate.id}`} title="启用（恢复进入候选与调度）"
+          disabled={busy} onClick={() => onToggleDisabled(candidate, false)}>
+          <CircleSlash size={14} />启用
+        </Button>
+      </>}
       {!candidate.disabled && <Button variant="ghost" size="sm" className="smart-add-btn" aria-label={`把 ${candidate.id} 加入调度池`}
         title="加入调度池" onClick={() => onAdd(candidate.id)}>
         <ListPlus size={15} />加入
       </Button>}
-      <Button variant="ghost" size="sm" className="smart-toggle-btn"
-        aria-label={candidate.disabled ? `启用 ${candidate.id}` : `停用 ${candidate.id}`}
-        title={candidate.disabled ? '启用（恢复进入候选与调度）' : '停用（从候选与调度中移除）'}
-        disabled={busy} onClick={() => onToggleDisabled(candidate, !candidate.disabled)}>
-        <CircleSlash size={14} />{candidate.disabled ? '启用' : '停用'}
-      </Button>
     </div>
   </li>
 }
@@ -58,12 +68,20 @@ function PoolRow({ modelId, index, total, statuses, dragging, onRemove, onMove, 
   const status = statusOf(statuses, modelId)
   const invalid = status?.reason === 'invalid'
   const exhausted = status?.reason === 'exhausted'
+  // 池行内联账号状态（FR-16.3）：M = total − available（已消耗）；M=N（全耗尽）且 N>0
+  // 时同行给出「最早解禁 HH:mm」（本地时区；时刻取自 accounts.earliestResetAtMs，缺省不显示）。
+  const accounts = status?.accounts
+  const consumed = accounts && accounts.total > 0
+    ? <>已消耗 {accounts.total - accounts.available}/{accounts.total}（账号）
+      {accounts.available === 0 && accounts.earliestResetAtMs ? ` · 最早解禁 ${fmtClock(accounts.earliestResetAtMs)}` : ''}</>
+    : null
   return <li className={`smart-pool-row${invalid ? ' is-invalid' : ''}${dragging ? ' is-dragging' : ''}`}
     draggable onDragStart={() => onDragStart(index)} onDragOver={onDragOver}
     onDrop={() => onDrop(index)} onDragEnd={onDragEnd}>
     <span className="smart-pool-order" aria-hidden="true">{index + 1}</span>
     <span className="smart-pool-grip" aria-hidden="true"><GripVertical size={14} /></span>
     <span className="smart-pool-id" title={modelId}>{modelId}</span>
+    {consumed && <span className="smart-pool-accounts" title={accounts?.earliestResetAtMs ? `最早解禁 ${fmtReset(accounts.earliestResetAtMs)}` : undefined}>{consumed}</span>}
     {invalid && <span className="smart-tag is-invalid-tag">已失效</span>}
     {exhausted && <span className="smart-tag is-skipped-tag" title={fmtReset(status?.resetAtMs)}>当日已跳过{status?.resetAtMs ? ` · ${fmtReset(status.resetAtMs)} 解禁` : ''}</span>}
     {!invalid && !exhausted && <span className="smart-tag is-ok-tag">可用</span>}
@@ -78,7 +96,7 @@ function PoolRow({ modelId, index, total, statuses, dragging, onRemove, onMove, 
   </li>
 }
 
-export function Smart({ summary, host, active }: { summary: Summary; stats: unknown; host: Host; active: boolean }) {
+export function Smart({ host, active }: { summary: Summary; stats: unknown; host: Host; active: boolean }) {
   const [view, setView] = useState<SmartState | undefined>(undefined)
   const [draft, setDraft] = useState<string[]>([])
   const [loading, setLoading] = useState(false)
@@ -87,6 +105,7 @@ export function Smart({ summary, host, active }: { summary: Summary; stats: unkn
   const [notice, setNotice] = useState('')
   const [dragging, setDragging] = useState<number | undefined>(undefined)
   const [candidateQuery, setCandidateQuery] = useState('')
+  const [showDisabled, setShowDisabled] = useState(false)
   const [busyCandidate, setBusyCandidate] = useState<string | undefined>(undefined)
   const dirty = useRef(false)
 
@@ -104,15 +123,19 @@ export function Smart({ summary, host, active }: { summary: Summary; stats: unkn
   useEffect(() => { if (active && !view) void load() }, [active, view, load])
 
   const statusList = view?.statuses
-  // 候选清单保留「已停用」条目（配行内「启用」动作，FR-13.4 启停唯一入口），
-  // 只过滤已下架（dead）与已在池内的条目。
+  // 候选默认过滤已停用（FR-16.1）：停用条目不参与调度，不占候选位；恢复路径 =
+  // 「显示已停用模型」开关（showDisabled，FR-16.2/D32），开启后灰显 + 仅「启用」动作。
+  // 已下架（dead）与已在池内的条目始终过滤。
   const candidates = useMemo(() => {
     const query = candidateQuery.trim().toLowerCase()
     return (view?.candidates ?? [])
       .filter(row => row.dead !== true && !draft.includes(row.id))
+      .filter(row => showDisabled || row.disabled !== true)
       .filter(row => query === '' || row.id.toLowerCase().includes(query) || row.provider.toLowerCase().includes(query)
         || (row.name ?? '').toLowerCase().includes(query))
-  }, [view, draft, candidateQuery])
+  }, [view, draft, candidateQuery, showDisabled])
+  const hiddenDisabledCount = useMemo(() => (view?.candidates ?? [])
+    .filter(row => row.dead !== true && !draft.includes(row.id) && row.disabled === true).length, [view, draft])
   const poolRows = draft.map(modelId => ({
     modelId,
     status: statusOf(statusList, modelId),
@@ -202,18 +225,31 @@ export function Smart({ summary, host, active }: { summary: Summary; stats: unkn
       <Card className="smart-candidates-card">
         <div className="smart-card-head">
           <h2>候选模型</h2>
-          <p>来自账号渠道的模型目录（已过滤下架条目；停用条目可在此重新启用）。绑定账号数与可用账号数实时推导。</p>
-          <label className="smart-filter-field">
-            <Search size={13} aria-hidden="true" />
-            <input type="search" value={candidateQuery} placeholder={`筛选 ${candidates.length} 个候选（id / 渠道）`}
-              aria-label="筛选候选模型" onChange={event => setCandidateQuery(event.target.value)} />
-          </label>
+          <p>来自账号渠道的模型目录（默认只列启用中的模型，已下架不展示）。绑定账号数与可用账号数实时推导。</p>
+          <div className="smart-filter-row">
+            <label className="smart-filter-field">
+              <Search size={13} aria-hidden="true" />
+              <input type="search" value={candidateQuery} placeholder={`筛选 ${candidates.length} 个候选（id / 渠道）`}
+                aria-label="筛选候选模型" onChange={event => setCandidateQuery(event.target.value)} />
+            </label>
+            <span className={`smart-toggle-view${showDisabled ? ' is-on' : ''}`}>
+              <Switch checked={showDisabled} onCheckedChange={setShowDisabled} aria-label="显示已停用模型" />
+              {/* 文案独立成按钮：Switch 的 {...props} 展开在内部 onClick 之后，外层
+                  传 onClick 会覆盖其切换逻辑——文字与开关各走各的点击面，互不冒泡。 */}
+              <button type="button" className="smart-toggle-view-text"
+                onClick={() => setShowDisabled(!showDisabled)}>
+                显示已停用模型{hiddenDisabledCount > 0 && !showDisabled ? `（${hiddenDisabledCount}）` : ''}
+              </button>
+            </span>
+          </div>
         </div>
         {candidates.length === 0 ? <p className="smart-candidates-empty" role="status">
-          {candidateQuery ? '没有匹配筛选条件的候选。' : view?.candidates.length ? '目录中的模型都已在池内或已下架。' : '渠道目录暂无模型，可稍后重试。'}
+          {candidateQuery ? '没有匹配筛选条件的候选。'
+            : view?.candidates.length ? (showDisabled ? '目录中的模型都已在池内或已下架。' : '没有启用中的候选：已停用模型不参与调度，可打开「显示已停用模型」查看并恢复。')
+              : '渠道目录暂无模型，可稍后重试。'}
           <Button variant="ghost" size="sm" onClick={() => void load()}><RefreshCw size={13} />刷新</Button>
         </p> : <ul className="smart-candidate-list">
-          {candidates.map(row => <CandidateRow key={row.id} candidate={row} busy={busyCandidate === row.id} onAdd={add} onToggleDisabled={(candidate, disabled) => void toggleDisabled(candidate, disabled)} />)}
+          {candidates.map(row => <CandidateRow key={row.id} candidate={row} busy={busyCandidate === row.id} showDisabled={showDisabled} onAdd={add} onToggleDisabled={(candidate, disabled) => void toggleDisabled(candidate, disabled)} />)}
         </ul>}
       </Card>
 
@@ -253,26 +289,5 @@ export function Smart({ summary, host, active }: { summary: Summary; stats: unkn
         </>}
       </Card>
     </div>}
-
-    <Card className="smart-status-card">
-      <div className="smart-card-head">
-        <h2>池状态</h2>
-        <p>每个池内模型的实时预检结果（跳过状态由账号 modelRateLimits 派生，服务重启后自动正确）。</p>
-      </div>
-      {poolRows.length === 0 ? <p className="smart-status-empty">池为空，暂无状态可展示。</p> : <ul className="smart-status-list">
-        {poolRows.map(row => {
-          const accounts = row.status?.accounts
-          return <li key={row.modelId} className={`smart-status-row${row.invalid ? ' is-invalid' : ''}`}>
-            <span className="smart-status-id" title={row.modelId}>{row.modelId}</span>
-            {row.invalid ? <span className="smart-state is-invalid">已失效（模型下架 / 停用 / 无启用账号），调度时自动跳过</span>
-              : row.status?.reason === 'exhausted'
-                ? <span className="smart-state is-exhausted">当日已跳过{row.status.resetAtMs ? ` · ${fmtReset(row.status.resetAtMs)} 解禁` : ' · 解禁时刻未知（积分型配额）'}</span>
-                : <span className="smart-state is-ok">可用</span>}
-            <span className="smart-status-accounts">{accounts ? `${accounts.available}/${accounts.total} 账号可用` : '账号信息未知'}</span>
-          </li>
-        })}
-      </ul>}
-      <p className="smart-status-footnote">服务端每 30 秒刷新一次快照；运行时接力发生后会立即刷新。摘要侧栏徽标 = 当前可用模型数（{summary?.smart?.available ?? '—'}）。</p>
-    </Card>
   </div>
 }
