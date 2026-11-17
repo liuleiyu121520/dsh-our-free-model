@@ -1,0 +1,8 @@
+# S8 入口基线：src/ 与 vendor/ 零改动状态快照（AC-20/AC-22 对照）
+# HEAD: 8ecb617c71b8c14a8b9e997d061561e0ce176853
+# git status --short src/ vendor/:
+（空=零改动）
+# git diff 838a64b..HEAD -- src/:
+ src/failure.js | 12 +++++++++++-
+ src/store.js   |  4 ++++
+ 2 files changed, 15 insertions(+), 1 deletion(-)

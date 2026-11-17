@@ -1,0 +1,47 @@
+# E-8 QUOTA 普查表自动生成版（MINOR-001 闭环）
+# 生成命令：grep -n "QUOTA_EXCEEDED" packages/standalone/channels/business.mjs（S8 时点实测，全集 40 处）
+# 与方案 §3.5 手抄普查表对账：
+#   - 补：cline 43244（方案表遗漏，实测在列）
+#   - 剔：29645（方案「辅助/标记 import」条目；grep 实测行号为 29655 QUOTA_EXCEEDED_CODE 定义，归「辅助/标记」组）
+#   - 其余 38 行与方案表逐一对应（抛出点/条件构造/守卫/辅助标记四组不变）
+# isQuotaExhaustion（smart-schedule.mjs）= channelCode 等值匹配，与抛出位置无关；普查表仅为回归参照。
+29655:  QUOTA_EXCEEDED_CODE
+32590:  "QUOTA_EXCEEDED",
+33510:  if (isQuotaExceededError(detail)) return QUOTA_EXCEEDED_CODE;
+33955:            throw new LlmError3(message2, QUOTA_EXCEEDED_CODE, { status: 200 });
+34000:          throw new LlmError3(message2, QUOTA_EXCEEDED_CODE, { status: response.status });
+34022:              "QUOTA_EXCEEDED"
+36292:        throw new LlmError4(`${this.product.id}: \u6A21\u578B ${options.model} \u6240\u6709\u8D26\u53F7\u5747\u53D7\u9650\uFF0C\u8BF7\u7A0D\u540E\u518D\u8BD5`, "QUOTA_EXCEEDED");
+37489:    super(message2, kind === "hard-credit" ? "QUOTA_EXCEEDED" : "SERVER", options);
+37499:    return new LlmError6(`${prefix}\uFF08${detail}\uFF09`, "QUOTA_EXCEEDED", { status });
+39429:          throw new LlmError8(`${label}: ${errorDetail4(payload)}`, "QUOTA_EXCEEDED");
+39449:              "QUOTA_EXCEEDED",
+39475:              throw new LlmError8(`${label}: ${data.message}`, "QUOTA_EXCEEDED", {
+39663:      throw new LlmError8(`${label}: ${errorDetail4(rawJson)}`, "QUOTA_EXCEEDED");
+39689:    if (error.code === "QUOTA_EXCEEDED" || error.code === "QUOTA") return true;
+40129:          throw new LlmError9(`qoder: ${errorDetail4(errorText)}`, "QUOTA_EXCEEDED", { status: response.status });
+41169:var QUOTA_EXCEEDED_MARKERS = ["4008", '"code":4008', "quota", "exceeded the quota"];
+41177:  for (const marker of QUOTA_EXCEEDED_MARKERS) {
+41809:          lastKind === "quota-exceeded" ? "QUOTA_EXCEEDED" : httpErrorCode5(lastStatus),
+41814:        throw new LlmError10(`trae: \u79EF\u5206\u4E0D\u8DB3\uFF08${errorDetail5(errorText)}\uFF09`, "QUOTA_EXCEEDED", { status: lastStatus });
+41828:            throw new LlmError10(error.message, "QUOTA_EXCEEDED");
+41845:            throw new LlmError10(error.message, "QUOTA_EXCEEDED");
+42103:                      ev.errorCode === 1005 || ev.errorCode === 4008 ? "QUOTA_EXCEEDED" : "SERVER"
+43244:          "QUOTA_EXCEEDED"
+43823:            quota ? "QUOTA_EXCEEDED" : httpErrorCode4(response.status),
+43839:        if (options.signal?.aborted || !(error instanceof LlmError12) || error.code !== "QUOTA_EXCEEDED") throw error;
+44312:            quota ? "QUOTA_EXCEEDED" : httpErrorCode4(response.status),
+44328:        if (options.signal?.aborted || !(error instanceof LlmError13) || error.code !== "QUOTA_EXCEEDED") throw error;
+56254:            "QUOTA_EXCEEDED",
+56331:          "QUOTA_EXCEEDED"
+56359:            "QUOTA_EXCEEDED",
+56590:  if (trimmed.includes("1113") || trimmed.includes("\u4F59\u989D\u4E0D\u8DB3")) return "QUOTA_EXCEEDED";
+59896:   * 6. 全部试完 → 抛 `QUOTA_EXCEEDED`（不无限切）。
+60093:            "QUOTA_EXCEEDED",
+60109:   * 白重试 5 次（500/1000/2000/4000/8000 ≈ 15.5 秒），而 `QUOTA_EXCEEDED`
+60119:      return new LlmError17(message2, "QUOTA_EXCEEDED", { status });
+60144:    if (error.code === "RATE_LIMIT" || error.code === "QUOTA_EXCEEDED" || error.code === "QUOTA") return true;
+67295:      const code = response.status === 402 ? "QUOTA_EXCEEDED" : httpErrorCode4(response.status);
+68668:          "QUOTA_EXCEEDED"
+68683:        if (error instanceof LlmError21 && error.code === "QUOTA_EXCEEDED") throw error;
+69050:      "QUOTA_EXCEEDED"

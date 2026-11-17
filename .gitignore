@@ -43,3 +43,6 @@ packages/desktop/src-tauri/.node-license-cache/
 packages/desktop/node_modules/
 
 _audit/
+
+# 1.1.0 时代走查截图（已被 docs/images/standalone-console 取代）
+docs/software-company/visual-walkthrough/

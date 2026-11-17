@@ -1,0 +1,28 @@
+S12-A E-4 孤儿扫描（frontend 零引用模块；作用域 = packages/standalone/frontend 树内引用 + scripts 保留测试）
+扫描时点：S12-A 工作树（commit 1 前）；方法 = 逐模块 grep 引用说明符（from/import()/index.html/assets 打包链）。
+
+模块（frontend 根 + components/ 共 28 项）                     引用面                     处置
+----------------------------------------------------------------------------------------------  ------------------------
+app.tsx / app.css              vite 入口（index.html → app.tsx；app.tsx → app.css）            保留（入口）
+theme.mjs                      index.html:8 <script type="module" src="./theme.mjs">          保留（入口）
+index.html / virtual.d.ts      vite root / tsc 环境声明（ofm-sharedclient 等）                 保留（构建/类型）
+channels.mjs / channels.css    app.tsx:38 动态 import('./channels.mjs')；channels.mjs → css  保留（渠道页分包）
+connection/requests/settings/smart/calendar .tsx+.css         保留页（同步渲染或 LAZY 分包）        保留
+disclaimer.css                 disclaimer-dialog.tsx                                          保留
+components/{shell,ui,channel-browser,model-picker,
+  disclaimer-dialog,dsh-import-dialog}.tsx                    app.tsx / channels.mjs / connection.tsx 保留
+management.ts / types.ts       disclaimer-dialog.tsx:7 / 全部 tsx                              保留
+settings-data.mjs              settings.tsx:5                                                 保留
+visibility-data.mjs            settings.tsx:6                                                 保留
+models-data.mjs                前端源零引用；保留测试消费：
+                               scripts/standalone-frontend-test.mjs:5
+                               scripts/standalone-client-regression-test.mjs:6              保留（E-4 灰区③：闭包干净且被保留测试消费；方案 A1 仅删 usage-data.mjs，本文件不在删除清单）
+
+被删文件（git rm，不在扫描面）：根级 9 页 tsx + components/overview.tsx + workbench-dialog.tsx
+  + css×6（models/usage/routing/desktop-update/workbench/workspace）+ usage-data.mjs
+
+结论：frontend 零真孤儿；唯一「前端源零引用」模块 models-data.mjs 按方案与 E-4③ 保留（测试消费留痕）。
+后端面（packages/standalone/*.mjs）：workbench/providers/library/routing/desktop-update 五模块删除后，
+  其余模块（eac/client-terminal/login-terminal/dsh-import/request-log/open-external/smart-schedule/
+  claims-history/service/management/channels/*）均有保留消费链（service.mjs / management.mjs / pack sourceFiles）。
+src/ 面：subscriptions.js、magpie-*.js 成为 D16 孤儿（方案既定保留；pack sourceFiles 已移除 magpie 两行）。

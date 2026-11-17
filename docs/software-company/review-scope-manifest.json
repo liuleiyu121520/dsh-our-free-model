@@ -1,0 +1,1392 @@
+{
+  "schema": "review_scope_manifest_v1",
+  "root_commit": "14280e4075e109f190243481c645061345dbb75b",
+  "generated_at": "2026-11-17T03:24:47.569Z",
+  "entries": [
+    {
+      "path": "docs/software-company/prd-buffer2026-smart-calendar.md",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 93156,
+      "sha256": "08dc0bfaba4865a2cca2409efe53e73833152c502c9b5bdf384be95197f7d06e",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "docs/software-company/plan-buffer2026-smart-calendar.md",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 92007,
+      "sha256": "f64c0d7b1366a91db494aa9f839c2d5e6d1d53e7072f7853285c877d59044c15",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "packages/standalone/service.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 18907,
+      "sha256": "87a6e09c53779898ba751c4ddde050acfd4a3ac87bec1d113eb3933420e1a23f",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "packages/standalone/management.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 25222,
+      "sha256": "e8e53588bbded9c73e83f4781e807d631e3472980e29e69dab60564ebddef6c2",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "packages/standalone/channels/runtime.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 6454,
+      "sha256": "d753e5bcc9ec2409ede696f57412d1f55d9e4c6114d9ae5c725940e6e3e0e095",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "packages/standalone/channels/worker.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 8531,
+      "sha256": "4e691ffb03286b2a63f7a2f89bf27b9689d32b67f4ecfcf77b1d08bbce13b220",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "packages/standalone/channels/contracts.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 1785,
+      "sha256": "6c98bbfcf88ac84f34958a495c1b8ae24cd2173a1cf3356ce31ab651f1bb3907",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "packages/standalone/channels/business.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 2940646,
+      "sha256": "ce2323a6ebfb35538c51e50911a0c66e59c4c7fa30ea70177e7c640939a03579",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "packages/standalone/vite.config.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 786,
+      "sha256": "65f5d41405547be92e36b551ea971e72de4745096f7d9086128c9cb7a6523de4",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "packages/standalone/request-log.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 4984,
+      "sha256": "46b0fb3d2f30ac501bf46d354733e50328ebd2ef84002e4cf0d6f23f11a986dc",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "src/failure.js",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 2778,
+      "sha256": "100e69b9b755a63465c66af713b57088e26b83521d0712d13cc23c230fb262e4",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "src/forward.js",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 64454,
+      "sha256": "7f0d6fa748985bda19eb6536d444eea5151ac243a33f6b2883292d249867e1b6",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "src/store.js",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 25012,
+      "sha256": "a9460659406176d6186f5760f27b5aaf236e99d8be2d70ebba86f681c627b8bd",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "src/core/stats.js",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 5038,
+      "sha256": "3da2a3ee3de0f42ef37a136249fa36fa25af8356b1cc3d0ce2c3c1c9db3612cb",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "src/core/runtime.js",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 21463,
+      "sha256": "069c696f97e335f9113e8c31740863f0378dde451bf799d0f61a7d0fbb3e8478",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "src/core/completion.js",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 9825,
+      "sha256": "526798c82dbcc974b0b35cb73bd78ca3514bbd235c3a7741609a3e7da5bee3f9",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "src/combos.js",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 11859,
+      "sha256": "5b4439b033c60115767c94975323e6896382de4e87328b58a93199893388e368",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "packages/standalone/frontend/components/shell.tsx",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 6913,
+      "sha256": "586cbe2076bb710894c3894e61267c8741c8120d86055bafd9601a46556a4f46",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "packages/standalone/frontend/channels.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 8656,
+      "sha256": "21bd649de56f1a442d10e829863e2eb74cfbce08cbadab8dfecd23acf7538a43",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "packages/standalone/frontend/components/channel-browser.tsx",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 4550,
+      "sha256": "b76870ace757a990af338a2b30401071e25e29d81ae1df2b10a1a506fe7f76ce",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "packages/standalone/frontend/types.ts",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 4134,
+      "sha256": "f49244bdd5a34d4ea0483d34f5bfc82ecdd102fa9cbbf7ad8690ed56a0564190",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "packages/standalone/frontend/app.tsx",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 16293,
+      "sha256": "5850ac0d12d7dcd73c4a5ae8ed7dc8e75a4e7ffa02e88a9dd512573969bc4d36",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "packages/standalone/frontend/app.css",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 254606,
+      "sha256": "bda1279adcc363d4f30df76fc580ecf0ba1bf4ae6eb066b2d2a18497d75a91e8",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "packages/standalone/frontend/connection.css",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 22369,
+      "sha256": "29167b3a52de3802590ca129451de07a1d051211a77457a02884c00281e62287",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "packages/standalone/frontend/connection.tsx",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 29254,
+      "sha256": "fb60797b987a36cfaf23a5079a937f6d10b85acb5bb60c5435d9b0286f91f296",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/standalone-test.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 20536,
+      "sha256": "2542ef31bd02a0378b30807984fa2ae8f53d2f7f41b42b3f58fc8677448b028d",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/standalone-management-test.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 41742,
+      "sha256": "a576dd3313ab2105adc8d880c5349acf78ee2098114412b69ec4d34303dbd7a4",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/standalone-channels-test.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 52895,
+      "sha256": "30a9262d3fff837ac4b156681541d7153a6a59d0e6d98235e40e2720cd83efed",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/build-standalone-ui.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 2158,
+      "sha256": "6240a1622df0d45d44ddc91ae64fcc1e3c7461815ec933e3ec35f59e2e7f6423",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "package.json",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 2167,
+      "sha256": "ca3f0147375fcbb5f2b2adb68645e480bc6b58a6eb07810b798fcff9e7c93c1d",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": ".github/workflows/test.yml",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 2406,
+      "sha256": "3b4fa3291793230accdce77a5f1d1db8ca6558ea992aca1930055493be2a721b",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/build-legacy-payload.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 8346,
+      "sha256": "c63e02e521ae4fb8c163adaa413c5f0de40fe2b62f563d3aad12426ede3bf255",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "worker/wrangler.toml",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 1369,
+      "sha256": "55513c5e1083fa839c319923fe3c66c333c128f66e67d0250569f6043dfd123c",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/aggregate-test.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 34407,
+      "sha256": "1e947c82d00ba08f45ae1ccca247948571c275b144e92453d34a4b50c123a5a8",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/anthropic-test.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 36065,
+      "sha256": "9baf2fb1c480fa69265d68483ae41b95cc64571f8ea9a223938014305a04e192",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/build-channel-pack.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 6748,
+      "sha256": "0a6fd976152b6c4803816082183617aace8b8be2372188f98d303e784d7f2d37",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/build-magpie-engine.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 7284,
+      "sha256": "de9cbfa5e75b98dd7994a5ca46a7c2319db209d22bc29c32ce919c3888838315",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/build-standalone-channels.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 2683,
+      "sha256": "e4a3c4b1e695b17bfa581e407f7a0903048ae943f4167fc0376185c9cd3006da",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/bun-fetch-test.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 8359,
+      "sha256": "49bf04b6a06f6adf37a0d63bd87d1a8aaca7e42860ca4059d5065a15fceee380",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/chan-relay-test.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 8079,
+      "sha256": "cba6032429f507928eb8a8627e25da755740ac09ca9d61defdd35c805148f0a2",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/channel-credits-rpc-test.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 8237,
+      "sha256": "06046979710047e1652d308d6c989149001c4e41d3386b4fa82c2e05738b1adf",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/channel-credits-ui-test.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 8043,
+      "sha256": "03f69b2e44b252906cab31028f8fc356a6a3d3caeb72d12eb2d3886998954349",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/channel-image-pricing-test.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 2481,
+      "sha256": "caa4835a749794fdc55db8d951b74c0bf11435691c5694a708abfedc817ed494",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/channel-login-test.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 20967,
+      "sha256": "1efcee5cb421a3dc241f9069097dae4d91b373579039316e32c9c449c49c470c",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/channel-model-actions-test.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 4681,
+      "sha256": "e30257e988ef2ab4e4f0b6a18cc0eafb4c1c1c254eb34a6f2103348e4afd390e",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/channel-network-test.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 16831,
+      "sha256": "9f0f57a62da7c54a2ab668109384c1455e996691655423e2e94d90f52448665d",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/channel-pack-gate-test.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 3983,
+      "sha256": "47e4ec4ddb5a4f54bf4658be2f64d1f64f9288919aa208358485fafa33608b6c",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/channel-pack-test.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 67790,
+      "sha256": "0b198a2827b2df30c8ac515db2119de2741c44ac166a694546fc043d81828255",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/channel-pr-fixes-test.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 7146,
+      "sha256": "ffaba12932a86e2e4d61974dc2c7aa9659eed083cff01709ed8956bdb360ed20",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/channel-queue-policy-test.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 9862,
+      "sha256": "8e27330cb8a89f2e58f1288fee04838ee3906fdd88510a1721f06de404f4f650",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/channel-queue-rotation-test.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 26371,
+      "sha256": "833278ae9c2fb31546d340a2ee10fbdff1a33a1f7e38a85b0395b3ca1c558222",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/channel-storage-compat-test.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 5095,
+      "sha256": "8bb17c09881ba0596d9bf10f1d47bfaaac1b135ed47ec8110f38476a78199032",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/client-terminal-test.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 21845,
+      "sha256": "3f8837cc18ba3f4d9875a4faa979af763ef38d4a7a166a50c61f1e075bde6bce",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/combo-advance-test.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 12354,
+      "sha256": "c00a350d2908a531e8ef18248ee1adddfec74af1c5de601256dc00cbf2c03982",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/eac-abort-test.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 3416,
+      "sha256": "b04312d6091446a5df23072c4e7b2ee04dcdef3ba3a0c3ca2bd4b32d740392f3",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/eac-auth-test.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 35067,
+      "sha256": "3f3af4a0a568c00a147190d6c9b410bb4382dd7307ab368eb224cb0694a36b1e",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/eac-router-ui-test.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 19241,
+      "sha256": "d7131c427c735d24d43ababf01c7818c5b7e82836bd9e9df105dbc30495e3a9f",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/effort-test.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 13879,
+      "sha256": "beeae42154c691d53e398e537e186f358bbb1e797e36023f181ee8b5e1a1288b",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/egress-availability-test.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 7263,
+      "sha256": "bca063b767416d411ca88c87eb799f30643f9a1a5df9fe536d677d98bd4326cd",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/egress-test.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 28907,
+      "sha256": "fbdd4a8ec3bafd6c30c27f48e19c25c913ef285789c818feb121edd911b47cbc",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/engine-appearance-test.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 20590,
+      "sha256": "6b60b2cae8e501a1b0a5c5e9978ee9d1cf912291ec80f30f056870b9e692cd67",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/engine-payload-test.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 5309,
+      "sha256": "40be074d1e89ca8f3e0ca54f42501e2016b43d51c7915b908c93f40617de427b",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/engine-transport-test.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 5634,
+      "sha256": "32d9a6234465b8c690cc6b8d906a190206ca83fe2b41a71ff25ee6d6526a9cbe",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/feed-test.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 13876,
+      "sha256": "9b5b9fc9f4334a98ddccb14235a5f505d7574f3444d4ef1a32537df5ed75c15e",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/fingerprint-test.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 12246,
+      "sha256": "b21c494ee7e02b2e47952e47748e68a710c5cd64d010d9ee958d0f085e557578",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/forward-test.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 68883,
+      "sha256": "49a807e3341bdab3dc1c6f9b03bdc5830fc53feec6448e465a82c8a72d2a63f2",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/free-lane-compat-test.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 9322,
+      "sha256": "bd61f5850b9e9ff1111903485652dcf5261d387d053b5a45296dba5d475b5767",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/free-lane-wire-test.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 17378,
+      "sha256": "bbde6e2bdd0a59b77ed640dc478f2f9221711d64e572910f46897c74d5effa6c",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/free-pool-test.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 6509,
+      "sha256": "3de7cd88a7903f95f4db091cb00efcd9c45fe74b5dceb36d9e8995b0148d669c",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/freetier-gate-test.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 4626,
+      "sha256": "bfe3aead059c0561f15406c13a33e1ba1a9ee7573b69bbcc75f30b22e005a26c",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/gateway-disconnect-test.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 8512,
+      "sha256": "6bfc6779032be7e566a3ea233c57ab83a6032af75171965d35dcefaad9bce3dc",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/gemini-gateway-test.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 27123,
+      "sha256": "4ff539748c9f1fcffee4e9aa14ae78692f98ab40728399b24c44f7fcb4a892a7",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/gemini-schema-test.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 9761,
+      "sha256": "9e6e8d094eeb0834fe8e055a7d2fb35824762b7e275070bb4b777152dd0bd0cd",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/image-pricing-host-test.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 6020,
+      "sha256": "f7c7d5ebf6398d7613d1b232bb650a5f521804a8e4089a6b38c55ff351f4a0f8",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/install-local-magpie.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 4086,
+      "sha256": "02266e9db2de5f764c208a0ac6c5dfca58fcefffbd5d6762a599692acea3dbbe",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/live-audit.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 4347,
+      "sha256": "2b4bf11ca5932079cb5579a3ecb7556037236fd0d7335035c27a2a450463945a",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/local-optimize-test.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 22466,
+      "sha256": "a543dbb8abd8d089178f4eca574d7dfeb93069fa620612d1bbf0384c1c55968e",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/magpie-engine-test.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 39038,
+      "sha256": "9bc640e74a6cd0b52807c23973dda99b6ee4de649649954992ec6baa9ac1ab1c",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/magpie-live-test.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 4100,
+      "sha256": "ddaa282efef1e8064d8483c6e5ab2448e01f378850eff58853949e21be8a3c36",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/magpie-models-test.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 2736,
+      "sha256": "e3cb305ab61d8edeb2a55dc6c3710cfb261ecd4e3ed2ea4fecc0c681abe486ec",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/magpie-native-ui-test.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 43481,
+      "sha256": "166fd34afe7449dcb74f0bb3566ef1973f6bb12162a9989c47f0ba555bc28d31",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/magpie-policy-test.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 12740,
+      "sha256": "b94f824008a651514b2419d9e699d284398ec7523afbaa0d54c4cf323f2e5844",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/managed-upgrade-ui-test.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 20037,
+      "sha256": "3c4c51b85f649d8549ebe204eec81cd0b605934648c57b385e875172924eea5f",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/measure-standalone-ui.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 1254,
+      "sha256": "54dbdff40c6a35ab26c2de6280f1161defc7207410d45c0602a363a320cbcdce",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/mint-eac-seal-test.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 4922,
+      "sha256": "f10e7e5b7c3d00332444c772f5e95280383bfa2ce7101637af484175342caf59",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/mint-eac-seal.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 4845,
+      "sha256": "b3fcbf2dac725b910b3bd30e73a7959710488dc6d1564773009b0b385d1957bd",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/model-test-finish-integration-test.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 4339,
+      "sha256": "13927794b076c7db0c9ef8f8ba27f661ed45db83ff1c1b242ecc83786c7fff97",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/model-test-probe-race-test.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 3352,
+      "sha256": "e7641a9357f87a067bc3014f28e377bfd35d9010274a43f633c44f74b29af5c0",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/model-test-test.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 7016,
+      "sha256": "d11105e853d298d8233fe57938177a428a0eb70029c5297640add9c26e668dac",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/oc-free-live-test.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 1827,
+      "sha256": "f587a7dc32a1dd45fff79dcb4aaf348c26dac14bb35075be83c545d6740217e6",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/opencode-parity-test.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 13263,
+      "sha256": "bb4e784bd8fc96e5ed34351ce813658bd2b542934ca6303122bca0ec57705cd5",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/pack-standalone-npm.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 6320,
+      "sha256": "f377f91b7e4dbd580d746d26ab7af83be232dbb2c5e178148361850ad751a7c7",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/pack-standalone.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 11400,
+      "sha256": "d77b2d995d4fa2f1414ad40a4bdad4d46ae0fe400187df3eab9f4c438fe1e7ac",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/picks-test.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 8327,
+      "sha256": "495a68d7c576a9a73e5160a69c3a577034516a812e015460f6eec08db8beeb8a",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/private-file-permissions-test.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 3706,
+      "sha256": "14746b8d697bfd141d119e860727cd1284d89c7b82767c97131bea41c003c7a0",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/probe-buddy-bisect.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 4145,
+      "sha256": "0c69c0fa6daf9fd80b4166e970db27ee47fe8ae7d52db72cea891a62e3dfe7a7",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/probe-buddy-request-shape.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 5250,
+      "sha256": "ed9b1555627a8b1d26e4a46bae0683da71b8cfa6e738c7c2224c7ad3eca730d8",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/probe-buddy-unapproved-channel.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 4739,
+      "sha256": "345d6ee8e10b72cc6dad4ee28e443aed2548f5345cc19997b371c730497bb3e8",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/projection-test.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 21255,
+      "sha256": "2e44182fe9462f1973a20b564911160c0f99fc8a9f9518c60693a0201e69a8c5",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/prompt-saver-test.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 24159,
+      "sha256": "3228c5120378bfa517c53737a2ab4bb1a29f6d6415279d1af6364f448b1890d4",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/qoder-effort-order-test.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 5704,
+      "sha256": "af4193b3f0ef33d9309e50e8ae98c80b4644342e2b510017b9ce3b553aa4f183",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/quota-routing-test.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 7595,
+      "sha256": "3bca99b30c33c7828fa5de6f163f4c5032326b10fbc29cbce32e573130e62be1",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/registry-test.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 23655,
+      "sha256": "d170abf23f8ac6de703ffeeeb467c243532b9baeed5ed75c3b12d93504deba44",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/release-standalone-npm.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 12142,
+      "sha256": "c68775f2beb57bc31cfcc630605a23fb5af2854564d088daa7905733590a4285",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/reload-test.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 6567,
+      "sha256": "16ffbc14cea22980af4134cd3ab094c81b625bd2b0f0aaf0e9748ffcd9236cc6",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/retry-safety-test.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 13725,
+      "sha256": "995c5dadae91b369b0b0ba19e721cf820610576d4f4e1da1569b1fb7bda3ffe0",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/route-test.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 19942,
+      "sha256": "dad9e3163bc09bf15fc41c025d75d175e5271a25ca1a789e98c46ae3f08933b6",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/rtk-shape-test.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 8056,
+      "sha256": "3ec597d298f1dde01c4dea6e95486ad4ad3fd79d6643e1f29505417224d532ba",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/rtk-test.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 39138,
+      "sha256": "60726d2f247c742d9314ebcc6f89550474cb3fd233e1c6c309aff1960e0c6e45",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/s12-color-audit.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 6479,
+      "sha256": "c4c7fe90c0f1de7b11728199ac5d66f1d0e2a9704aefec207aa738957fdd0ce1",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/s12-zero-residual-audit.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 10114,
+      "sha256": "ca99a836bf0467730b0eed3a529ffbfef7040b694bd1b18713dc3dab8d15f538",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/sniff-test.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 18844,
+      "sha256": "d0281d0cc55e28d4838d844f0cdd31f3676f05fc137b68e1514a7448a905096b",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/speed-stat-test.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 11463,
+      "sha256": "4615b2fa278df6f9000062582c4935226aae807fb7c3263c8319b04ee2e4a50d",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/stable-session-test.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 2997,
+      "sha256": "d1897c71feacdfae082d50284283eb6001d26d2ce58d7ed5c6046c58d86ad11b",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/standalone-auto-checkin-schedule-test.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 7213,
+      "sha256": "2a70d9d97be2efe7c58193b0249c5ad4887ddfe4f74531e20da1ef70c1c8a329",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/standalone-channel-filter-test.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 2233,
+      "sha256": "431aa8b1faf6af52d219fc006b9f8ae885dcb27e6f8bfbc80c75dc7def8cd5e0",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/standalone-client-regression-test.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 5810,
+      "sha256": "0a1f55c723aae6a911b3791fb323174aa0ab73fdb3ab0fabed5875b6d2d2f84d",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/standalone-desktop-regression-test.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 2672,
+      "sha256": "0d705989ad3522fc39f3452d7b7bc299b6d4689e88eaea2cba2e0a11ae7b200c",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/standalone-dsh-import-test.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 11255,
+      "sha256": "33d8f46002d66c7c9791a81bcc1e7c57f90dab73c807acc2bb8cb2c520e0ff6e",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/standalone-frontend-test.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 14906,
+      "sha256": "90ca17ce9f31a27b8539f054575a92b6e8be2e00a4c95f3e222b06c89f776d40",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/standalone-lan-test.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 27095,
+      "sha256": "e1817a71aed9155910c300efa86fe94ebd5822466f74c3e29c34f4e7930c458e",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/standalone-login-terminal-test.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 8857,
+      "sha256": "712dd4c2e09d6d00fa5439d811bc142acddfbeb8f978584e0295715ce8c8e582",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/standalone-login-ui-test.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 7472,
+      "sha256": "e07c9462cd681d70ff47ac56604d639773ba1715d7f114e74cc6457730f8b042",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/standalone-model-operation-test.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 3813,
+      "sha256": "faa7a2f06e1771d80ee631b6170b0adbf58344b675b1244389379f814d090bf4",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/standalone-model-row-test.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 10744,
+      "sha256": "c9337dab05492c646a86f8ba58d24b8153da2e1e288eded07deb095cf10335d8",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/standalone-nav-test.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 7006,
+      "sha256": "fd0837bc931b5456047e2d1707c7f609a8772819191043fdeb33a06164e487a4",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/standalone-package-test.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 17081,
+      "sha256": "79287de41d52cf9ddefebd1225509195d864afafab0f5a62e499a8a1b3ed6627",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/standalone-page-lifecycle-test.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 6848,
+      "sha256": "8e985111084d929f1b7143d975c9529bf0f016136ff940a3ba78b63ebac2bb90",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/standalone-react-ui-test.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 7627,
+      "sha256": "0c76f7d61b13c434f7d9b6b08ffa4b5c05618367d43679ff47452d92b85dc2a4",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/standalone-settings-host-test.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 1080,
+      "sha256": "cc0414ebb23f217cbf2f2017e5edab20b00ff0451248062e6c90e83869ad78fa",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/standalone-ui-preview.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 10638,
+      "sha256": "49c32cf99a82ec8b8c004458dba7386bf2f8cbfd9913e08c2ad6531f48a3dcac",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/stream-failure-test.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 10631,
+      "sha256": "1608b7d4fd0478134b987465991253787dde821cc43e451e9ef9b912e5856e3c",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/subscription-completion-test.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 36251,
+      "sha256": "df6932b730e38d0e0e9b4200cbbae1b831cf0f4c9f132abe735759d1a4742d01",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/subscriptions-test.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 42717,
+      "sha256": "9792fcf62162a441eac3607998f6fc57b7de95ac1517331546f2f57a1013f565",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/tencent-fingerprint-test.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 7151,
+      "sha256": "5b4bcccc64765b9e1093c20ebbc6e448b935c3713993ca35a662b00579e29e00",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/test-all.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 11093,
+      "sha256": "8728d3d8507a5cc771881da84e4ec837c7a2d3df7a5652875c0073533f0ef954",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/truncation-test.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 18148,
+      "sha256": "7a61d47c29bc0a4be2f9339e13d07a3e1b38e2ed128d0af7792d90c3e235f95d",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/trust-test.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 11580,
+      "sha256": "23761fcaea3bd1cd4177c8344541bc2e6bf3ab1227d74a3179f99ef2c04dfbab",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/turn-accounting-test.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 8278,
+      "sha256": "35c3dee9a22ccae705b87f6c757836535c052eb7e730587a98bd66f4a8df42c9",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/update-magpie-engine.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 8517,
+      "sha256": "0b44b68bc0d997a1d02171abad68b6374d31dc93bd1ad4b1ac7f1064855fad8b",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/updater-test.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 90221,
+      "sha256": "3c4cb88f854c5105c61aee2bef271e107227b801e1f4829b5cfd56793b2e283f",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/usage-sanitize-test.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 9602,
+      "sha256": "fce026810190a699f27f86b049b3aa4d5696aa2b0cbfc1efe2642cf13206c262",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/wire-tool-alias-test.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 8102,
+      "sha256": "f1d45e8147da4c326c2d482e88e6f391b8c064cac9ca9742a3b10b19dc6b3dc2",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/lib/channel-pack-gate.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 2475,
+      "sha256": "fca5ae6133d7e312e38efc488441ed088e16b349b5e0a330b39f374d7b15aa32",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/lib/channel-pack-kernel.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 1272,
+      "sha256": "9ab069ee75e7c5ee5b933e9c03f430a769d1b14793f76fafb0d7935bd7184219",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/lib/engine-binary.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 1867,
+      "sha256": "e7df8dd13a7911c22a5d3c57fb467c357ff0275950ae6d9f707389375e03d7d3",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/lib/fake-kernel.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 13672,
+      "sha256": "3ddb7168a0ab30817ef67af7af2b31d6c7ce27cd4229309d82be6f16328a8d7a",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/lib/standalone-channel-fixture.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 1045,
+      "sha256": "746300734296110e4d2cd7297fd6bd6867abe0a355fae865d14ca6637b52c986",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/lib/standalone-isolation-loader.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 549,
+      "sha256": "0588ed79d3b92e3ac8b15b6b703256e58e17dee09bdb2d56ee118709e89b0089",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/lib/standalone-refresh-fixture.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 1058,
+      "sha256": "f72c030d747b2b3b7e920cfcd2bd0af7b15ec3bc3d091e4748dd3c8230c2d18e",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/lib/standalone-shared-ui.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 2686,
+      "sha256": "690526e0e599874f87a5d06497eabcbc0122b9bea0cd0f36cceb39dde7335ebe",
+      "secret_status": "CLEAR"
+    },
+    {
+      "path": "scripts/lib/undici-stub.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 425,
+      "sha256": "b8bd074f00d5b2288b505050967bc1580f3bdd3666f11098faf3b739bc1c1aff",
+      "secret_status": "CLEAR"
+    }
+  ],
+  "removed_from_scope": [
+    "index.js",
+    "client.js",
+    "cordis.patch.yml",
+    "adapter/kernel.js",
+    "adapter/dsh-llm.d.ts",
+    "locale/en.json",
+    "locale/zh.json",
+    "catalog/dsh-plugin.json",
+    "feed/manifest.json",
+    ".github/workflows/build-macos.yml",
+    ".github/workflows/prepare-release.yml",
+    ".github/workflows/release-sign.yml",
+    "packages/desktop/package.json",
+    "packages/desktop/src-tauri/tauri.conf.json"
+  ],
+  "aggregate_sha256": "3dc175477e93f5f352a5f0c151c34830d565713013eea600650789a7cfb2e3bd"
+}

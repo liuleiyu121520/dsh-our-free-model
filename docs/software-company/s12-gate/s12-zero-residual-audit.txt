@@ -1,0 +1,294 @@
+S12 残留判零审计（脚本 scripts/s12-zero-residual-audit.mjs；作用域 git ls-files 634 文件）
+时点：2026-11-17T04:19:57.064Z；HEAD：14280e4
+前置：web/assets.json 指纹一致性（build-standalone-ui --check）通过
+
+── pattern (a) 前端源面 :: /'(overview|workspace|agents|usage|sponsor)'/g
+   命中 0（豁免 0 / 违规 0）
+
+── pattern (b) 端点面 :: //workbench|/library|/providers|/routing|/subscriptions|/engine|/desktop-update|/eac/|/models/(test|refresh)/g
+   命中 238（豁免 238 / 违规 0）
+   - docs/eac-login-delivery.md:32  豁免：控制面文档 / 历史验证记录
+   - docs/eac-seal-migration.md:11  豁免：控制面文档 / 历史验证记录
+   - docs/eac-server-login-handoff.md:28  豁免：控制面文档 / 历史验证记录
+   - docs/eac-server-login-handoff.md:115  豁免：控制面文档 / 历史验证记录
+   - docs/eac-server-login-handoff.md:116  豁免：控制面文档 / 历史验证记录
+   - docs/eac-server-login-handoff.md:116  豁免：控制面文档 / 历史验证记录
+   - docs/eac-server-login-handoff.md:167  豁免：控制面文档 / 历史验证记录
+   - docs/verification/2026-10-23-magpie-parity.md:14  豁免：控制面文档 / 历史验证记录
+   - docs/verification/2026-10-23-magpie-parity.md:45  豁免：控制面文档 / 历史验证记录
+   - docs/verification/2026-10-23-magpie-parity.md:65  豁免：控制面文档 / 历史验证记录
+   - docs/verification/2026-10-23-magpie-parity.md:77  豁免：控制面文档 / 历史验证记录
+   - docs/verification/2026-10-23-magpie-parity.md:108  豁免：控制面文档 / 历史验证记录
+   - docs/verification/2026-10-23-magpie-parity.md:158  豁免：控制面文档 / 历史验证记录
+   - docs/verification/2026-10-23-workbench.md:23  豁免：控制面文档 / 历史验证记录
+   - docs/verification/2026-10-23-workbench.md:24  豁免：控制面文档 / 历史验证记录
+   - docs/verification/2026-10-23-workbench.md:24  豁免：控制面文档 / 历史验证记录
+   - docs/verification/2026-10-23-workbench.md:25  豁免：控制面文档 / 历史验证记录
+   - docs/verification/2026-10-23-workbench.md:27  豁免：控制面文档 / 历史验证记录
+   - docs/verification/2026-10-23-workbench.md:29  豁免：控制面文档 / 历史验证记录
+   - docs/verification/2026-10-23-workbench.md:30  豁免：控制面文档 / 历史验证记录
+   - docs/verification/2026-10-23-workbench.md:32  豁免：控制面文档 / 历史验证记录
+   - docs/verification/2026-10-23-workbench.md:32  豁免：控制面文档 / 历史验证记录
+   - docs/verification/2026-10-23-workbench.md:53  豁免：控制面文档 / 历史验证记录
+   - docs/verification/2026-10-23-workbench.md:54  豁免：控制面文档 / 历史验证记录
+   - docs/verification/2026-10-23-workbench.md:55  豁免：控制面文档 / 历史验证记录
+   - docs/verification/2026-10-23-workbench.md:56  豁免：控制面文档 / 历史验证记录
+   - docs/verification/2026-10-24-plugin-page-login.md:22  豁免：控制面文档 / 历史验证记录
+   - docs/verification/2026-10-24-workspace-appearance.md:24  豁免：控制面文档 / 历史验证记录
+   - docs/verification/2026-10-24-workspace-startup.md:17  豁免：控制面文档 / 历史验证记录
+   - docs/verification/2026-10-25-excluded-workbuddy.md:23  豁免：控制面文档 / 历史验证记录
+   - docs/verification/2026-10-25-excluded-workbuddy.md:42  豁免：控制面文档 / 历史验证记录
+   - docs/verification/2026-10-25-excluded-workbuddy.md:53  豁免：控制面文档 / 历史验证记录
+   - docs/verification/2026-10-25-excluded-workbuddy.md:77  豁免：控制面文档 / 历史验证记录
+   - docs/verification/2026-10-25-excluded-workbuddy.md:105  豁免：控制面文档 / 历史验证记录
+   - docs/verification/2026-10-25-excluded-workbuddy.md:106  豁免：控制面文档 / 历史验证记录
+   - docs/verification/2026-10-25-excluded-workbuddy.md:108  豁免：控制面文档 / 历史验证记录
+   - docs/verification/2026-10-25-private-file-permissions.md:7  豁免：控制面文档 / 历史验证记录
+   - docs/verification/2026-10-25-private-file-permissions.md:7  豁免：控制面文档 / 历史验证记录
+   - docs/verification/2026-10-26-desktop-update.md:12  豁免：控制面文档 / 历史验证记录
+   - docs/verification/2026-10-26-desktop-update.md:25  豁免：控制面文档 / 历史验证记录
+   - docs/verification/2026-10-26-desktop-update.md:27  豁免：控制面文档 / 历史验证记录
+   - docs/verification/2026-10-26-legacy-upgrade-2.7.2.md:11  豁免：控制面文档 / 历史验证记录
+   - docs/verification/2026-10-31-issue-audit.md:34  豁免：控制面文档 / 历史验证记录
+   - docs/verification/2026-11-01-magpie-engine-update.md:23  豁免：控制面文档 / 历史验证记录
+   - docs/verification/2026-11-01-magpie-engine-update.md:36  豁免：控制面文档 / 历史验证记录
+   - docs/verification/2026-11-01-magpie-engine-update.md:59  豁免：控制面文档 / 历史验证记录
+   - docs/verification/2026-11-01-magpie-engine-update.md:87  豁免：控制面文档 / 历史验证记录
+   - docs/verification/2026-11-01-magpie-engine-update.md:91  豁免：控制面文档 / 历史验证记录
+   - docs/verification/2026-11-01-magpie-engine-update.md:94  豁免：控制面文档 / 历史验证记录
+   - docs/verification/2026-11-01-magpie-engine-update.md:99  豁免：控制面文档 / 历史验证记录
+   - docs/verification/2026-11-01-magpie-engine-update.md:101  豁免：控制面文档 / 历史验证记录
+   - packages/standalone/web/calendar-Cu7lwL83.js:0  豁免：索引中间态（文件已从工作树删除，待提交）
+   - packages/standalone/web/channels-ByIvLq2-.js:1065  豁免：web 构建产物内嵌 E-10 冻结快照字符串（源=scripts/lib/standalone-shared-ui.source.js，已豁免；独立端源面判零）
+   - packages/standalone/web/channels-ByIvLq2-.js:1065  豁免：web 构建产物内嵌 E-10 冻结快照字符串（源=scripts/lib/standalone-shared-ui.source.js，已豁免；独立端源面判零）
+   - packages/standalone/web/channels-ByIvLq2-.js:1065  豁免：web 构建产物内嵌 E-10 冻结快照字符串（源=scripts/lib/standalone-shared-ui.source.js，已豁免；独立端源面判零）
+   - packages/standalone/web/channels-ByIvLq2-.js:1065  豁免：web 构建产物内嵌 E-10 冻结快照字符串（源=scripts/lib/standalone-shared-ui.source.js，已豁免；独立端源面判零）
+   - packages/standalone/web/channels-ByIvLq2-.js:1065  豁免：web 构建产物内嵌 E-10 冻结快照字符串（源=scripts/lib/standalone-shared-ui.source.js，已豁免；独立端源面判零）
+   - packages/standalone/web/channels-ByIvLq2-.js:1065  豁免：web 构建产物内嵌 E-10 冻结快照字符串（源=scripts/lib/standalone-shared-ui.source.js，已豁免；独立端源面判零）
+   - packages/standalone/web/channels-ByIvLq2-.js:1068  豁免：web 构建产物内嵌 E-10 冻结快照字符串（源=scripts/lib/standalone-shared-ui.source.js，已豁免；独立端源面判零）
+   - packages/standalone/web/channels-ByIvLq2-.js:1068  豁免：web 构建产物内嵌 E-10 冻结快照字符串（源=scripts/lib/standalone-shared-ui.source.js，已豁免；独立端源面判零）
+   - packages/standalone/web/channels-ByIvLq2-.js:1068  豁免：web 构建产物内嵌 E-10 冻结快照字符串（源=scripts/lib/standalone-shared-ui.source.js，已豁免；独立端源面判零）
+   - packages/standalone/web/channels-ByIvLq2-.js:1068  豁免：web 构建产物内嵌 E-10 冻结快照字符串（源=scripts/lib/standalone-shared-ui.source.js，已豁免；独立端源面判零）
+   - packages/standalone/web/channels-ByIvLq2-.js:1068  豁免：web 构建产物内嵌 E-10 冻结快照字符串（源=scripts/lib/standalone-shared-ui.source.js，已豁免；独立端源面判零）
+   - packages/standalone/web/channels-ByIvLq2-.js:1068  豁免：web 构建产物内嵌 E-10 冻结快照字符串（源=scripts/lib/standalone-shared-ui.source.js，已豁免；独立端源面判零）
+   - packages/standalone/web/channels-ByIvLq2-.js:1068  豁免：web 构建产物内嵌 E-10 冻结快照字符串（源=scripts/lib/standalone-shared-ui.source.js，已豁免；独立端源面判零）
+   - packages/standalone/web/channels-ByIvLq2-.js:1068  豁免：web 构建产物内嵌 E-10 冻结快照字符串（源=scripts/lib/standalone-shared-ui.source.js，已豁免；独立端源面判零）
+   - packages/standalone/web/channels-ByIvLq2-.js:1068  豁免：web 构建产物内嵌 E-10 冻结快照字符串（源=scripts/lib/standalone-shared-ui.source.js，已豁免；独立端源面判零）
+   - packages/standalone/web/channels-ByIvLq2-.js:1068  豁免：web 构建产物内嵌 E-10 冻结快照字符串（源=scripts/lib/standalone-shared-ui.source.js，已豁免；独立端源面判零）
+   - packages/standalone/web/channels-ByIvLq2-.js:1082  豁免：web 构建产物内嵌 E-10 冻结快照字符串（源=scripts/lib/standalone-shared-ui.source.js，已豁免；独立端源面判零）
+   - packages/standalone/web/channels-ByIvLq2-.js:1082  豁免：web 构建产物内嵌 E-10 冻结快照字符串（源=scripts/lib/standalone-shared-ui.source.js，已豁免；独立端源面判零）
+   - packages/standalone/web/channels-ByIvLq2-.js:1082  豁免：web 构建产物内嵌 E-10 冻结快照字符串（源=scripts/lib/standalone-shared-ui.source.js，已豁免；独立端源面判零）
+   - packages/standalone/web/channels-ByIvLq2-.js:1082  豁免：web 构建产物内嵌 E-10 冻结快照字符串（源=scripts/lib/standalone-shared-ui.source.js，已豁免；独立端源面判零）
+   - packages/standalone/web/settings-BfBMQi0p.js:0  豁免：索引中间态（文件已从工作树删除，待提交）
+   - packages/standalone/web/smart-s5WA0vwj.js:0  豁免：索引中间态（文件已从工作树删除，待提交）
+   - scripts/aggregate-test.mjs:29  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/build-legacy-payload.mjs:116  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/build-legacy-payload.mjs:127  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/build-legacy-payload.mjs:143  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/build-legacy-payload.mjs:150  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/build-legacy-payload.mjs:157  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/eac-abort-test.mjs:63  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/eac-abort-test.mjs:77  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/eac-auth-test.mjs:145  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/eac-auth-test.mjs:150  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/eac-auth-test.mjs:190  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/eac-auth-test.mjs:197  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/eac-auth-test.mjs:198  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/eac-auth-test.mjs:205  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/eac-auth-test.mjs:251  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/eac-auth-test.mjs:263  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/eac-auth-test.mjs:286  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/eac-auth-test.mjs:442  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/eac-auth-test.mjs:460  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/eac-auth-test.mjs:462  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/eac-auth-test.mjs:463  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/eac-auth-test.mjs:509  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/eac-auth-test.mjs:511  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/eac-auth-test.mjs:512  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/eac-router-ui-test.mjs:9  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/eac-router-ui-test.mjs:87  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/eac-router-ui-test.mjs:91  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/eac-router-ui-test.mjs:101  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/eac-router-ui-test.mjs:102  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/eac-router-ui-test.mjs:106  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/eac-router-ui-test.mjs:213  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/eac-router-ui-test.mjs:222  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/eac-router-ui-test.mjs:225  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/eac-router-ui-test.mjs:236  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/eac-router-ui-test.mjs:239  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/eac-router-ui-test.mjs:241  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/egress-test.mjs:518  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/egress-test.mjs:533  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/engine-payload-test.mjs:7  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/engine-payload-test.mjs:15  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/engine-payload-test.mjs:72  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/engine-transport-test.mjs:10  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/gateway-disconnect-test.mjs:41  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/install-local-magpie.mjs:26  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/lib/engine-binary.mjs:4  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/lib/engine-binary.mjs:24  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/lib/engine-binary.mjs:39  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/lib/standalone-shared-ui.mjs:16  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/lib/standalone-shared-ui.source.js:3274  豁免：E-10 冻结快照（历史插件组件源）
+   - scripts/lib/standalone-shared-ui.source.js:3479  豁免：E-10 冻结快照（历史插件组件源）
+   - scripts/lib/standalone-shared-ui.source.js:3499  豁免：E-10 冻结快照（历史插件组件源）
+   - scripts/lib/standalone-shared-ui.source.js:3533  豁免：E-10 冻结快照（历史插件组件源）
+   - scripts/lib/standalone-shared-ui.source.js:3554  豁免：E-10 冻结快照（历史插件组件源）
+   - scripts/lib/standalone-shared-ui.source.js:3566  豁免：E-10 冻结快照（历史插件组件源）
+   - scripts/lib/standalone-shared-ui.source.js:5750  豁免：E-10 冻结快照（历史插件组件源）
+   - scripts/lib/standalone-shared-ui.source.js:5867  豁免：E-10 冻结快照（历史插件组件源）
+   - scripts/lib/standalone-shared-ui.source.js:5872  豁免：E-10 冻结快照（历史插件组件源）
+   - scripts/lib/standalone-shared-ui.source.js:5881  豁免：E-10 冻结快照（历史插件组件源）
+   - scripts/lib/standalone-shared-ui.source.js:5885  豁免：E-10 冻结快照（历史插件组件源）
+   - scripts/lib/standalone-shared-ui.source.js:5939  豁免：E-10 冻结快照（历史插件组件源）
+   - scripts/lib/standalone-shared-ui.source.js:6013  豁免：E-10 冻结快照（历史插件组件源）
+   - scripts/lib/standalone-shared-ui.source.js:6288  豁免：E-10 冻结快照（历史插件组件源）
+   - scripts/lib/standalone-shared-ui.source.js:6299  豁免：E-10 冻结快照（历史插件组件源）
+   - scripts/lib/standalone-shared-ui.source.js:6315  豁免：E-10 冻结快照（历史插件组件源）
+   - scripts/lib/standalone-shared-ui.source.js:6819  豁免：E-10 冻结快照（历史插件组件源）
+   - scripts/lib/standalone-shared-ui.source.js:7001  豁免：E-10 冻结快照（历史插件组件源）
+   - scripts/lib/standalone-shared-ui.source.js:7009  豁免：E-10 冻结快照（历史插件组件源）
+   - scripts/lib/standalone-shared-ui.source.js:7017  豁免：E-10 冻结快照（历史插件组件源）
+   - scripts/lib/standalone-shared-ui.source.js:7040  豁免：E-10 冻结快照（历史插件组件源）
+   - scripts/magpie-engine-test.mjs:272  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/magpie-engine-test.mjs:273  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/magpie-engine-test.mjs:372  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/magpie-engine-test.mjs:373  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/magpie-engine-test.mjs:550  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/magpie-engine-test.mjs:618  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/magpie-engine-test.mjs:619  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/magpie-native-ui-test.mjs:17  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/magpie-native-ui-test.mjs:130  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/magpie-native-ui-test.mjs:131  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/magpie-native-ui-test.mjs:136  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/magpie-native-ui-test.mjs:382  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/magpie-policy-test.mjs:30  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/magpie-policy-test.mjs:115  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/magpie-policy-test.mjs:201  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/mint-eac-seal-test.mjs:13  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/mint-eac-seal-test.mjs:63  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/pack-standalone.mjs:49  豁免：文件路径 token（如 src/subscriptions.js、src/engine-payload.js、src/providers/index.js），非 HTTP 端点
+   - scripts/pack-standalone.mjs:50  豁免：文件路径 token（如 src/subscriptions.js、src/engine-payload.js、src/providers/index.js），非 HTTP 端点
+   - scripts/registry-test.mjs:36  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/registry-test.mjs:45  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/s12-zero-residual-audit.mjs:44  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/s12-zero-residual-audit.mjs:44  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/s12-zero-residual-audit.mjs:44  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/s12-zero-residual-audit.mjs:44  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/s12-zero-residual-audit.mjs:44  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/s12-zero-residual-audit.mjs:44  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/s12-zero-residual-audit.mjs:44  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/s12-zero-residual-audit.mjs:44  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/s12-zero-residual-audit.mjs:45  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/s12-zero-residual-audit.mjs:45  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/s12-zero-residual-audit.mjs:45  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/s12-zero-residual-audit.mjs:45  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/s12-zero-residual-audit.mjs:45  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/s12-zero-residual-audit.mjs:45  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/s12-zero-residual-audit.mjs:45  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/s12-zero-residual-audit.mjs:67  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/s12-zero-residual-audit.mjs:67  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/s12-zero-residual-audit.mjs:67  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/s12-zero-residual-audit.mjs:68  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/s12-zero-residual-audit.mjs:68  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/s12-zero-residual-audit.mjs:68  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/s12-zero-residual-audit.mjs:69  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/s12-zero-residual-audit.mjs:69  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/s12-zero-residual-audit.mjs:95  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/s12-zero-residual-audit.mjs:95  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/s12-zero-residual-audit.mjs:95  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/s12-zero-residual-audit.mjs:96  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/standalone-channels-test.mjs:597  豁免：删除留痕注释（说明端点/旗标已删除）
+   - scripts/standalone-desktop-regression-test.mjs:25  豁免：EAC 接线 base URL（网关 /eac/v1 协议路径，推理链保留），非管理端点
+   - scripts/standalone-management-test.mjs:254  豁免：删除留痕注释（说明端点/旗标已删除）
+   - scripts/standalone-management-test.mjs:254  豁免：删除留痕注释（说明端点/旗标已删除）
+   - scripts/standalone-package-test.mjs:155  豁免：删除留痕注释（说明端点/旗标已删除）
+   - scripts/standalone-package-test.mjs:262  豁免：删除留痕注释（说明端点/旗标已删除）
+   - scripts/subscription-completion-test.mjs:7  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/subscriptions-test.mjs:9  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/subscriptions-test.mjs:243  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/subscriptions-test.mjs:272  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/update-magpie-engine.mjs:6  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/update-magpie-engine.mjs:86  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/update-magpie-engine.mjs:120  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/update-magpie-engine.mjs:123  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/update-magpie-engine.mjs:156  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - src/aggregate.js:7  豁免：共享内核与 worker 自有路径 / 方法名（非独立端管理 API）
+   - src/aggregate.js:54  豁免：共享内核与 worker 自有路径 / 方法名（非独立端管理 API）
+   - src/egress.js:889  豁免：共享内核与 worker 自有路径 / 方法名（非独立端管理 API）
+   - src/engine-payload.js:26  豁免：共享内核与 worker 自有路径 / 方法名（非独立端管理 API）
+   - src/magpie-engine.js:11  豁免：共享内核与 worker 自有路径 / 方法名（非独立端管理 API）
+   - src/magpie-engine.js:25  豁免：共享内核与 worker 自有路径 / 方法名（非独立端管理 API）
+   - src/magpie-policy.js:106  豁免：共享内核与 worker 自有路径 / 方法名（非独立端管理 API）
+   - src/magpie-policy.js:173  豁免：共享内核与 worker 自有路径 / 方法名（非独立端管理 API）
+   - src/providers/index.js:28  豁免：共享内核与 worker 自有路径 / 方法名（非独立端管理 API）
+   - src/updater.js:644  豁免：共享内核与 worker 自有路径 / 方法名（非独立端管理 API）
+   - vendor/magpie/engine.json:33  豁免：二进制 / 引擎资产
+   - vendor/magpie/engine.json:38  豁免：二进制 / 引擎资产
+   - vendor/magpie/engine.json:43  豁免：二进制 / 引擎资产
+   - vendor/magpie/engine.json:48  豁免：二进制 / 引擎资产
+   - vendor/magpie/engine.json:53  豁免：二进制 / 引擎资产
+   - vendor/magpie/engine.json:58  豁免：二进制 / 引擎资产
+   - vendor/magpie/engine.json:63  豁免：二进制 / 引擎资产
+   - worker/README.md:29  豁免：控制面文档 / 历史验证记录
+   - worker/README.md:61  豁免：控制面文档 / 历史验证记录
+   - worker/README.md:63  豁免：控制面文档 / 历史验证记录
+   - worker/README.md:63  豁免：控制面文档 / 历史验证记录
+   - worker/README.md:77  豁免：控制面文档 / 历史验证记录
+   - worker/README.md:112  豁免：控制面文档 / 历史验证记录
+   - worker/README.md:125  豁免：控制面文档 / 历史验证记录
+   - worker/entry.js:6  豁免：共享内核与 worker 自有路径 / 方法名（非独立端管理 API）
+   - worker/entry.js:11  豁免：共享内核与 worker 自有路径 / 方法名（非独立端管理 API）
+   - worker/entry.js:12  豁免：共享内核与 worker 自有路径 / 方法名（非独立端管理 API）
+   - worker/gateway-node.mjs:55  豁免：共享内核与 worker 自有路径 / 方法名（非独立端管理 API）
+   - worker/gateway-node.mjs:55  豁免：共享内核与 worker 自有路径 / 方法名（非独立端管理 API）
+   - worker/worker.js:26  豁免：共享内核与 worker 自有路径 / 方法名（非独立端管理 API）
+   - worker/wrangler.toml:13  豁免：共享内核与 worker 自有路径 / 方法名（非独立端管理 API）
+   - worker/wrangler.toml:14  豁免：共享内核与 worker 自有路径 / 方法名（非独立端管理 API）
+
+── pattern (d) 符号面 :: /LITE_PAGES|liteNavigationPages|--full|hasDesktopBridge|--lite/g
+   命中 29（豁免 29 / 违规 0）
+   - packages/standalone/web/calendar-Cu7lwL83.js:0  豁免：索引中间态（文件已从工作树删除，待提交）
+   - packages/standalone/web/settings-BfBMQi0p.js:0  豁免：索引中间态（文件已从工作树删除，待提交）
+   - packages/standalone/web/smart-s5WA0vwj.js:0  豁免：索引中间态（文件已从工作树删除，待提交）
+   - scripts/s12-zero-residual-audit.mjs:50  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/s12-zero-residual-audit.mjs:50  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/s12-zero-residual-audit.mjs:50  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/s12-zero-residual-audit.mjs:50  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/s12-zero-residual-audit.mjs:50  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/s12-zero-residual-audit.mjs:51  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/s12-zero-residual-audit.mjs:51  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/s12-zero-residual-audit.mjs:51  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/s12-zero-residual-audit.mjs:51  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/s12-zero-residual-audit.mjs:51  豁免：共享内核 / 引擎 / EAC 接线测试（src·engine·eac-lane 自有路径，非独立端管理 API）
+   - scripts/standalone-lan-test.mjs:488  豁免：删除留痕注释（说明端点/旗标已删除）
+   - scripts/standalone-lan-test.mjs:488  豁免：删除留痕注释（说明端点/旗标已删除）
+   - scripts/standalone-nav-test.mjs:9  豁免：删除留痕注释（说明端点/旗标已删除）
+   - scripts/standalone-nav-test.mjs:9  豁免：删除留痕注释（说明端点/旗标已删除）
+   - scripts/standalone-nav-test.mjs:15  豁免：删除留痕注释（说明端点/旗标已删除）
+   - scripts/standalone-nav-test.mjs:15  豁免：删除留痕注释（说明端点/旗标已删除）
+   - scripts/standalone-nav-test.mjs:15  豁免：删除留痕注释（说明端点/旗标已删除）
+   - scripts/standalone-nav-test.mjs:15  豁免：删除留痕注释（说明端点/旗标已删除）
+   - scripts/standalone-nav-test.mjs:15  豁免：删除留痕注释（说明端点/旗标已删除）
+   - scripts/standalone-nav-test.mjs:94  豁免：判零守恒断言字符串（nav 套件用这些符号名断言其不存在）
+   - scripts/standalone-nav-test.mjs:94  豁免：判零守恒断言字符串（nav 套件用这些符号名断言其不存在）
+   - scripts/standalone-nav-test.mjs:94  豁免：判零守恒断言字符串（nav 套件用这些符号名断言其不存在）
+   - scripts/standalone-nav-test.mjs:99  豁免：判零守恒断言字符串（nav 套件用这些符号名断言其不存在）
+   - scripts/standalone-nav-test.mjs:99  豁免：判零守恒断言字符串（nav 套件用这些符号名断言其不存在）
+   - scripts/standalone-nav-test.mjs:100  豁免：判零守恒断言字符串（nav 套件用这些符号名断言其不存在）
+   - scripts/standalone-nav-test.mjs:100  豁免：判零守恒断言字符串（nav 套件用这些符号名断言其不存在）
+
+── pattern (c) 测试面 :: A6 处置集合复检（删除项不存在即零）
+   - 已删除  scripts/workbench-test.mjs
+   - 已删除  scripts/workbench-library-test.mjs
+   - 已删除  scripts/workbench-management-test.mjs
+   - 已删除  scripts/workbench-native-desktop-test.mjs
+   - 已删除  scripts/workbench-native-test.mjs
+   - 已删除  scripts/workbench-native-agents-test.mjs
+   - 已删除  scripts/desktop-update-test.mjs
+   - 已删除  scripts/workbench-ui-test.mjs
+   删除项残留 0（改写项按新断言面由 (a)/(b)/(d) 覆盖）
+
+结论：违规命中 0（判零通过）；豁免 267 项已逐条留痕。
+口径：独立端产品面 = packages/standalone/** + scripts/{standalone-*,test-all,pack-standalone,build-standalone*,release-standalone-npm,quota-routing}；
+豁免类别：控制面文档 / E-10 冻结快照 / 共享内核与 worker 自有路径 / 文件路径 token / 删除留痕注释 / 判零守恒断言字符串 / 二进制资产。
