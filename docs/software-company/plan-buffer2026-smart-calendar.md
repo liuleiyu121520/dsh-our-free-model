@@ -840,3 +840,248 @@ v10 申报计数：blocker 0 / major 0 / minor 0 / 未决假设 0 / 证据缺口
 | 请求三形态 | worker.mjs:117 `request.responsesBody ?? request.openAi ?? harnessBody(request)`——含图检测三入口的形态锚点 |
 | S12 偏差 7 实现件 | smart.tsx:30（已停用 tag 常显）、:36-39（启停按钮常显）、:107（保留注释）、:205（区头文案）、:259（`<h2>池状态</h2>` 独立区块）、:267（invalid 行）、:19-28（accounts 消费）、:134（启停后重读状态） |
 | AC-41 五场景 | PRD v3.1 :441-447（含图命中/纯文本零变化/无 vision 400/有但耗尽 429/缺失保守） |
+
+---
+
+# 第四部分 · v11 增量：npm 全局实例自更新（PRD v3.2 / S18-S20）
+
+| 项 | 内容 |
+|---|---|
+| 方案版本 | **v12**（v11 经第 9 轮 REVISE 修订：R9O-001 兜底强制解锁 / R9O-002 勘误撤回；PRD v3.2 增量，标准路线不豁免） |
+| 状态 | `PLAN_READY_FOR_REVIEW`（工程基线冻结在 `d7a6409`；v12 待第 10 轮全新审查——delta 仅 R9O-001/R9O-002 两项闭环，处置表 §V11.12） |
+| 输入 | PRD v3.2（FR-17、AC-45~50、D35-D38、R16-R17、S18-S20）；总监 S18 设计委派（检查器/端点/自重启/前端/测试五件） |
+| 工程基线 | `feat/standalone-lite` @ **d7a6409**；registry 实测 `latest=1.2.4`（本轮 `npm view our-free-model-standalone dist-tags.latest --json` → `"1.2.4"`，2026-11-19）；本地包版本 `packages/standalone/package.json` = 1.2.4 |
+| 范围 | S18 实现+自测（本方案主体）；S19 本地验收清单内容（§V11.7，验收文档由 S18 执行时落盘）；S20 发布 1.2.5 流程复述（§V11.8，**待用户批准、本轮零 publish 动作**） |
+| 明确不做 | 不改 `packages/standalone/channels/*`（channel-pack 签名清单零触碰）；不改 `src/*`；不手改 `web/` 构建产物（由 build-standalone-ui 重建）；不新增持久化 settings 字段（FR-17.1：检查结果纯内存态）；零新增运行时依赖（包内 `dependencies: {}` 保持，npm view/i 用系统 npm） |
+
+## V11.0 验收映射
+
+| PRD 条目 | 验收 | 落点 |
+|---|---|---|
+| FR-17.1 每小时检查/内存态/unref | AC-45 | §V11.2 |
+| FR-17.2 右上角 messageTip+关闭语义+状态可查 | AC-46 | §V11.3/§V11.5 |
+| FR-17.3 一键更新（确认→update/run→npm i -g） | AC-47 | §V11.3/§V11.5 |
+| FR-17.4 自重启（停监听→detached 派生→旧进程退出→前端轮询刷新） | AC-48 | §V11.4/§V11.5 |
+| FR-17.5-② 非全局禁用自更（保守判定） | AC-49 | §V11.2/§V11.3/§V11.5 |
+| FR-17.5-③ 失败不破坏现存安装/错误态可重试 | AC-50 | §V11.2/§V11.6 |
+| FR-17.5-①④⑤（明示中断/检查静默/无 CSP 面） | AC-45/47 | §V11.3/§V11.5/§V11.9 |
+| D35/D36/D37/D38 | — | §V11.2~§V11.8 逐条内联 |
+| R16/R17 | — | §V11.9 |
+| S18/S19/S20 | AC-45~50 / 用户验收 / 发布 | §V11.6/§V11.7/§V11.8 |
+
+## V11.1 项目现状证据与口径校正（v12 勘误：撤回①，保留②③）
+
+**关键工程事实（d7a6409 实测，行号见附 V11）**：
+1. 版本读取：`service.mjs:17`（`VERSION = JSON.parse(readFileSync(new URL('./package.json', …))).version`）。PRD 写 :19，实测 :17——以实测为准。
+2. close 链全貌：`service.mjs:378-396`——`stopped=true → clearTimeout(timer) → management.dispose() → eac/scheduler/claims/runtime.dispose() → await relayChanges → Promise.all([managementClosing, closeRelay(), listener.close(), channels.close()]) → finally { stores.dispose(); await releaseLock() }`。**service.lock 在 close 链最尾部释放**（`acquireServiceLock` :48-107）。
+3. 锁竞态决定自重启顺序（本方案核心修订，见 §V11.4）：macOS（darwin）`acquireProcessGuard` 直接返回 null（:27），EEXIST 时**无回收路径**（:67 `if (error.code !== 'EEXIST' || !releaseGuard) throw error`——win32/linux 专属）；即旧进程持锁期间新进程启动必然 EEXIST 失败。
+4. 调度形态锚点：`business.mjs:61142-61176`（`start()`：首跑延时 → tick → 周期重排；`defaultSchedule` :61172-61176 = `setTimeout + timer.unref() + cancel 句柄`）。**〔v12 勘误，撤回 v11「口径校正①」〕** auto-checkin 生产默认首跑即 30s：`AUTO_CHECKIN_DELAY_MS = 3e4`（business.mjs:60915）、周期 `AUTO_CHECKIN_INTERVAL_MS = 36e5`（:60916）、`autoCheckinDelayMs()` fallback 返回 DELAY（:60917-60921；env `DSH_CHANNEL_PACK_AUTO_CHECKIN_DELAY_MS` 仅测试覆写）。v11 的 sed 窗口起于 :60916 漏看 DELAY 常量、且误读 fallback 返回值为 INTERVAL_MS（60min），据以立的「校正①」属错误代码阅读，本轮撤回并降格为勘误。本方案 30s 首检 + 60min 周期**同时契合 AC-45 用户口径与 auto-checkin 生产先例**，二者一致、无冲突。
+5. 端口延续事实：`service.mjs:344-346` 启动即 `settings.update({ standalonePort: listener.port })` 持久化实际端口；cli 侧 `port ?? savedPort`（service.mjs:229、cli.mjs:30/34-37）——显式 `--port` 优先于保存值。派生透传必须传**实际端口**而非原始 `--port 0`（§V11.4-3）。
+6. 启动参数全集（cli.mjs:10-18/23-38）：`--port`、`--data-dir`、`--no-open`、`--no-refresh`、`--probe`（停用兼容）、`--lan/--no-lan/--lan-port`（三者均为 settings 持久化写入口，service.mjs:237-238 已保存、重启自动恢复，无需透传）。
+7. 发布包布局：`pack-standalone-npm.mjs` 注入 `bin: { 'our-free-model-standalone': './packages/standalone/cli.mjs', ofm: 同 }`，**保留仓库相对布局**（包根下 `packages/standalone/` + `src/`）——全局安装后 `self-update.mjs` 与 `cli.mjs` 同目录，`path.join(moduleDir, 'cli.mjs')` 即派生目标。npm 全局布局 macOS/Linux 恒为 `<prefix>/lib/node_modules/our-free-model-standalone/…`（nvm `~/.nvm/versions/node/vX/lib/node_modules`、homebrew `/usr/local/lib/node_modules` 同构）；npx 缓存为 `~/.npm/_npx/<hash>/node_modules/…`。
+8. **口径校正 ②（关键遗漏防线）**：`pack-standalone.mjs:13-62` 的 `sourceFiles` 是**显式文件清单**，新文件 `packages/standalone/self-update.mjs` 若不登记，发布 tgz 将缺失该模块 → 全局实例 `import './self-update.mjs'` 启动即崩。登记该行列为 T2 完成判据。
+9. 管理端注入惯例：`OFM_TEST_UPSTREAM`（service.mjs:245/:324）为既有测试 env 先例；management 鉴权门在 `route()` 统一 401（management.mjs:290），路由为方法+路径白名单 else-if 链（:291-431）。
+10. **口径校正 ③（委派顺序修订）**：委派稿自重启顺序为「停监听 → 派生 → 旧进程 exit(0)」（子进程重试防竞态）。依事实 2/3，macOS 上旧进程持锁至 close 尾部，「先派生后退出」会让新进程在 `acquireServiceLock` 即 EEXIST 退出（重试若无锁感知也仅是延迟失败）。本方案修订为「**先完整 close（含锁释放）→ 再派生 → 旧进程 exit(0)**」，子进程启动重试降级为二道防线（§V11.4）。反驳依据：`service.mjs:27/:67/:125/:392` 可复核——这是比委派顺序更强的工程证据；行为语义（AC-48 断言集）不变。
+
+## V11.2 检查器：packages/standalone/self-update.mjs（新文件；FR-17.1/17.5-②④）
+
+**导出三件**（纯函数可单测 + 工厂）：
+
+1. `compareVersions(a, b)`（写死，零依赖）：取 `x.y.z` 三段数字逐段比（`Number` 比较，1.2.10 > 1.2.9）；同三段时**有 prerelease 后缀（`1.2.5-rc.1`）< 无后缀（`1.2.5`）**（semver 核心子集，覆盖 S19 rc→正式场景）；任一输入非 `\d+\.\d+\.\d+(-[\w.-]+)?` 形态 → 返回 `null`（保守视为不可比，不提示更新）。不支持 build metadata 等完整 semver——1.2.x 发布序列三段数字，不触雷（限制声明，§V11.9-SR16）。
+2. `detectInstallKind({ platform, moduleDir })` → `'global' | 'npx' | 'local' | 'source' | 'unsupported'`：
+   - `platform === 'win32'` → `unsupported`（**范围声明：自更新链路仅 macOS/Linux**；Windows 用户在管理台看到的是「发现新版本 + 手动升级命令」形态，AC-49 语义，非功能缺失）；
+   - `moduleDir` 含 `/.npm/_npx/`（posix 分隔符）→ `npx`（npx 缓存安装，误升级会改全局副本而运行实例不变——禁）；
+   - `moduleDir` 匹配 `(^|/)lib/node_modules/our-free-model-standalone/` → `global`（npm 全局布局唯一特征，事实 7；**依此判定 canSelfUpdate=true**）；
+   - 仅匹配 `(^|/)node_modules/our-free-model-standalone/`（项目本地安装）→ `local`（禁）；
+   - 其余（源码直跑）→ `source`（禁）；
+   - 判据用 `__dirname`（self-update.mjs 安装位置 = 运行代码的真实来源）而非委派稿的 `process.argv[1]`：argv[1] 在 wrapper/自定义脚本启动时指向 wrapper，`__dirname` 恒指向实际加载的包内路径，信息更准；语义仍满足 D36②（判定不可得 → 保守禁用）。
+3. `createSelfUpdate(deps)` 工厂，deps（生产默认 + 测试注入双轨）：
+
+| dep | 生产默认 | 测试注入（env，跨进程需要） |
+|---|---|---|
+| `currentVersion` | service.mjs 传入 `VERSION` | — |
+| `moduleDir` | `__dirname`（fileURLToPath） | `OFM_SELF_UPDATE_MODULE_DIR` |
+| `npmCommand` | `'npm'`（PATH 解析，spawn 继承 env——`NPM_CONFIG_REGISTRY`/代理配置天然生效，R17 兼容） | `OFM_SELF_UPDATE_NPM`（假 npm 脚本绝对路径） |
+| `firstDelayMs` | `30_000`（AC-45） | `OFM_SELF_UPDATE_FIRST_DELAY_MS` |
+| `intervalMs` | `3_600_000` | `OFM_SELF_UPDATE_INTERVAL_MS` |
+| `viewTimeoutMs` | `15_000` | `OFM_SELF_UPDATE_VIEW_TIMEOUT_MS` |
+| `installTimeoutMs` | `600_000`（10 分钟） | `OFM_SELF_UPDATE_INSTALL_TIMEOUT_MS` |
+| `closeTimeoutMs` | `5_000`（close 挂起兜底竞速，§V11.4-2） | `OFM_SELF_UPDATE_CLOSE_TIMEOUT_MS`；另有 `OFM_SELF_UPDATE_TEST_STUCK_CLOSE=1`（集成测试钩子：将 performRestart 的 close 调用替换为永不 resolve 的 promise，专测兜底路径，§V11.6） |
+| `dataDir` / `logger` / `performRestart` | service.mjs 注入（§V11.4） | — |
+
+   env 注入命名与 `OFM_TEST_UPSTREAM` 先例一致，**测试专用钩子、生产文档不宣传、未设置即全默认**。
+- `start()`：对齐 business.mjs:61151-61164 调度形态——`setTimeout(first, firstDelayMs)`，tick 内执行检查后重排 `setTimeout(tick, intervalMs)`，`timer.unref()`，`stop()` 清除句柄（不阻止进程退出，AC-45）。
+- 检查动作：`spawn(npmCommand, ['view', 'our-free-model-standalone', 'dist-tags.latest', '--json'])`，`timeout: viewTimeoutMs`，失败（非零退出/超时/垃圾输出/JSON 解析失败）**静默**：记 `lastError`（内存）、保留上次 `latest`，下一周期自动重试（AC-45/FR-17.5-④——无弹窗、服务与网关调用不受影响）。
+- 内存态 `state()`（**零持久化**，重启后下一周期重建，FR-17.1）：
+  `{ current, latest: string|null, hasUpdate: boolean, canSelfUpdate: boolean, checkedAt: number|null, lastError: string|null, state: 'idle'|'available'|'updating'|'restarting'|'failed', target?: string }`
+  （`canSelfUpdate = detectInstallKind(...) === 'global'`；`hasUpdate = compareVersions(latest, current) === 1`。）
+- `requestRun()`（management 端点调用）：同步前置校验并置 `state='updating'` 后返回，安装异步执行——`canSelfUpdate=false` → throw 409；`!hasUpdate` → throw 409；`state==='updating'||'restarting'` → throw 409；`state==='failed'` **放行重试**（AC-50）。异步体：`spawn(npmCommand, ['i', '-g', 'our-free-model-standalone@' + latest], { timeout: installTimeoutMs })`，收集 stdout/stderr 尾部 ~4KB 摘要 → 失败：`state='failed'` + `lastError`，**服务不重启、现存全局安装未变**（npm 安装原子性，无半升级；AC-50）；成功：`state='restarting'` → `await deps.performRestart()`。两条路径均追加 `dataDir/update.log`（时间戳/目标版本/结果/输出摘要——R16 可诊断性载体）。
+
+## V11.3 端点：management.mjs（FR-17.2/17.3）
+
+1. `createManagement` 增可选参数 `selfUpdate`（service.mjs 传入实例）；未传时 summary 不含 `update` 字段、`update/run` 404（兼容形态，测试可独立构造）。
+2. `summary()`（:224-252）增 `...(selfUpdate ? { update: selfUpdate.state() } : {})`——**轮询即达前端**（app.tsx:98 既有 15s 轮询 `/summary`，零新增查询通道，D35「状态查询形态由架构师定」落点）。
+3. `route()` 鉴权门内（:290 之后）新增分支：
+   `POST /api/management/update/run` → `await readBody(req)`（空 JSON 对象，与 logout :291-294 形态一致）→ `json(res, 200, selfUpdate.requestRun())`（requestRun 内 throw 的 409/401 经既有 catch :457-461 转 JSON 错误响应）。**立即响应、不挂 HTTP 等待安装**（npm 最长 10 分钟，request() 前端默认 10s 超时，app.tsx:85——同步等待必炸；响应体 `{ ok: true, target }`，安装进度由前端轮询 `summary.update.state` 获得）。
+4. 鉴权/负向路径：未登录 → 401（既有 :290 门）；`canSelfUpdate=false` → 409 + 文案含手动升级命令（AC-49 服务侧面）；GET 该路径 → 404（else-if 链既有行为）。
+
+## V11.4 自重启序列（FR-17.4/17.5-③；service.mjs + cli.mjs）
+
+**顺序（依 V11.1 事实 2/3 修订，委派稿「先派生后退出」的反驳见 V11.1-10）**：
+
+```
+requestRun() 安装成功（state='restarting'）后：
+1. await sleep(300ms)                      # 让 update/run 的 HTTP 响应先 flush（json() 已 res.end，
+                                           # 300ms 余量防连接层排队）
+2. await Promise.race([service.close(), sleep(closeTimeoutMs)])
+                                           # §V11.1-2 完整 close 链原样复用：HTTP 停监听、
+                                           # management/eac/scheduler/claims/runtime dispose、
+                                           # stores flush、service.lock 释放（:392）
+   ├─ close 正常完成 → 继续 3；close reject → update.log 留痕 + process.exit(1)（安装已成功，
+   │                    全局命令可用，R16-b 兜底；finally 块保证锁仍释放，:391-393）
+   └─ 兜底（close 挂起竞速超时，默认 5s）〔v12 R9O-001 修订〕三步强制序列：
+       a) update.log 追加留痕：「close 超时（组件挂起，详情见 update-restart.log），执行强制解锁后退出；
+          如服务仍无法启动，请删除 <dataDir>/service.lock 后重试」；
+       b) 强制版 releaseLock（self-update.mjs 内 forceReleaseLock(dataDir)：读 service.lock，
+          校验 JSON.pid === process.pid 且 product === 'our-free-model-standalone'——锁确属本进程；
+          与正式 releaseLock（service.mjs:96-106 token/pid/product 归属校验）语义等价，
+          进程即将退出，pid+product 自证足够）→ fs.unlinkSync(lockFile)；
+          读取/unlink 失败或归属不符 → update.log 追加「请手动删除 <dataDir>/service.lock 后重启」；
+       c) process.exit(0)（exit 终结一切连接，detached 子进程不受影响）。
+       不变式：兜底路径「**锁必释放（b 成功）或留痕含删锁指引（b 失败）**」——与 close 链 finally 的
+       锁释放不变式对齐，不留 darwin 残锁死锁（残锁 + :27/:67 EEXIST 无回收 = 手动 ofm 亦无法启动）。
+3. fs.accessSync(path.join(moduleDir, 'cli.mjs'))   # 新版 cli 就位校验（npm i -g 后同路径已是新版，V11.1-7）
+   失败 → update.log 留痕 + process.exit(1)
+4. spawn(process.execPath, [cliPath, ...passthroughArgs, '--no-open', '--update-restart'],
+        { detached: true, stdio: ['ignore', logFd, logFd], env: process.env })
+   # logFd = fs.openSync(path.join(dataDir, 'update-restart.log'), 'a')——新进程崩溃可诊断（R16-c）
+   # execPath = 当前 node 二进制（nvm 场景正确同源）
+   # spawn 同步异常 → update.log 留痕 + stderr + process.exit(1)
+5. child.unref(); fs.closeSync(logFd); process.exit(0)
+```
+
+**要点**：安装成功后无论派生成败，旧进程都不再提供服务（HTTP 已停）——此时 npm 安装完好，`ofm` 全局命令可手动重启，`update.log`/`update-restart.log` 双日志保证可诊断（R16 对策核心：**失败前移到安装阶段可重试（AC-50），派生阶段只剩低概率同步错误且留痕**）。R16「新进程启动即崩」无自动回滚为 PRD 声明既定风险，兜底 = update-restart.log + S19 真机演练门。
+
+**2. passthroughArgs（argv 过滤透传，从 process.argv 提取）**：
+
+| 参数 | 处理 | 依据 |
+|---|---|---|
+| `--port` | 原 argv 有 → 透传**实际端口**（service.port）而非原值（`--port 0` 透 0 会换随机端口，违背 AC-48「端口一致」）；argv 无 → 不透传（settings.standalonePort 已持久化实际端口，service.mjs:345，新进程自动同端口） | V11.1-5 |
+| `--data-dir` | 原样透传（显式目录必须延续；argv 无则默认链 OFM_HOME/~/.our-free-model 与旧进程一致） | cli.mjs:11/:37 |
+| `--no-refresh` | 原样透传（用户显式的会话级启动偏好，AC-48「关键启动参数一致」） | cli.mjs:13 |
+| `--lan/--no-lan/--lan-port` | **不透传**（settings 持久化，service.mjs:237-238 新进程自动恢复，透传反而无害冗余） | V11.1-6 |
+| `--probe` | 不透传（停用兼容旗标） | cli.mjs:14 |
+| `--no-open` | **强制附加**（更新重启不弹浏览器抢焦点——前端正在轮询等待，AC-48 流程不被打断） | cli.mjs:12 |
+| `--update-restart` | **强制附加**（内部旗标，见 3） | 本节 |
+
+**3. cli.mjs 改动（二道防线）**：usage 增一行 `--update-restart  （内部）自更新重启接力：遇锁/端口占用自动重试`；解析 `if (flag === '--update-restart') { options.updateRestart = true; continue }`（:23-38 白名单链内）；`main()` 中 `updateRestart` 时对 `startStandalone` 包重试循环：catch `code ∈ {EEXIST, EADDRINUSE}` → 最多 5 次×500ms 后重试，全败走原错误路径。防「close 完成后第三方抢占端口/锁」边缘竞态（正常序列下 close 先于 spawn，此层近乎空转，属防御深度）。
+
+**4. service.mjs 接线**：import `createSelfUpdate`；listener 就绪后创建实例（`currentVersion: VERSION, dataDir, moduleDir, logger, performRestart`），`start()`；`close()` 链首段与 `clearTimeout(timer)` 并列 `selfUpdate.stop()`（仅取消检查定时器；updating 中用户 Ctrl-C → npm 事务性保证无半升级，下次启动内存态重建，§V11.9-R16-d）。`performRestart` 闭包绑定最终 service 对象（实现形态：`let serviceRef` + return 后回绑，或将 close 序列提取为局部函数——按最小 diff 由工程师定，验收只认上述行为序列）。
+
+## V11.5 前端（FR-17.2/17.3；AC-46/47/48/49/50）
+
+**新组件 `frontend/components/update-notice.tsx`**，挂载于 `app.tsx:113` 的 `<header className="topbar">` 内 `<Topbar>` 之后（右上角；shell.tsx 零改动）：
+
+1. **显示条件**（summary.update 驱动 + 本地会话记忆）：
+   - `state ∈ {updating, restarting}` 或用户已发起更新 → spinner 气泡「正在更新到 x.y.z 并重启服务…」（不可关闭）；
+   - `state === 'failed'` → 错误气泡（lastError 摘要 + **重试** + 关闭）；
+   - `hasUpdate && canSelfUpdate && sessionStorage['ofm-update-dismissed'] !== latest` → 气泡「发现新版本 x.y.z（当前 a.b.c）」+「立即更新」+ 关闭；
+   - `hasUpdate && !canSelfUpdate`（源码/npx/local/win32）→ 气泡仅展示新版本号 + 手动升级命令 `npm i -g our-free-model-standalone@x.y.z` + 复制 + 关闭；**「立即更新」不渲染**（AC-49）；
+   - 关闭 → `sessionStorage.setItem('ofm-update-dismissed', latest)`——同版本本会话不再弹，状态仍可查（summary.update，AC-46）。
+2. **确认交互（AC-47/D36①）**：点击「立即更新」→ 气泡内容切换为二次确认态「将重启服务，进行中调用会中断」+「确认更新/取消」——**内联两步，不新增模态组件**（与 disclaimer-dialog 的模态语言、hash 路由零耦合，规避 R17-UI）。
+3. **发起与恢复探测（AC-48）**：确认 → `request('/update/run', {}, 30000)` → 成功即进入「等待重启」模式（App 层 `updatePhase` 状态）：**独立 2s 轮询** `GET /api/management/summary`——fetch 失败/超时 = 服务重启中（预期，不报错）；成功且 `version === target` → `location.reload()`（hash 保留，app.tsx:19-29 页面回位）；成功但版本异常 → 同样 reload 回稳态；总超时 5 分钟 → 错误态提示手动刷新。等待期间既有 15s loadData 轮询的报错被抑制（app.tsx:98 回调加 `updatePhase` 判断，不 setError——避免全屏 error-notice 与更新气泡打架）。
+   - LAN 开启场景（standaloneLanEnabled=true）服务重启后旧会话 401：探测轮询遇 401 一律继续轮询至超时，reload 后走登录页（会话重启失效为既有语义，登录屏文案已声明 app.tsx:45；验收口径注明）。
+4. `types.ts`：`Summary` 增 `update?: UpdateInfo`（字段同 §V11.2 state() 形状）。`app.css` 增 `.update-notice` 系（对齐 `notice`/`notice-enter` 动效与 `ui-spinner` 复用，app.tsx:43 同款；暖调语言，深浅主题双覆盖——S12-B 色板惯例）。
+5. **更新失败（AC-50）**：`update/run` 直接 4xx 或轮询见 `state==='failed'` → 错误气泡 + 重试按钮（重试=重新走确认流）。
+
+## V11.6 测试（AC-45~50 载体；S18 自测口径，mock 为主）
+
+| 套件 | 用例 |
+|---|---|
+| **scripts/self-update-test.mjs（新）单元段** | ① `compareVersions` 矩阵：1.2.4<1.2.5、1.2.10>1.2.9、相等、`1.2.5-rc.1`>1.2.4、`1.2.5`>`1.2.5-rc.1`、非法输入（'abc'/''/null）→ null；② `detectInstallKind` 矩阵：`~/.nvm/…/lib/node_modules/our-free-model-standalone/…`→global、`/usr/local/lib/node_modules/…`→global、`~/.npm/_npx/x/node_modules/…`→npx、`<proj>/node_modules/…`（无 lib 段）→local、源码路径→source、win32→unsupported；③ 检查器（env 提速 + 假 npm view 输出 `"1.9.9"`）：idle→checked、hasUpdate 流转；view 非零退出/超时（假 npm sleep）/垃圾输出 → lastError 记录、latest 保留旧值、无异常抛出（AC-45 静默）；④ `requestRun` 拒绝路径：source 形态 409、无更新 409、updating 重复 409；⑤ 假 npm `i` 非零退出 → state=failed + lastError + `update.log` 留痕、**不触发 performRestart**（AC-50） |
+| **self-update-test.mjs 集成段（自重启端到端，关键自动化）** | 构造伪全局目录 `<tmp>/lib/node_modules/our-free-model-standalone/packages/standalone/`：cli.mjs 替身（起 http 监听 argv `--port`、argv 原样落盘 `respawn-argv.json`、`GET /` 回 `{version:'99.0.0'}`）+ 假 npm（view→`"1.9.9"`；i→no-op 退出 0）；spawn 真实 `node packages/standalone/cli.mjs --port 0 --data-dir <tmp> --no-open`（env 注入 OFM_SELF_UPDATE_*）→ 解析 stdout 管理链接拿端口/登录（key 读 dataDir/settings.json）→ 断言 summary.update 形状（canSelfUpdate=true、hasUpdate=true）→ POST update/run 200 → 断言：**旧进程 exit code 0**、`update.log` 含目标版本、`respawn-argv.json` 含 `--port <实际端口>`/`--data-dir <tmp>`/`--update-restart`/`--no-open`、**原端口被替身接管**（请求回 99.0.0）；失败注入变体：假 npm i 退出 1 → 旧进程**不退出**、summary.update.state=failed、网关 `/v1` 仍应答（AC-50 端到端）；**close 挂起兜底注入用例（v12 R9O-001）**：env `OFM_SELF_UPDATE_TEST_STUCK_CLOSE=1` + `OFM_SELF_UPDATE_CLOSE_TIMEOUT_MS=500` 起旧进程 → update/run → 断言 ①旧进程仍 exit(0)（竞速兜底生效）②`dataDir/service.lock` 已被强制解锁删除（或 update.log 含手动删锁指引——两分支必居其一）③update.log 含兜底路径留痕 ④**同 dataDir 再 spawn 真实 cli.mjs 启动成功无 EEXIST**（服务可再次启动 = 残锁死锁已消除的可恢复性证明）→ 清理 |
+| **standalone-management-test.mjs 扩** | summary.update 字段存在与形状（源码直跑形态 canSelfUpdate=false 如实）；update/run：未登录 401、canSelfUpdate=false → 409 含手动命令、GET → 404、非 JSON body → 415（readBody 既有惯例）；**本文件零真 npm 调用**（成功路径归集成段） |
+| **前端测试（standalone-frontend-test/react-ui-test 扩）** | fixture summary 带 update：available → 气泡出现含版本号；关闭 → sessionStorage 记忆、同版本不再渲染；canSelfUpdate=false → 无「立即更新」、含手动命令文本（AC-46/49 DOM 断言） |
+| **回归** | 既有 standalone-* 全套件复跑（service.mjs 改动影响面）；pack-standalone-gate-test / standalone-package-test（sourceFiles 登记 self-update.mjs 后 tgz 完整性 + 包内启动冒烟）；判零脚本复跑（前端新增样式不引入冷色残留） |
+
+## V11.7 S19 本地验收清单（AC-45~50 真源演练；文档 S18 执行时落 docs/software-company/s19-local-acceptance.md）
+
+**主路径（真 registry，零 mock、零发布动作）**——利用 `latest(1.2.4) > 本地降版实例` 场景：
+1. 临时改 `packages/standalone/package.json` version → `1.2.3`（**不提交**），`node scripts/pack-standalone-npm.mjs` → `npm i -g <dist/*.tgz>`（全局装上含自更新代码的 1.2.3 实例，全局布局真实）。
+2. `ofm` 启动 → ~30s 后管理台右上角气泡「发现 1.2.4」；关闭 → 本会话不再弹、重开管理台仍可查（AC-46）。
+3. 「立即更新」→ 确认（明示中断文案核对）→ 气泡 spinner → 服务重启 → 自动刷新 → 侧栏版本显示 **1.2.4**（真 registry 真包 `npm i -g our-free-model-standalone@1.2.4`，AC-47/48）。
+4. 数据完好：更新前后比对 settings.json（API Key 不变）/stats/claims-history 文件（AC-48）。
+5. 负向：断网（或临时 hosts 屏蔽 registry.npmjs.org）重启服务 → 无气泡无弹窗、网关调用正常、1h 后恢复网络自动出现提示（AC-45）；`chmod -w` 全局 node_modules → 更新失败错误气泡、服务不重启、`chmod +w` 后重试成功（AC-50）。
+6. 非全局路径：源码直跑 `node packages/standalone/cli.mjs` → 气泡仅版本号+手动命令（AC-49）。
+7. 回滚：`npm i -g our-free-model-standalone@1.2.4 --registry=https://registry.npmjs.org` 恢复全局 1.2.4；git checkout 还原临时版本改动。
+（可选补充：`npx verdaccio` + `NPM_CONFIG_REGISTRY` 本地源演练 1.2.5-rc 形态——非必需，主路径已覆盖全链路。）
+
+## V11.8 S20 发布 1.2.5 复述（D37；**待用户批准，本轮零 publish 动作**）
+
+1. 前置：S19 用户验收通过并明示批准（PRD :390）。
+2. bump `packages/standalone/package.json` → `1.2.5`；NPM-README 增「自更新」说明段（S18 内完成文案，含 Windows 不支持声明）。
+3. `node scripts/release-standalone-npm.mjs` preflight → build → pack → smoke（工程师）→ **publish**（总监本人终端，凭据零落盘，release-standalone-npm.mjs:194-205）→ `npm view` 断言 `dist-tags.latest === 1.2.5` → record 落 `docs/software-company/release-record-1.2.5.md`。
+4. 发布后 dogfood（首个生产自更新样本）：任一全局 1.2.4 实例 ≤1h 收到提示 → 一键升级 1.2.5 → 结果记入 release-record。
+5. 回滚预案：§6I.4 机制复用（deprecate 1.2.5 / dist-tag 回拨 1.2.4）；**自更新特例**：已升 1.2.5 的实例在 latest 回拨后 hasUpdate=false，不会自动降级——需用户手动 `npm i -g our-free-model-standalone@1.2.4`（发布说明中注明）。
+
+## V11.9 风险与回滚
+
+| # | 风险 | 对策 |
+|---|---|---|
+| R16-a 停监听后派生竞态（锁/端口） | 自重启顺序修订为「完整 close（锁释放）→ 派生 → exit」（V11.1-10，service.mjs:27/:67/:392 证据）；cli `--update-restart` 5×500ms 二道防线（§V11.4-3）；集成测试覆盖真进程退出/端口接管（§V11.6） |
+| R16-b 派生同步失败 / close 挂起（execPath/cli 路径异常、close 链组件挂起） | 同步失败：close 前 `fs.accessSync(cliPath)` 校验，失败留痕 `update.log` + exit(1)，安装此时已完好、`ofm` 命令可手动重启（无半升级）。**close 挂起（v12 R9O-001）**：5s 竞速 → 强制解锁（`forceReleaseLock`：pid+product 归属校验后 unlink service.lock）→ update.log 留痕（含删锁指引兜底分支）→ exit(0)；不变式「锁必释放或留痕含指引」，杜绝 darwin 残锁死锁（service.mjs:96-106 releaseLock 仅挂 close finally——挂起即不执行）；集成兜底注入用例覆盖（§V11.6） |
+| R16-c 新进程启动即崩 | detached 派生 stdio 重定向 `dataDir/update-restart.log`（可诊断）；无自动回滚为 PRD R16 既定声明；S19 真机演练为发布门 |
+| R16-d updating 中用户 Ctrl-C | close 链 `selfUpdate.stop()` 仅停检查定时器；npm 安装事务性（无半升级）；内存态下次启动重建；边缘：安装完成但未及重启 → 全局已是新版，下次手动/正常启动即新版（无害终态） |
+| R17 registry/网络/权限 | 检查失败静默+1h 重试（AC-45）；安装失败错误态可重试不破坏现存安装（AC-50）；npm 命令继承 env（NPM_CONFIG_REGISTRY/代理天然兼容企业环境）；nvm 前缀权限用户侧既有；**Windows 声明范围外**（detectInstallKind unsupported，仅提示手动命令，AC-49 形态） |
+| SR-16（自识别）简化 semver 限制 | 仅三段数字 + prerelease<release 子集；build metadata 等不支持；1.2.x 发布序列三段数字不触雷；非法输入保守 null 不提示（漏报安全、误报为零） |
+| SR-17（自识别）重启窗口前端 401/断连 | 独立 2s 探测轮询容忍失败/401 至 5 分钟总超时；LAN 场景 reload 后登录页为既有会话语义（app.tsx:45 文案）；等待期抑制全局 error-notice 打架（§V11.5-3） |
+| SR-18（自识别）pack 清单遗漏致发布包启动崩 | sourceFiles 登记 self-update.mjs 列为 T2 完成判据 + package-test 冒烟（V11.1-8） |
+
+**回滚（S18 代码）**：改动为独立 commit 组（后端 self-update.mjs/service/management/cli + 前端 + pack 清单 + 测试），可整体 revert；零数据迁移（update 状态纯内存；`update.log`/`update-restart.log` 为追加型诊断日志，残留无害）；未发布前 registry 无任何变化。
+
+## V11.10 未决假设与证据缺口申报
+
+**未决假设 0 / 证据缺口 0**。两项口径校正（V11.1-8/10：pack sourceFiles 显式清单、自重启顺序依锁证据修订）均已用可复核行号证据关闭，非缺口；v11 的「校正①」（30s 非 auto-checkin 生产默认）系错误代码阅读，v12 已撤回并降格为勘误（V11.1-4；business.mjs:60915 实测 `AUTO_CHECKIN_DELAY_MS = 3e4`）。R9O-001 兜底强制解锁已并入 §V11.4-2/§V11.2（closeTimeoutMs）/§V11.6（兜底注入用例）/§V11.9（R16-b）。阶段门确认事项 2 项（既定流程，非未决）：S19 用户验收批准、S20 发布批准（D37）。
+
+## V11.11 影响文件与实现顺序（T1→T5 依赖序，S18 执行清单）
+
+| # | 文件 | 动作 | 前置 | 完成判据 |
+|---|---|---|---|---|
+| T1 | `packages/standalone/self-update.mjs` | 新建（compareVersions/detectInstallKind/createSelfUpdate） | — | self-update-test 单元段全绿 |
+| T1 | `scripts/self-update-test.mjs` | 新建（单元段） | 同上 | 同上 |
+| T2 | `packages/standalone/service.mjs` | 修改（创建/start/performRestart 注入/close 链 stop） | T1 | standalone-test 冒烟不回归 |
+| T2 | `packages/standalone/cli.mjs` | 修改（--update-restart 解析+重试+usage） | T1 | 重试路径单测/手测 |
+| T2 | `scripts/pack-standalone.mjs` | 修改（sourceFiles 登记 self-update.mjs） | T1 | package-test/gate 全绿 |
+| T3 | `packages/standalone/management.mjs` | 修改（selfUpdate 参数/summary.update/update/run） | T2 | management-test 扩展全绿 |
+| T3 | `scripts/standalone-management-test.mjs` | 修改（§V11.6 断言） | T3 | 同上 |
+| T4 | `frontend/types.ts` / `app.tsx` / `app.css` / `components/update-notice.tsx`（新） | 前端四件 | T3（契约先定） | typecheck + 前端测试 + web 重建 |
+| T5 | `scripts/self-update-test.mjs` | 扩集成段（替身+假 npm+真进程自重启） | T2-T4 | 集成断言全绿（旧进程退出/端口接管/失败变体） |
+| 收尾 | `packages/standalone/NPM-README.md` | 增自更新说明（含 Windows 声明） | T5 | pack 冒烟含文案 |
+
+明确不修改：`channels/*`（business.mjs 等签名清单零触碰）、`src/*`、`login-terminal.mjs`、`shell.tsx`、web 构建产物（由 build 生成）。
+
+v12 申报计数：blocker 0 / major 0 / minor 0 / 未决假设 0 / 证据缺口 0（第 9 轮 1 major / 1 minor 已逐项处置并登记 §V11.12）；阶段门确认事项 2 项（S19 验收批准、S20 发布批准，D37 既定流程）。
+
+## V11.12 第 9 轮处置表（v11 → v12；R9O-001/R9O-002）
+
+| ID | 级别 | 裁决摘要 | 处置 | 修改位置 | 证据 | 关闭标准 |
+|---|---|---|---|---|---|---|
+| R9O-001 | major | §V11.4 步骤 2 兜底「close 5s 超时 → 强制 process.exit(0)」在 darwin 留 service.lock 残锁（releaseLock 仅挂 close() closing promise 的 finally——close 挂起则永不执行；exit 不删磁盘锁文件；:27/:67 EEXIST 无回收路径直接 throw）→ 更新后既不自启、手动 ofm 亦 EEXIST；且该路径无 update.log 留痕 | **接受**（采纳 reviewer better_alternative）：兜底改为「close 与 5s 计时竞速 → 超时执行**强制版 releaseLock**（forceReleaseLock(dataDir)：pid+product 归属校验后 unlink，与 close 链 finally 的锁释放不变式对齐）→ update.log 留痕（含兜底说明 + 失败分支「请删除 <dataDir>/service.lock」指引）→ exit(0)」；R16-b 声称同步修正；测试设计补兜底注入用例 | §V11.4-2（兜底三步强制序列与不变式）、§V11.2 deps 表（closeTimeoutMs=5s / OFM_SELF_UPDATE_CLOSE_TIMEOUT_MS / OFM_SELF_UPDATE_TEST_STUCK_CLOSE 钩子）、§V11.6 集成段（close 挂起兜底注入用例）、§V11.9 R16-b 行、附 V11（锁释放与兜底依据行） | 本轮复测：service.mjs:96-106（releaseLock 闭包归属校验；仅由 close() 调用）、:387-394（releaseLock 挂 closing 的 finally——挂起即不执行）、:27/:67（darwin 无 Unix-socket guard、EEXIST 无回收） | 兜底路径满足「锁必释放或留痕含删锁指引」不变式（§V11.4-2b 已写入）+ 兜底注入用例在列（§V11.6：STUCK_CLOSE 注入 → exit(0) → 锁删除/指引留痕 → 同 dataDir 可再启动无 EEXIST） |
+| R9O-002 | minor | v11「口径校正①」事实错误：business.mjs:60915 `AUTO_CHECKIN_DELAY_MS=3e4`（30s 首跑即 auto-checkin 生产默认）、:60916 INTERVAL=36e5；「30s 并非 auto-checkin 生产值」系 DELAY/INTERVAL 混读，PRD「启动约 30s 首检」本与代码一致 | **接受**（本轮复测与裁决一致，无反驳）：撤回「校正①」，降格为勘误说明并入调度形态锚点；措辞改为「auto-checkin 生产默认首跑即 30s（DELAY=3e4，间隔 36e5），本方案 30s 首检同时契合 AC-45 与 auto-checkin 先例」；§V11.10 申报文字与附 V11 索引同步 | §V11.1 标题（撤回①保留②③）、§V11.1-4（勘误段，含 v11 误读成因：sed 窗口起于 :60916 漏看 DELAY 常量、误读 fallback 返回值）、§V11.10、附 V11（调度形态行改写） | 本轮复测 business.mjs:60915-60921（`var AUTO_CHECKIN_DELAY_MS = 3e4` / `var AUTO_CHECKIN_INTERVAL_MS = 36e5` / `autoCheckinDelayMs` 两处 fallback 均返回 `AUTO_CHECKIN_DELAY_MS`） | 文档与 business.mjs:60915-60919 实测一致（§V11.1-4 与附 V11 均已按 DELAY=3e4 实测改写，「非生产默认」表述已清除） |
+
+## 附 V11：证据索引（d7a6409 实测，2026-11-19）
+
+| 事实 | 锚点 |
+|---|---|
+| registry | `npm view our-free-model-standalone dist-tags.latest --json` → `"1.2.4"`；本地包 version=1.2.4（packages/standalone/package.json） |
+| 版本读取 | service.mjs:17（VERSION 读 ./package.json；PRD 写 :19，实测 :17） |
+| close 链与锁释放时序 | service.mjs:378-396（close 全序列；:392 finally releaseLock）；acquireServiceLock :48-107（:86 写锁；:96-106 释放）；:27 darwin 无 Unix-socket guard；:64-83 EEXIST 回收仅 win32/linux（:67 throw 条件） |
+| 锁释放与兜底依据（v12 R9O-001） | service.mjs:96-106（releaseLock 闭包：token/pid/product 归属校验后 removeOwnedLock + closeSync）；releaseLock 仅在 close() 的 closing promise finally（:387-394）被 await——close 链挂起（Promise.all 某项永不 resolve）则锁永不释放且 exit 不删磁盘文件 → darwin 残锁无回收（:27/:67）→ 兜底 forceReleaseLock（pid+product 校验 + unlink）与删锁指引留痕（§V11.4-2） |
+| 端口持久化与优先级 | service.mjs:344-346（setPort + settings.update({standalonePort})）；:229（port ?? savedPort）；cli.mjs:30/:34-37（--port 解析） |
+| 调度形态 | business.mjs:61142-61176（start/tick/defaultSchedule=setTimeout+unref+cancel）；:60915-60921（**AUTO_CHECKIN_DELAY_MS=3e4 首跑 30s 生产默认**、AUTO_CHECKIN_INTERVAL_MS=36e5 周期 60min、autoCheckinDelayMs fallback 返回 DELAY——v12 勘误：v11 误读为 INTERVAL_MS，30s 首检与 auto-checkin 先例一致） |
+| 启动参数全集 | cli.mjs:6-19（usage）、:21-38（解析白名单）；--lan 系持久化 service.mjs:237-238 |
+| 发布包布局与 bin | pack-standalone-npm.mjs:44-58（bin 双命令名 → packages/standalone/cli.mjs；files=shipped；仓库相对布局）；pack-standalone.mjs:13-62（sourceFiles **显式清单**——新文件必须登记） |
+| 管理端鉴权/路由/summary | management.mjs:290（401 门）、:291-431（else-if 路由链）、:224-252（summary）、:40-55（readBody 415/413 惯例）、:457-461（错误转 JSON） |
+| 前端轮询/顶栏/提示形态 | app.tsx:85（request 默认 10s 超时）、:86（loadData /summary+/stats）、:98（15s 轮询）、:113（header.topbar+Topbar 挂点）；shell.tsx:121-124（Topbar 右上 console-topbar-status）；app.tsx:45（会话重启失效文案）；smart.tsx:105-114（toast 2.8s 先例——更新气泡不自动消失，语义不同） |
+| 测试 env 注入先例 | service.mjs:245/:324（OFM_TEST_UPSTREAM）；management-test.mjs:60-101（check/request/login 形态、startStandalone({port:0, refresh:false}) + keyFile 读 key） |
+| 发布流程 | release-standalone-npm.mjs:118-119（preflight/build/pack/smoke/publish/record 子命令）、:194-205（publish+view 断言）、:25（版本取自 packages/standalone/package.json） |

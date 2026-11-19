@@ -1,15 +1,15 @@
 {
   "schema": "review_scope_manifest_v1",
-  "root_commit": "14280e4075e109f190243481c645061345dbb75b",
-  "generated_at": "2026-11-17T03:24:47.569Z",
+  "root_commit": "d7a640978eca99aa365e15acbf88fb33975a89bb",
+  "generated_at": "2026-11-19T13:55:03.932Z",
   "entries": [
     {
       "path": "docs/software-company/prd-buffer2026-smart-calendar.md",
       "type": "file",
       "mode": "100644",
       "symlink": null,
-      "size": 93156,
-      "sha256": "08dc0bfaba4865a2cca2409efe53e73833152c502c9b5bdf384be95197f7d06e",
+      "size": 104800,
+      "sha256": "286fdc6ae3c58be21bb21fc71cf36fd4f07b0e5b198a0d0f2871015237d8cadc",
       "secret_status": "CLEAR"
     },
     {
@@ -17,8 +17,8 @@
       "type": "file",
       "mode": "100644",
       "symlink": null,
-      "size": 92007,
-      "sha256": "f64c0d7b1366a91db494aa9f839c2d5e6d1d53e7072f7853285c877d59044c15",
+      "size": 124154,
+      "sha256": "4602cf946fe23abc4793ba1b3d3c488525352af5c34d92cb958e782fbef7d9ff",
       "secret_status": "CLEAR"
     },
     {
@@ -35,8 +35,8 @@
       "type": "file",
       "mode": "100644",
       "symlink": null,
-      "size": 25222,
-      "sha256": "e8e53588bbded9c73e83f4781e807d631e3472980e29e69dab60564ebddef6c2",
+      "size": 26128,
+      "sha256": "3a5f75575a2f17b4fc125653acc978fc8eadf6df0e453c440ebd27cef9ab253d",
       "secret_status": "CLEAR"
     },
     {
@@ -53,8 +53,8 @@
       "type": "file",
       "mode": "100644",
       "symlink": null,
-      "size": 8531,
-      "sha256": "4e691ffb03286b2a63f7a2f89bf27b9689d32b67f4ecfcf77b1d08bbce13b220",
+      "size": 9841,
+      "sha256": "eb177854c2611dc82a1954adb2f64e0e70b38d525b510fc26656d2499a1c438e",
       "secret_status": "CLEAR"
     },
     {
@@ -170,8 +170,8 @@
       "type": "file",
       "mode": "100644",
       "symlink": null,
-      "size": 8656,
-      "sha256": "21bd649de56f1a442d10e829863e2eb74cfbce08cbadab8dfecd23acf7538a43",
+      "size": 8563,
+      "sha256": "47569b4886979e5cf465d1e1e8db536a981be376de29212bcc318622296baf7f",
       "secret_status": "CLEAR"
     },
     {
@@ -188,8 +188,8 @@
       "type": "file",
       "mode": "100644",
       "symlink": null,
-      "size": 4134,
-      "sha256": "f49244bdd5a34d4ea0483d34f5bfc82ecdd102fa9cbbf7ad8690ed56a0564190",
+      "size": 4308,
+      "sha256": "fb98a619b00b4506e7b5639282e18d27284d9843724e89601397b02a5e257aa0",
       "secret_status": "CLEAR"
     },
     {
@@ -197,8 +197,8 @@
       "type": "file",
       "mode": "100644",
       "symlink": null,
-      "size": 16293,
-      "sha256": "5850ac0d12d7dcd73c4a5ae8ed7dc8e75a4e7ffa02e88a9dd512573969bc4d36",
+      "size": 18241,
+      "sha256": "20cf9477bf1d3e2436da2fa8763a86e6e8ce4e78c182ed38dd0df2d075d22157",
       "secret_status": "CLEAR"
     },
     {
@@ -206,8 +206,8 @@
       "type": "file",
       "mode": "100644",
       "symlink": null,
-      "size": 254606,
-      "sha256": "bda1279adcc363d4f30df76fc580ecf0ba1bf4ae6eb066b2d2a18497d75a91e8",
+      "size": 256652,
+      "sha256": "c061ed3925530e020ab3617412829177e0862fcfbf4f0dc18e4693cf64768ca2",
       "secret_status": "CLEAR"
     },
     {
@@ -215,8 +215,8 @@
       "type": "file",
       "mode": "100644",
       "symlink": null,
-      "size": 22369,
-      "sha256": "29167b3a52de3802590ca129451de07a1d051211a77457a02884c00281e62287",
+      "size": 23144,
+      "sha256": "b8d7b7c3a67f6db6dca6484cb8ed812f8346c93203ce7f0b57436aa04a848555",
       "secret_status": "CLEAR"
     },
     {
@@ -224,8 +224,8 @@
       "type": "file",
       "mode": "100644",
       "symlink": null,
-      "size": 29254,
-      "sha256": "fb60797b987a36cfaf23a5079a937f6d10b85acb5bb60c5435d9b0286f91f296",
+      "size": 30519,
+      "sha256": "7b27d6298e9567007839a21531fb673b26407f1ccb690710f6747f35e82b0846",
       "secret_status": "CLEAR"
     },
     {
@@ -242,8 +242,8 @@
       "type": "file",
       "mode": "100644",
       "symlink": null,
-      "size": 41742,
-      "sha256": "a576dd3313ab2105adc8d880c5349acf78ee2098114412b69ec4d34303dbd7a4",
+      "size": 42778,
+      "sha256": "ebc3e0df52dc47be40103e140961e33d77bba156b3f19e57f403554e5b99d981",
       "secret_status": "CLEAR"
     },
     {
@@ -251,8 +251,8 @@
       "type": "file",
       "mode": "100644",
       "symlink": null,
-      "size": 52895,
-      "sha256": "30a9262d3fff837ac4b156681541d7153a6a59d0e6d98235e40e2720cd83efed",
+      "size": 65925,
+      "sha256": "ef20c1bdff28ff475826b4a9353d6e0d9289fb8190c5273292ab03e78cc49131",
       "secret_status": "CLEAR"
     },
     {
@@ -319,6 +319,15 @@
       "secret_status": "CLEAR"
     },
     {
+      "path": "scripts/auto-checkin-tick-test.mjs",
+      "type": "file",
+      "mode": "100644",
+      "symlink": null,
+      "size": 7983,
+      "sha256": "ed9fbcd2511a82125f4cad3f99f7d76dd590213f817545892ef2f53ab037c951",
+      "secret_status": "CLEAR"
+    },
+    {
       "path": "scripts/build-channel-pack.mjs",
       "type": "file",
       "mode": "100644",
@@ -368,8 +377,8 @@
       "type": "file",
       "mode": "100644",
       "symlink": null,
-      "size": 8237,
-      "sha256": "06046979710047e1652d308d6c989149001c4e41d3386b4fa82c2e05738b1adf",
+      "size": 10783,
+      "sha256": "4f1b806f35f462c1ffcdb16fd110a334eaf4a70c15f7542391d22c2da3a70188",
       "secret_status": "CLEAR"
     },
     {
@@ -431,8 +440,8 @@
       "type": "file",
       "mode": "100644",
       "symlink": null,
-      "size": 67790,
-      "sha256": "0b198a2827b2df30c8ac515db2119de2741c44ac166a694546fc043d81828255",
+      "size": 68379,
+      "sha256": "a4d5c9ba560237764be4839875cf305953346d1bede81b675646226afe559fcf",
       "secret_status": "CLEAR"
     },
     {
@@ -1115,8 +1124,8 @@
       "type": "file",
       "mode": "100644",
       "symlink": null,
-      "size": 3813,
-      "sha256": "faa7a2f06e1771d80ee631b6170b0adbf58344b675b1244389379f814d090bf4",
+      "size": 5679,
+      "sha256": "f5c299bc794cc5e51f6969dd78d26d1aa5c4d7a6f120f25c0b3a7bd21e811ff2",
       "secret_status": "CLEAR"
     },
     {
@@ -1133,8 +1142,8 @@
       "type": "file",
       "mode": "100644",
       "symlink": null,
-      "size": 7006,
-      "sha256": "fd0837bc931b5456047e2d1707c7f609a8772819191043fdeb33a06164e487a4",
+      "size": 7950,
+      "sha256": "d2b466e8cf32ced77d3ad4454cdb51b65a3b6500abbe3ee19ee81ebb6bb03a95",
       "secret_status": "CLEAR"
     },
     {
@@ -1151,8 +1160,8 @@
       "type": "file",
       "mode": "100644",
       "symlink": null,
-      "size": 6848,
-      "sha256": "8e985111084d929f1b7143d975c9529bf0f016136ff940a3ba78b63ebac2bb90",
+      "size": 7163,
+      "sha256": "79ec3da05ac5f0ad049d64be15ae79b74642b952998598b814509376bf827809",
       "secret_status": "CLEAR"
     },
     {
@@ -1160,8 +1169,8 @@
       "type": "file",
       "mode": "100644",
       "symlink": null,
-      "size": 7627,
-      "sha256": "0c76f7d61b13c434f7d9b6b08ffa4b5c05618367d43679ff47452d92b85dc2a4",
+      "size": 10461,
+      "sha256": "2eaecb847e3a16dade58d334cf366f08cfb83ffadd7567f8fbbccdac5f6b6c06",
       "secret_status": "CLEAR"
     },
     {
@@ -1223,8 +1232,8 @@
       "type": "file",
       "mode": "100644",
       "symlink": null,
-      "size": 11093,
-      "sha256": "8728d3d8507a5cc771881da84e4ec837c7a2d3df7a5652875c0073533f0ef954",
+      "size": 11152,
+      "sha256": "76453a70333d6c24e262ef91ae3b5a877c30023d513ef018e89987c2fb3c4c4b",
       "secret_status": "CLEAR"
     },
     {
@@ -1388,5 +1397,5 @@
     "packages/desktop/package.json",
     "packages/desktop/src-tauri/tauri.conf.json"
   ],
-  "aggregate_sha256": "3dc175477e93f5f352a5f0c151c34830d565713013eea600650789a7cfb2e3bd"
+  "aggregate_sha256": "c117b6d4fb3d7baf356308bfd09beba69cf16be3c44ed6dbc4784248cc308fed"
 }
