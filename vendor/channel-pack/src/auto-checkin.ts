@@ -4,8 +4,10 @@
  * ## 它做什么
  *
  * DSH 启动后延迟一小段（默认 30 秒，见下）跑**第一轮**，之后**每 60 分钟**再
- * 检查一次（`AUTO_CHECKIN_INTERVAL_MS`）。每一轮都先看「今天（UTC+8）跑过没有」：
- * 跑过就跳过，没跑过才串行遍历「账号池里真的有账号的渠道」，逐个调内部
+ * 检查一次（`AUTO_CHECKIN_INTERVAL_MS`）；进程常驻时另有 2.5 小时的跨天巡检
+ * （`AUTO_CHECKIN_TICK_MS`），进入新的一天（UTC+8）后自动补一轮。每一轮都先看
+ * 「今天（UTC+8）跑过没有」：跑过就跳过，没跑过才串行遍历「账号池里真的有账号
+ * 的渠道」，逐个调内部
  * `credits.claimAll`；跑完把日期与**逐渠道结果**写进文档 ⇒ **当天不再触发**。
  * 用户手动点「全部渠道签到」不受此限（那是显式操作，永远放行）。
  *
@@ -29,7 +31,7 @@
  *    若抢在续期之前签到，过期凭据会让整轮变成失败。
  * 即便如此仍可能抢在续期完成前（多账号时续期本身就要几秒到几十秒），故**再加
  * 一道保险**：整轮跑完**没有任何一条能证明「今天已被处理」**时**不记日期**，
- * 下次启动会重试（见 `shouldMarkToday`）。延迟可用
+ * 下次巡检（或下次启动）会重试（见 `shouldMarkToday`）。延迟可用
  * `DSH_CHANNEL_PACK_AUTO_CHECKIN_DELAY_MS` 覆盖，`0` 合法（表示立刻跑，单测用它）。
  * 首轮之后的周期由 `intervalMs`（默认 60 分钟）决定，只影响「多久看一次」，
  * 不影响「当天跑过就不再跑」这条判据。
@@ -199,6 +201,25 @@ export const AUTO_CHECKIN_DELAY_MS = 30_000
  * `lastDate === today()` 跳过，正好等于「整点前后每小时看一眼，今天跑过就不动」。
  */
 export const AUTO_CHECKIN_INTERVAL_MS = 3_600_000
+
+/**
+ * 常驻进程的跨天巡检间隔（毫秒，默认 2.5 小时）。
+ *
+ * 启动补跑只覆盖「当天第一次启动」；独立服务会连续运行多天，必须有跨天触发点。
+ * 巡检只做日期比较，真正的判断与在飞去重都在 `runIfDue()` 里，成本可以忽略；
+ * 过零点后最多晚 2.5 小时签到。（与上面的 60 分钟周期互为冗余保险：两边都只
+ * 调 `runIfDue()`，由它去重，多一次空转定时器没有副作用。）
+ */
+export const AUTO_CHECKIN_TICK_MS = 150 * 60 * 1000
+
+/**
+ * 今天尝试过、但没有任何渠道能证明「今天已被处理」时的重试间隔下限（毫秒）。
+ *
+ * 失败（凭据过期 / 网络）时 `runIfDue()` 不记 `lastDate`，会随巡检自然重试。
+ * 该值是**下限保护**：巡检间隔（默认 2.5 小时）不小于它时不生效；只有巡检被
+ * 自定义调小到 1 小时以内时，才用它拦住「每 15 分钟打一轮上游」的高频重试。
+ */
+export const AUTO_CHECKIN_RETRY_MS = 60 * 60 * 1000
 
 /**
  * 读延迟配置。
@@ -397,7 +418,7 @@ export function describeRun(totals: RunTotals): string {
  * 而且界面还显示「1 个今天已领」，用户毫无提示。渠道自己用
  * `ClaimOutcome.coversToday` 标出「这条不算今天」，本函数只负责数。
  *
- * 反例（不记、下次启动重试）：
+ * 反例（不记日期、下次启动重试）：
  * - 整轮零成功零已领（凭据全过期 / 网络不通 / 启动太早抢在续期之前）——
  *   若记了，用户当天就再也不会自动签到，且界面只说「上次：N 个失败」；
  * - 跑完但**没有一条能证明今天**（例如只有 Qoder 且赶在 10:00 之前）——
@@ -405,6 +426,10 @@ export function describeRun(totals: RunTotals): string {
  * - 一个渠道都没跑（全被跳过）：没有意义，不记。
  * 反之「有成功也有失败」要记：否则一个坏账号会让插件每次启动都把好账号再领一遍
  * （虽然幂等，但白白多发请求）。
+ *
+ * ⚠️ 本函数只管**日期**。这些反例的逐渠道结果仍照常落盘（见 `performRun` 里
+ * 「不记日期也要写 channels」那段）—— 不记日期是「今天还要重试」，不是「这轮
+ * 结果不值得留」。
  */
 export function shouldMarkToday(totals: RunTotals): boolean {
   return totals.coversToday > 0
@@ -477,6 +502,10 @@ export interface AutoCheckinDeps {
   intervalMs?: number
   /** 排定延迟执行（注入以便单测零等待）。返回值交给 `stop()` 取消。 */
   schedule?(fn: () => void, ms: number): { cancel(): void }
+  /** 跨天巡检间隔；默认 `AUTO_CHECKIN_TICK_MS`，设 `0` 关闭巡检（单测/宿主不需要常驻）。 */
+  tickMs?: number
+  /** 排定周期性巡检（注入以便单测零等待）。返回值交给 `stop()` 取消。 */
+  scheduleTick?(fn: () => void, ms: number): { cancel(): void }
   warn?(message: string): void
 }
 
@@ -494,7 +523,7 @@ export interface AutoCheckin {
    * 故下一轮跑出新结果时它会重新出现。
    */
   dismiss(): Promise<RpcUsageAutoCheckinState>
-  /** 启动时调用一次：延迟后排定一轮（内部自己判开关与当天是否已跑）。 */
+  /** 启动时调用一次：延迟后排定一轮，并挂上跨天巡检（内部自己判开关与当天是否已跑）。 */
   start(): void
   /** 立刻按判据跑一轮（供「刚打开开关」与单测用）。 */
   runIfDue(): Promise<void>
@@ -510,6 +539,11 @@ export function createAutoCheckin(deps: AutoCheckinDeps): AutoCheckin {
   /** 在飞去重：`setEnabled(true)` 与启动排定可能同时想跑。 */
   let inflight: Promise<void> | null = null
   let pending: { cancel(): void } | null = null
+  /** 跨天巡检定时器（独立服务常驻时每天自动触发）。 */
+  let tick: { cancel(): void } | null = null
+  // 本轮**尝试**时刻（含失败轮）：退避下限看它，而不是 `doc.lastAt` ——
+  // 失败轮刻意不落盘（见 `performRun`），但「刚试过、别马上再打」仍然成立。
+  let lastAttemptAt = doc.lastAt
 
   const today = (): string => utc8DateString(now())
 
@@ -528,6 +562,7 @@ export function createAutoCheckin(deps: AutoCheckinDeps): AutoCheckin {
   }
 
   async function performRun(): Promise<void> {
+    lastAttemptAt = now()
     const totals = emptyTotals()
     let providers: string[] = []
     try {
@@ -595,8 +630,26 @@ export function createAutoCheckin(deps: AutoCheckinDeps): AutoCheckin {
       // ⚠️ 刻意**不写** lastDate：让「凭据还没续上 / 网络不通 / 赶在渠道刷新前
       // 跑的那一轮」能在下次启动重试，而不是当天就此放弃（判据见 shouldMarkToday）。
       deps.warn?.(
-        `[channel-pack] 自动签到未记入今日（下次启动会重试）：${describeRun(totals)}`,
+        `[channel-pack] 自动签到未记入今日（下次巡检会重试）：${describeRun(totals)}`,
       )
+      // ⚠️⚠️ 但**逐渠道结果仍要落盘**（真实缺陷，2026-10-23 定位）：原先这里直接
+      // return，`channels` 整轮被丢掉，于是「所有渠道都失败」时面板上仍是上一轮
+      // 的记录，或者干脆空白 —— 用户点「立即签到」看到按钮转完、结果一个字没变，
+      // 会以为按钮没生效。不记日期是「今天还要重试」，不是「这轮结果不值得留」。
+      // ⚠️ 只写 `channels` / `lastResult` / `lastAt`，**不动 `lastDate`**：
+      // 正是那个字段决定「当天是否已跑过」，动了就等于放弃重试（本函数上半段的全部理由）。
+      doc = {
+        ...doc,
+        lastResult: describeRun(totals),
+        lastAt: now(),
+        channels,
+        dismissedRunAt: 0,
+      }
+      try {
+        await deps.store.save(doc)
+      } catch (error) {
+        deps.warn?.(`[channel-pack] 自动签到结果写入失败: ${String(error)}`)
+      }
       return
     }
 
@@ -657,21 +710,37 @@ export function createAutoCheckin(deps: AutoCheckinDeps): AutoCheckin {
      * 当天签到过之后其余轮次都是空转；跨天、或某天失败没记入时，下一轮自动补上。
      */
     start() {
-      if (pending !== null) return
+      if (pending !== null || tick !== null) return
       const interval = deps.intervalMs ?? AUTO_CHECKIN_INTERVAL_MS
-      const tick = (): void => {
+      // 本分支的周期检查（60 分钟）：先按启动延时跑第一轮，之后每轮跑完重排下一轮。
+      // ⚠️ 局部函数叫 `runRound` 而不是 `tick`：外层 `tick` 已被跨天巡检定时器占用。
+      const runRound = (): void => {
         void runIfDue()
         // 每轮都重新登记下一轮；`defaultSchedule` 的定时器已 unref，不拖住进程退出。
-        pending = (deps.schedule ?? defaultSchedule)(tick, interval)
+        pending = (deps.schedule ?? defaultSchedule)(runRound, interval)
       }
       const first = deps.delayMs ?? autoCheckinDelayMs()
       // 首轮延迟为 0 = 立刻跑（单测的默认形态，也是环境变量设成 0 时的语义）。
       if (first <= 0) {
         pending = null
-        tick()
-        return
+        runRound()
+      } else {
+        pending = (deps.schedule ?? defaultSchedule)(runRound, first)
       }
-      pending = (deps.schedule ?? defaultSchedule)(tick, first)
+      // 独立服务会常驻多天：启动补跑只覆盖「当天第一次启动」，跨天必须有巡检，
+      // 否则过了零点就再没有触发点（2026-10-27 实测：进程从 10-25 起未重启，
+      // 10-26 的记录是手动点的，10-27 一整天没有自动签到）。
+      // 开关 / 今天是否已跑 / 在飞去重都收敛在 `runIfDue()`；这里只多做一层
+      // 失败退避下限，拦住「巡检被调小后高频打上游」的情况。
+      const tickMs = deps.tickMs ?? AUTO_CHECKIN_TICK_MS
+      if (tickMs > 0) {
+        tick = (deps.scheduleTick ?? defaultScheduleTick)(() => {
+          if (doc.lastDate !== '' && doc.lastDate === today()) return
+          const attemptedToday = lastAttemptAt > 0 && utc8DateString(lastAttemptAt) === today()
+          if (attemptedToday && now() - lastAttemptAt < AUTO_CHECKIN_RETRY_MS) return
+          void runIfDue()
+        }, tickMs)
+      }
     },
     runIfDue,
     async dismiss() {
@@ -688,6 +757,8 @@ export function createAutoCheckin(deps: AutoCheckinDeps): AutoCheckin {
     stop() {
       pending?.cancel()
       pending = null
+      tick?.cancel()
+      tick = null
     },
   }
 }
@@ -702,4 +773,15 @@ function defaultSchedule(fn: () => void, ms: number): { cancel(): void } {
   const timer = setTimeout(fn, ms)
   timer.unref?.()
   return { cancel: () => clearTimeout(timer) }
+}
+
+/**
+ * 默认跨天巡检排定：`setInterval` + `unref()`。
+ *
+ * `unref()` 的理由同 `defaultSchedule`：巡检定时器不能拖住宿主进程退出。
+ */
+function defaultScheduleTick(fn: () => void, ms: number): { cancel(): void } {
+  const timer = setInterval(fn, ms)
+  timer.unref?.()
+  return { cancel: () => clearInterval(timer) }
 }
