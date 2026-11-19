@@ -88,6 +88,7 @@ const suites = [
   ['standalone-desktop-regression', 'standalone-desktop-regression-test.mjs', []],
   ['standalone-page-lifecycle', 'standalone-page-lifecycle-test.mjs', []],
   ['standalone-management', 'standalone-management-test.mjs', []],
+  ['self-update', 'self-update-test.mjs', []],
   ['standalone-lan', 'standalone-lan-test.mjs', []],
   ['standalone-frontend', 'standalone-frontend-test.mjs', []],
   ['standalone-client-regression', 'standalone-client-regression-test.mjs', []],

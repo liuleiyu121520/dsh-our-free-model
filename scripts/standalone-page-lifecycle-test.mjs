@@ -32,7 +32,7 @@ const settings = { enabled: true }
 const summary = { settings, catalog: [], networkMode: 'fixture' }
 const context = {
   ...react, h: (type, props, ...children) => ({ type, props: props ?? {}, children: children.flat(Infinity) }), Fragment: 'fragment',
-  Sidebar: 'Sidebar', Topbar: 'Topbar', Connection: 'Connection', ChannelMount: 'ChannelMount', LazyPage: 'LazyPage', LoadingScreen: 'LoadingScreen', LoginScreen: 'LoginScreen', AlertCircle: 'AlertCircle', DisclaimerDialog: 'DisclaimerDialog', DshImportDialog: 'DshImportDialog',
+  Sidebar: 'Sidebar', Topbar: 'Topbar', Connection: 'Connection', ChannelMount: 'ChannelMount', LazyPage: 'LazyPage', LoadingScreen: 'LoadingScreen', LoginScreen: 'LoginScreen', AlertCircle: 'AlertCircle', DisclaimerDialog: 'DisclaimerDialog', DshImportDialog: 'DshImportDialog', UpdateNotice: 'UpdateNotice',
   // `App` navigates against the sidebar-derived list (`navigationPages`), so
   // that is the name this sandbox has to supply. The value only needs to cover
   // the pages this suite walks through — the sidebar/type agreement itself is

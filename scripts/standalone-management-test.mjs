@@ -556,6 +556,26 @@ try {
       assert.ok(typeof row.provider === 'string' && typeof row.model === 'string', '启停 RPC 需要 provider/model 字段')
     }
   })
+  await check('自更新端点：summary.update 如实上报源码直跑形态，update/run 鉴权与 409/404/415 语义（零真 npm）', async () => {
+    // 本套件服务以源码路径直跑：canSelfUpdate 必须如实为 false（AC-49 服务侧）；
+    // 首检默认 30s 后，本套件远在此之前结束 —— latest/checkedAt 恒为 null，零真 registry。
+    const summary = await (await request('/api/management/summary')).json()
+    assert.deepEqual(summary.update, {
+      current: service.version, latest: null, hasUpdate: false, canSelfUpdate: false,
+      checkedAt: null, lastError: null, state: 'idle',
+    })
+    // 已吊销会话（登出后的旧 cookie）→ 401：鉴权门先于路由分支。
+    const revoked = await login({ key })
+    await request('/api/management/logout', { body: {}, cookie: revoked })
+    assert.equal((await request('/api/management/update/run', { body: {}, cookie: revoked })).status, 401)
+    // 非全局安装 → 409，且文案必须含手动升级命令（AC-49）。
+    const rejected = await request('/api/management/update/run', { body: {} })
+    assert.equal(rejected.status, 409)
+    assert.match((await rejected.json()).error, /npm i -g our-free-model-standalone/)
+    // GET 该路径 → 404（else-if 路由链既有行为）；非 JSON body → 415（readBody 惯例）。
+    assert.equal((await request('/api/management/update/run')).status, 404)
+    assert.equal((await request('/api/management/update/run', { body: {}, headers: { 'content-type': 'text/plain' } })).status, 415)
+  })
   await check('claims 领取历史：claimAll 包装落记录（AC-17）、人为推进 lastAt 落记录（AC-18）、范围校验 400、auto-checkin.json 零触碰', async () => {
     const localDay = (at = Date.now()) => {
       const date = new Date(at)

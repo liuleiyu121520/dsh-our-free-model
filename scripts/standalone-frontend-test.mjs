@@ -210,4 +210,28 @@ assert.match(pickerPanel.body, /position\s*:\s*absolute/, '面板必须使用 ab
 assert.ok(!/@keyframes\s+settingsIn\s*\{\s*(?:from|0%)[^}]*opacity\s*:\s*0/.test(sheet),
   'settingsIn 首帧不得是 opacity:0（隐藏标签页会让动画冻结在透明首帧）')
 assert.ok(!/@keyframes\s+cp5-boot-in/.test(sheet), '内容可见性不应依赖页载入动画')
-console.log('standalone-frontend: 资源登记、懒加载三页分包（smart/calendar/settings）、模型筛选、统计累计、设置校验与草稿同步、迟到摘要、退出保存与网关模型选择器检查通过')
+// 自更新 messageTip（S18/FR-17.2，AC-46/47/49/50 静态面）：
+// - 组件挂进入口 bundle（顶栏右上），二次确认明示「进行中的调用会中断」；
+// - 关闭记忆按 latest 写 sessionStorage，同版本本会话不再弹；
+// - 非全局（canSelfUpdate=false）分支先于「立即更新」按钮 return —— 只示手动命令。
+const updateNoticeSource = fs.readFileSync(new URL('../packages/standalone/frontend/components/update-notice.tsx', import.meta.url), 'utf8')
+assert.match(updateNoticeSource, /sessionStorage\.setItem\(DISMISS_KEY/)
+assert.match(updateNoticeSource, /dismissed === dismissVersion/, '关闭后同版本本会话不得再弹（含失败态按 target 记忆）')
+assert.match(updateNoticeSource, /进行中的调用会中断/, '二次确认必须明示重启中断（D36①）')
+assert.match(updateNoticeSource, /\/update\/run/)
+assert.match(updateNoticeSource, /npm i -g our-free-model-standalone@/, '非全局形态必须展示手动升级命令（AC-49）')
+const manualBranch = updateNoticeSource.indexOf('if (!info.canSelfUpdate)')
+const autoButton = updateNoticeSource.indexOf('>立即更新</button>')
+assert.ok(manualBranch >= 0 && manualBranch < autoButton,
+  '「立即更新」按钮必须只出现在非全局分支的早退 return 之后（AC-49：非全局不得渲染一键更新）')
+assert.match(updateNoticeSource, /ofm-update-dismissed/, '关闭记忆键名必须是 ofm-update-dismissed')
+assert.ok(app.includes('update-notice') && app.includes('ofm-update-dismissed'), '入口 bundle 必须包含自更新气泡（含关闭记忆键）')
+assert.ok(app.includes('/update/run'), '入口 bundle 必须发起一键更新请求')
+const appSource = fs.readFileSync(new URL('../packages/standalone/frontend/app.tsx', import.meta.url), 'utf8')
+assert.match(appSource, /updateWaitRef\.current\.phase !== 'waiting'/, '等待重启期间必须抑制全局 error-notice（SR-17）')
+assert.match(appSource, /location\.reload\(\)/, '探测到新版本必须整页 reload 回稳态（AC-48）')
+const noticeRule = rules.find(rule => rule.selectors === '.update-notice')
+assert.ok(noticeRule, '更新气泡必须有样式定义')
+assert.match(noticeRule.body, /position\s*:\s*absolute/, '气泡锚定顶栏右上（absolute 于 .topbar）')
+assert.match(sheet, /\[data-theme="?dark"?\]\s*\.update-notice/, '深色主题必须覆盖更新气泡')
+console.log('standalone-frontend: 资源登记、懒加载三页分包（smart/calendar/settings）、模型筛选、统计累计、设置校验与草稿同步、迟到摘要、退出保存、网关模型选择器与自更新气泡检查通过')
