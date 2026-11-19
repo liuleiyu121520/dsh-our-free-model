@@ -136,7 +136,9 @@ export function passthroughArgs(argv, actualPort) {
  *    - close reject → 留痕 → forceReleaseLock（R10O-001 闭环：两异常分支均
  *      「锁必释放或留痕含指引」）→ exit(1)（安装已成功，ofm 命令可手动启动）；
  * 3. 新版 cli 就位校验（fs.accessSync），失败留痕 + exit(1)；
- * 4. detached 派生 `node <moduleDir>/cli.mjs <关键参数> --no-open --update-restart`，
+ * 4. detached 派生 `node <moduleDir>/cli.mjs <关键参数> --no-open`，接力信号经 spawn
+ *    env OFM_SELF_UPDATE_RESTART=1 传递（不用 CLI 旗标：目标版本若是旧代码、严格解析
+ *    陌生旗标会直接启动失败退场；陌生 env 被旧代码天然忽略，前后兼容），
  *    stdio 重定向 dataDir/update-restart.log（新进程崩溃可诊断，R16-c）；
  *    spawn 同步异常 → 留痕 + exit(1)（服务不复活，但安装完好、可手动 ofm）；
  * 5. child.unref() + exit(0)。
@@ -180,8 +182,8 @@ export async function runRestartSequence({
   let logFd
   try {
     logFd = fs.openSync(path.join(dataDir, 'update-restart.log'), 'a')
-    child = spawnImpl(execPath, [cliPath, ...restartArgs, '--no-open', '--update-restart'], {
-      detached: true, stdio: ['ignore', logFd, logFd], env,
+    child = spawnImpl(execPath, [cliPath, ...restartArgs, '--no-open'], {
+      detached: true, stdio: ['ignore', logFd, logFd], env: { ...env, OFM_SELF_UPDATE_RESTART: '1' },
     })
   } catch (error) {
     if (logFd !== undefined) { try { fs.closeSync(logFd) } catch { /* fd 已失效 */ } }
@@ -192,7 +194,7 @@ export async function runRestartSequence({
   }
   child.unref()
   try { fs.closeSync(logFd) } catch { /* fd 已失效 */ }
-  appendUpdateLog(dataDir, `已派生新进程（pid ${child.pid}，参数 ${restartArgs.concat('--no-open', '--update-restart').join(' ')}），旧进程退出`)
+  appendUpdateLog(dataDir, `已派生新进程（pid ${child.pid}，参数 ${restartArgs.concat('--no-open').join(' ')}，env OFM_SELF_UPDATE_RESTART=1），旧进程退出`)
   exit(0)
 }
 

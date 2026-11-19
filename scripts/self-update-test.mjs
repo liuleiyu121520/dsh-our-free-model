@@ -155,7 +155,9 @@ await check('runRestartSequence：正常路径派生 detached 替身、日志与
     spawnImpl: (command, args, options) => {
       const fake = { pid: 4321, unref: () => { children.push(args) } }
       assert.equal(command, process.execPath)
-      assert.deepEqual(args.slice(-2), ['--no-open', '--update-restart'], '必须强制附加 --no-open 与 --update-restart')
+      assert.deepEqual(args.slice(-1), ['--no-open'], '必须强制附加 --no-open')
+      assert.ok(!args.includes('--update-restart'), '不得附加 --update-restart 旗标（目标为旧代码时严格解析会启动失败）')
+      assert.equal(options.env.OFM_SELF_UPDATE_RESTART, '1', '接力信号必须经 spawn env OFM_SELF_UPDATE_RESTART=1 传递')
       assert.ok(options.detached === true)
       assert.equal(args[0], path.join(globalStandaloneDir, 'cli.mjs'), '派生目标必须是 moduleDir/cli.mjs')
       return fake
@@ -163,7 +165,7 @@ await check('runRestartSequence：正常路径派生 detached 替身、日志与
     exit: code => exits.push(code),
   })
   assert.deepEqual(exits, [0])
-  assert.deepEqual(children, [[path.join(globalStandaloneDir, 'cli.mjs'), '--port', '18999', '--data-dir', dir, '--no-open', '--update-restart']])
+  assert.deepEqual(children, [[path.join(globalStandaloneDir, 'cli.mjs'), '--port', '18999', '--data-dir', dir, '--no-open']])
   assert.match(fs.readFileSync(path.join(dir, 'update.log'), 'utf8'), /已派生新进程/)
 
   const missing = path.join(scratch, 'restart-missing-cli')
@@ -382,7 +384,7 @@ const settle = async (proc, exitPromise) => {
 }
 
 await check('集成：真进程 update/run → 完整 close → 替身接管端口 → respawn 参数与日志逐项断言', async () => {
-  // 替身 cli：起 http 监听 argv --port、argv 原样落盘 respawn-argv.json、GET / 回 99.0.0。
+  // 替身 cli：起 http 监听 argv --port、argv 与接力 env 落盘 respawn-argv.json、GET / 回 99.0.0。
   fs.writeFileSync(path.join(globalStandaloneDir, 'cli.mjs'), `#!/usr/bin/env node
 import fs from 'node:fs'
 import http from 'node:http'
@@ -391,7 +393,7 @@ const args = process.argv.slice(2)
 const dirIndex = args.indexOf('--data-dir')
 const dir = dirIndex >= 0 ? args[dirIndex + 1] : process.env.TMPDIR || '/tmp'
 fs.mkdirSync(dir, { recursive: true })
-fs.writeFileSync(path.join(dir, 'respawn-argv.json'), JSON.stringify(args))
+fs.writeFileSync(path.join(dir, 'respawn-argv.json'), JSON.stringify({ argv: args, updateRestartEnv: process.env.OFM_SELF_UPDATE_RESTART ?? null }))
 fs.writeFileSync(path.join(dir, 'respawn-pid.json'), JSON.stringify({ pid: process.pid }))
 const portIndex = args.indexOf('--port')
 const port = portIndex >= 0 ? Number(args[portIndex + 1]) : 18900
@@ -433,14 +435,16 @@ for (let attempt = 0; ; attempt++) {
     const log = fs.readFileSync(path.join(dataDir, 'update.log'), 'utf8')
     assert.match(log, /1\.9\.9/)
     assert.match(log, /已派生新进程/)
-    // ③ respawn-argv.json：实际端口 / data-dir / --update-restart / --no-open 全在
-    const respawnArgs = await waitFor(() => {
+    // ③ respawn-argv.json：实际端口 / data-dir / --no-open 在 argv，接力信号在 env
+    const respawn = await waitFor(() => {
       try { return JSON.parse(fs.readFileSync(path.join(dataDir, 'respawn-argv.json'), 'utf8')) } catch { return null }
     }, { message: 'respawn-argv.json 未落盘' })
+    const respawnArgs = respawn.argv
     assert.ok(respawnArgs.includes('--port'), '替身必须收到 --port')
     assert.equal(Number(respawnArgs[respawnArgs.indexOf('--port') + 1]), service.port, '必须透传实际端口而非原始 --port 0')
     assert.equal(respawnArgs[respawnArgs.indexOf('--data-dir') + 1], dataDir)
-    assert.ok(respawnArgs.includes('--update-restart'))
+    assert.equal(respawn.updateRestartEnv, '1', '子进程必须经 env 收到 OFM_SELF_UPDATE_RESTART=1')
+    assert.ok(!respawnArgs.includes('--update-restart'), '不得再传 --update-restart 旗标（目标为旧代码时严格解析会启动失败）')
     assert.ok(respawnArgs.includes('--no-open'))
     // ④ 原端口被替身接管：请求回 99.0.0（版本回读）
     const taken = await waitFor(async () => {
