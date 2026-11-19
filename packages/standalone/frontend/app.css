@@ -135,7 +135,7 @@ main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .status-dot { display: inline-block; flex-shrink: 0; width: 6px; height: 6px; border-radius: 50%; background: var(--success); animation: status-pulse 2s ease-in-out infinite; }
 @keyframes status-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
 .status-dot.paused { background: #c08a1e; }
-.topbar { height: 60px; padding: 0 32px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--line); background: var(--surface); gap: 14px; }
+.topbar { min-height: 60px; padding: 0 32px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--line); background: var(--surface); gap: 14px; }
 .console-breadcrumb, .console-topbar-status { display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--dsw-alias-label-tertiary); }
 .console-breadcrumb strong { font-weight: 500; color: var(--ink-soft); }
 .console-topbar-status { font-size: 11px; }
@@ -508,7 +508,7 @@ pre { white-space: pre-wrap; overflow-wrap: anywhere; background: #f2ede4; borde
   .console-nav-item svg { width: 15px; height: 15px; }
   .console-sidebar-footer { position: absolute; top: 15px; right: 18px; border: 0; padding: 0; }
   .console-sidebar-footer > div { display: none; }
-  .topbar { height: 45px; }
+  .topbar { min-height: 45px; }
   .page { padding: 23px 18px; }
   .topbar, footer { padding-left: 18px; padding-right: 18px; }
   .console-topbar-status > span:last-child, .topbar-divider { display: none; }
@@ -4539,13 +4539,16 @@ input:disabled, select:disabled, textarea:disabled, .ui-input:disabled {
   [data-theme="dark"] body h1::before { animation: none !important; }
 }
 
-/* ---------- 50. 自更新 messageTip（FR-17.2/S18）：顶栏右上气泡 ----------
-   绝对定位锚在 .topbar（自带 position: relative）右上、顶栏下沿浮出；
-   暖调语言、深浅主题经既有变量双覆盖（S12-B 色板惯例），动效对齐 notice-enter。 */
+/* ---------- 50. 自更新 messageTip（FR-17.2/S18）：顶栏内嵌横幅 ----------
+   原实现绝对定位锚在 .topbar 右上（top:54px），气泡垂到顶栏下沿之外，
+   与渠道页标签条 / 页面首个工具行互相压盖（悬浮层又被内容层穿了过去）。
+   现改为 topbar 内的流式换行行（.topbar 已 flex-wrap，本条 flex-basis 100%
+   独占第二行、margin-left:auto 右对齐），顶栏随之长高、内容自然下移，
+   零遮挡、无 z-index 纠纷；暖调语言与深浅主题变量沿用（S12-B 色板惯例），
+   动效对齐 notice-enter，窄屏随 flex-wrap 内部换行不溢出。 */
 .update-notice {
-  position: absolute; top: 54px; right: 32px; z-index: 40;
+  flex: 0 1 100%; max-width: 440px; margin: 4px 0 8px auto;
   display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
-  max-width: min(440px, calc(100vw - 36px));
   padding: 11px 14px; border-radius: 10px;
   border: 1px solid var(--warning-line); background: var(--surface); color: var(--ink);
   box-shadow: 0 6px 24px rgba(72, 58, 42, 0.16), 0 1px 2px rgba(72, 58, 42, 0.08);
@@ -4558,6 +4561,3 @@ input:disabled, select:disabled, textarea:disabled, .ui-input:disabled {
 .update-notice .ui-button { min-height: 28px; padding: 4px 10px; font-size: 11px; gap: 5px; }
 .update-notice .ui-spinner { flex-shrink: 0; border-color: var(--line); border-top-color: var(--warning); }
 [data-theme="dark"] .update-notice { box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 8px 28px rgba(0, 0, 0, 0.4); }
-@media (max-width: 720px) {
-  .update-notice { right: 18px; top: 50px; }
-}
