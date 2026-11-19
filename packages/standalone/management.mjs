@@ -128,7 +128,7 @@ export function isLoopbackAddress(address) {
 }
 
 /** 管理读写要求鉴权；登录恢复仅允许同源页面触发固定本机动作。 */
-export function createManagement({ stores, runtime, channels, requestLog, scheduler, claims, info, onSettingsChanged, loginTerminal = openLoginTerminal }) {
+export function createManagement({ stores, runtime, channels, requestLog, scheduler, claims, selfUpdate, info, onSettingsChanged, loginTerminal = openLoginTerminal }) {
   let bootstrap = { token: crypto.randomBytes(32).toString('base64url'), until: Date.now() + BOOTSTRAP_MS }
   const sessions = new Map()
   let cookieName
@@ -236,6 +236,9 @@ export function createManagement({ stores, runtime, channels, requestLog, schedu
       settings: managementSettings(stores.settings.get()),
       catalogSyncedAt: stores.settings.get().catalogSyncedAt ?? 0,
       probedAt: available.at ?? 0,
+      // 自更新状态随既有 15s 轮询即达前端（FR-17.2/D35，零新增查询通道）；
+      // 未注入实例（兼容形态）时不含该字段，update/run 相应 404。
+      ...(selfUpdate ? { update: selfUpdate.state() } : {}),
       ...(smartView ? { smart: smartView } : {}),
       catalog: state.catalog.map(entry => {
         const measured = modelAvailability(entry.id, available, Boolean(entry.channel))
@@ -296,6 +299,13 @@ export function createManagement({ stores, runtime, channels, requestLog, schedu
       json(res, 200, summary())
     } else if (method === 'GET' && pathname === `${PREFIX}/stats`) {
       json(res, 200, buildStats(stores.stats.get(), runtime.catalog))
+    } else if (method === 'POST' && pathname === `${PREFIX}/update/run` && selfUpdate) {
+      // 一键自更新（FR-17.3/AC-47）：requestRun 同步前置校验并置 updating 后立即
+      // 返回，安装异步执行——npm 最长 10 分钟，挂 HTTP 等待必超时；安装进度由前端
+      // 轮询 summary.update.state 获得。requestRun throw 的 409（非全局含手动升级
+      // 命令、无更新、进行中）经既有 catch 转 JSON 错误响应；GET 该路径 → 404。
+      await readBody(req)
+      json(res, 200, selfUpdate.requestRun())
     } else if (method === 'GET' && pathname === `${PREFIX}/claims/history` && claims) {
       // 领取历史查询（FR-8.5）：按日期范围返回按日聚合（providers/claimedCount/events）。
       // from/to 校验（YYYY-MM-DD、跨度 ≤400 天）在记录器内部，错误带 400 状态码。

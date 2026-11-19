@@ -56,6 +56,17 @@ ofm --no-refresh            # 不自动刷新模型清单
 ofm --help                  # 全部选项
 ```
 
+## 自动更新
+
+控制台启动约 30 秒后检查新版本（此后每小时一次；结果只保存在内存里，不写任何配置）。
+发现新版本时右上角会提示：点「立即更新」并确认，服务会自动执行 `npm i -g` 并重启，
+页面随后自动刷新；更新失败不影响现有安装，可就地重试。诊断日志见数据目录下的
+`update.log` 与 `update-restart.log`。
+
+自动更新仅支持 macOS / Linux 上的 npm 全局安装。`npx` 运行、项目内依赖或
+Windows 环境不会出现一键更新按钮，界面会显示手动升级命令
+（`npm i -g our-free-model-standalone@<版本>`），按提示执行即可。
+
 ## 仓库
 
 - **源码**：[liuleiyu121520/dsh-our-free-model](https://github.com/liuleiyu121520/dsh-our-free-model)（命令行工具在 [`packages/standalone`](https://github.com/liuleiyu121520/dsh-our-free-model/tree/main/packages/standalone)）

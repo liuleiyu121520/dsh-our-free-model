@@ -15,6 +15,7 @@ const usage = `Our Free Model 独立本地服务
   --lan               启用并保存 LAN 推理中继（独立密钥，管理页仍仅限本机）
   --no-lan            关闭并保存 LAN 推理中继
   --lan-port <端口>   保存 LAN 期望端口，默认 0；不会单独开启中继
+  --update-restart  （内部）自更新重启接力：遇锁/端口占用自动重试
   --help              显示帮助
 `
 
@@ -26,6 +27,7 @@ async function main() {
     if (flag === '--no-refresh') { options.refresh = false; continue }
     if (flag === '--probe') { options.probe = true; continue }
     if (flag === '--no-open') { options.open = false; continue }
+    if (flag === '--update-restart') { options.updateRestart = true; continue }
     if (flag === '--lan' || flag === '--no-lan') { options.lanEnabled = flag === '--lan'; continue }
     if (!['--port', '--data-dir', '--lan-port'].includes(flag) || !process.argv[index + 1] || process.argv[index + 1].startsWith('--')) {
       throw new Error(`未知选项或缺少参数：${flag}`)
@@ -36,7 +38,24 @@ async function main() {
       options[flag === '--port' ? 'port' : 'lanPort'] = Number(value)
     } else options.dataDir = path.resolve(value)
   }
-  const service = await startStandalone(options)
+  // 自更新重启接力（方案 §V11.4-3 二道防线）：正常序列下旧进程先完整 close 再
+  // 派生本进程，锁与端口都已让出、此层近乎空转；防的是第三方在间隙抢占端口/锁
+  // 的边缘竞态——EEXIST/EADDRINUSE 时 5 次×500ms 重试，全败走原错误路径。
+  const start = async () => {
+    if (!options.updateRestart) return startStandalone(options)
+    for (let attempt = 0; ; attempt++) {
+      try {
+        return await startStandalone(options)
+      } catch (error) {
+        if ((error?.code === 'EEXIST' || error?.code === 'EADDRINUSE') && attempt < 5) {
+          await new Promise(resolve => { setTimeout(resolve, 500) })
+          continue
+        }
+        throw error
+      }
+    }
+  }
+  const service = await start()
   let stopping = false
   const shutdown = () => {
     if (stopping) return

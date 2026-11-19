@@ -21,6 +21,7 @@ const sourceFiles = [
   'packages/standalone/package.json',
   'packages/standalone/cli.mjs',
   'packages/standalone/service.mjs',
+  'packages/standalone/self-update.mjs',
   'packages/standalone/management.mjs',
   'packages/standalone/smart-schedule.mjs',
   'packages/standalone/claims-history.mjs',

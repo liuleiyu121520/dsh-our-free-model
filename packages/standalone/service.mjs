@@ -12,6 +12,7 @@ import { createChannelRuntime } from './channels/runtime.mjs'
 import { createSmartScheduler } from './smart-schedule.mjs'
 import { createClaimsHistory } from './claims-history.mjs'
 import { createRequestLog } from './request-log.mjs'
+import { createSelfUpdate, runRestartSequence, passthroughArgs } from './self-update.mjs'
 
 const PRODUCT = 'our-free-model-standalone'
 const VERSION = JSON.parse(fs.readFileSync(new URL('./package.json', import.meta.url), 'utf8')).version
@@ -134,6 +135,8 @@ export async function startStandalone({
   let eac
   let requestLog
   let timer
+  let selfUpdate
+  let serviceRef
   let refreshInFlight
   let closing
   let stopped = false
@@ -314,9 +317,22 @@ export async function startStandalone({
         if (options?.report) return { ...result, sources: { ...result.sources, ...channelResult?.sources } }
       },
     }
+    // 自更新检查器（FR-17）：检查结果纯内存态，30s 首检 + 60min 周期、unref。
+    // performRestart 闭包经 serviceRef 回绑最终服务对象——自重启时先完整 close
+    // （含 service.lock 释放）再派生新进程（方案 §V11.4，锁竞态证据见方案）。
+    selfUpdate = createSelfUpdate({
+      currentVersion: VERSION,
+      dataDir,
+      logger,
+      performRestart: options => runRestartSequence({
+        ...options,
+        close: () => serviceRef?.close(),
+        passthroughArgs: passthroughArgs(process.argv, serviceRef?.port),
+      }),
+    })
     management = createManagement({
       stores, runtime, channels, requestLog,
-      scheduler, claims,
+      scheduler, claims, selfUpdate,
       info: () => ({
         product: PRODUCT, version: VERSION, dataDir,
         baseUrl: `http://${host === '::1' ? '[::1]' : host}:${listener?.port ?? requestedPort}`,
@@ -345,6 +361,7 @@ export async function startStandalone({
     settings.update({ standalonePort: listener.port })
     settings.flush()
     await reconcileRelay()
+    selfUpdate.start()
 
     function scheduleRefresh() {
       clearTimeout(timer)
@@ -367,7 +384,7 @@ export async function startStandalone({
     }
     // 启动与周期刷新只更新清单，不自动探测；手动“探测可用性”仍走运行时 API。
     const ready = Promise.all([channels.ready, refresh ? refreshModels(false) : Promise.resolve()])
-    return {
+    const handle = {
       product: PRODUCT, version: VERSION, dataDir,
       url: `http://${host === '::1' ? '[::1]' : host}:${listener.port}`,
       managementUrl: `http://${host === '::1' ? '[::1]' : host}:${listener.port}/${management.bootstrapFragment}`,
@@ -379,6 +396,9 @@ export async function startStandalone({
         if (closing !== undefined) return closing
         stopped = true
         clearTimeout(timer)
+        // 只停检查定时器：updating 中被关（如 Ctrl-C）时 npm 事务性保证无半升级，
+        // 内存态下次启动重建（§V11.9-R16-d）。
+        selfUpdate?.stop()
         const managementClosing = management.dispose()
         eac.dispose()
         scheduler?.dispose()
@@ -395,9 +415,12 @@ export async function startStandalone({
         return closing
       },
     }
+    serviceRef = handle
+    return handle
   } catch (error) {
     stopped = true
     clearTimeout(timer)
+    selfUpdate?.stop()
     await management?.dispose()
     eac?.dispose()
     scheduler?.dispose()
