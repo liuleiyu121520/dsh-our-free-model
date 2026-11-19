@@ -7,7 +7,8 @@ import { Connection } from './connection'
 import { Requests } from './requests'
 import { DisclaimerDialog } from './components/disclaimer-dialog'
 import { DshImportDialog } from './components/dsh-import-dialog'
-import type { ClaimsQuery, Host, Page, ServiceSettings, SmartState, Snapshot } from './types'
+import { UpdateNotice } from './components/update-notice'
+import type { ClaimsQuery, Host, Page, ServiceSettings, SmartState, Snapshot, UpdateWait } from './types'
 import './app.css'
 
 const API = '/api/management'
@@ -74,6 +75,11 @@ function App() {
   const [disclaimer, setDisclaimer] = useState<{ acknowledged?: boolean } | undefined>(undefined)
   const [disclaimerOpen, setDisclaimerOpen] = useState(false)
   const generation = useRef(0), loading = useRef<Promise<void> | undefined>(undefined), authenticated = useRef(false), settingsRevision = useRef(0)
+  // 自更新「等待重启」阶段（§V11.5-3）：独立 2s 探测轮询 + 等待期抑制全局报错，
+  // 防止服务重启窗口的全屏 error-notice 与更新气泡打架（SR-17）。
+  const [updateWait, setUpdateWait] = useState<UpdateWait>({ phase: 'idle' })
+  const updateWaitRef = useRef(updateWait)
+  updateWaitRef.current = updateWait
   const enterLogin = (reason = '') => { generation.current++; loading.current = undefined; authenticated.current = false; setSnapshot(undefined); setVisited([]); setPage('channels'); setError(reason); setNotice(''); setMode('login'); syncPageHash('channels') }
   // navigate 与 hashchange 共用的切页路径：登记 visited（懒加载页渲染依赖）、清错误/提示。
   const switchPage = (next: Page) => {
@@ -95,7 +101,28 @@ function App() {
     return () => window.removeEventListener('hashchange', onHashChange)
   }, [])
   useEffect(() => { const token = new URLSearchParams(location.hash.slice(1)).get('login'); if (token) history.replaceState(null, '', location.pathname + location.search); void (async () => { try { if (token) await request('/session', { bootstrapToken: token }); await loadData() } catch (reason) { enterLogin((reason as any)?.status === 401 && !token ? '' : messageOf(reason)) } })() }, [])
-  useEffect(() => { if (mode !== 'ready') return; const timer = window.setInterval(() => { if (!document.hidden) void loadData().catch(reason => setError(messageOf(reason))) }, 15000); return () => window.clearInterval(timer) }, [mode])
+  useEffect(() => { if (mode !== 'ready') return; const timer = window.setInterval(() => { if (!document.hidden) void loadData().catch(reason => { if (updateWaitRef.current.phase !== 'waiting') setError(messageOf(reason)) }) }, 15000); return () => window.clearInterval(timer) }, [mode])
+  // 等待重启的独立 2s 探测（AC-48）：fetch 失败/超时/401 = 服务重启中（预期，不报错），
+  // 继续轮询；成功且版本已变化（到位或异常）→ location.reload() 回稳态（hash 保留，
+  // 页面回位）；5 分钟总超时 → 错误态提示手动刷新。
+  useEffect(() => {
+    if (updateWait.phase !== 'waiting') return
+    const startedAt = Date.now()
+    const timer = window.setInterval(() => {
+      void (async () => {
+        try {
+          const response = await fetch(API + '/summary', { credentials: 'same-origin', cache: 'no-store', signal: AbortSignal.timeout(2500) })
+          if (response.status === 401) return // LAN 场景旧会话 401：继续轮询至超时，reload 后走登录页
+          if (response.ok) {
+            const value = await response.json()
+            if (typeof value?.version !== 'string' || value.version !== updateWaitRef.current.from) { location.reload(); return }
+          }
+        } catch { /* 服务重启中：预期失败 */ }
+        if (Date.now() - startedAt >= 5 * 60_000) setUpdateWait(previous => previous.phase === 'waiting' ? { ...previous, phase: 'timeout' } : previous)
+      })()
+    }, 2000)
+    return () => window.clearInterval(timer)
+  }, [updateWait.phase])
   useEffect(() => {
     if (mode !== 'ready') return
     let alive = true
@@ -110,6 +137,6 @@ function App() {
   if (mode === 'loading') return <LoadingScreen />
   if (mode === 'login') return <LoginScreen request={async (...args) => { const result = await request(...args); if (args[0] === '/session') await loadData(); return result }} />
   // data-active-page 供页面级样式挂钩（smart 页视口内自适应布局，smart.css）。
-  return <div id="app" className="app-shell" data-active-page={page}><aside className="sidebar"><Sidebar page={page} summary={snapshot?.summary} host={host} onDisclaimer={() => setDisclaimerOpen(true)} /></aside><main><header className="topbar"><Topbar page={page} summary={snapshot?.summary} /></header>{snapshot?.summary.networkMode === 'fixture' && <div className="notice test-mode-notice notice-enter" role="alert">当前为本机替身测试模式：账号、模型回答与额度均为测试数据。</div>}{notice && <div className="notice notice-enter" role="status">{notice}<button className="text-button" onClick={() => setNotice('')}>关闭</button></div>}{error && <div className="notice error-notice notice-enter" role="alert"><AlertCircle size={16} /><span>{error}</span><button className="text-button" onClick={() => { setError(''); void loadData() }}>重试</button></div>}<section className="page">{content}{snapshot && navigationPages.filter((name): name is LazyPageName => LAZY_PAGES.has(name) && visited.includes(name)).map(name => <div key={name} hidden={page !== name}><LazyPage name={name} snapshot={snapshot} host={host} active={page === name} /></div>)}</section><footer>本地运行 <span>·</span> 由你掌控</footer></main>{snapshot && <DshImportDialog request={request} onDone={() => { void loadData() }} />}<DisclaimerDialog open={disclaimerOpen} onClose={() => { setDisclaimerOpen(false); setDisclaimer(current => current ? { ...current, acknowledged: true } : current) }} /></div>
+  return <div id="app" className="app-shell" data-active-page={page}><aside className="sidebar"><Sidebar page={page} summary={snapshot?.summary} host={host} onDisclaimer={() => setDisclaimerOpen(true)} /></aside><main><header className="topbar"><Topbar page={page} summary={snapshot?.summary} /><UpdateNotice update={snapshot?.summary.update} wait={updateWait} request={request} onWait={next => setUpdateWait(next)} onWaitDone={() => setUpdateWait({ phase: 'idle' })} /></header>{snapshot?.summary.networkMode === 'fixture' && <div className="notice test-mode-notice notice-enter" role="alert">当前为本机替身测试模式：账号、模型回答与额度均为测试数据。</div>}{notice && <div className="notice notice-enter" role="status">{notice}<button className="text-button" onClick={() => setNotice('')}>关闭</button></div>}{error && <div className="notice error-notice notice-enter" role="alert"><AlertCircle size={16} /><span>{error}</span><button className="text-button" onClick={() => { setError(''); void loadData() }}>重试</button></div>}<section className="page">{content}{snapshot && navigationPages.filter((name): name is LazyPageName => LAZY_PAGES.has(name) && visited.includes(name)).map(name => <div key={name} hidden={page !== name}><LazyPage name={name} snapshot={snapshot} host={host} active={page === name} /></div>)}</section><footer>本地运行 <span>·</span> 由你掌控</footer></main>{snapshot && <DshImportDialog request={request} onDone={() => { void loadData() }} />}<DisclaimerDialog open={disclaimerOpen} onClose={() => { setDisclaimerOpen(false); setDisclaimer(current => current ? { ...current, acknowledged: true } : current) }} /></div>
 }
 createRoot(document.getElementById('root')!).render(<App />)

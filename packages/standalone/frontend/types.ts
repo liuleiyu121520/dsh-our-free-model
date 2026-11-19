@@ -41,7 +41,26 @@ export interface Summary {
   channels: { state: string; error?: string }
   /** 智能调度徽标：池内模型数与当前可用（未当日耗尽）数。 */
   smart?: { pool: number; available: number }
+  /** 自更新状态（FR-17.2）：随 15s 轮询即达；纯内存态，未检查过时 latest/checkedAt 为 null。 */
+  update?: UpdateInfo
   catalog: Model[]
+}
+/** 自更新检查结果（GET /summary 的 update 字段；形状同服务端 state()）。 */
+export interface UpdateInfo {
+  current: string
+  latest: string | null
+  hasUpdate: boolean
+  canSelfUpdate: boolean
+  checkedAt: number | null
+  lastError: string | null
+  state: 'idle' | 'available' | 'updating' | 'restarting' | 'failed'
+  target?: string
+}
+/** App 层「等待重启」状态（§V11.5-3）：waiting 期间独立 2s 探测 + 抑制全局报错。 */
+export interface UpdateWait {
+  phase: 'idle' | 'waiting' | 'timeout'
+  target?: string
+  from?: string
 }
 export interface Stats {
   requests: number
