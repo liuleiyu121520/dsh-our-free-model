@@ -361,6 +361,15 @@ export function createManagement({ stores, runtime, channels, requestLog, schedu
       const params = new URL(req.url, 'http://localhost').searchParams
       const limit = params.get('limit')
       json(res, 200, requestLog.list({ limit: limit === null ? 100 : Number(limit) }))
+    } else if (method === 'GET' && pathname === `${PREFIX}/requests/detail` && requestLog) {
+      // 单条正文（2026-11-20 需求）：列表只回元数据，正文按 id 现取。id 白名单
+      // 字符校验（`时间戳-随机串`），既防注入构造，也顺带拒绝明显非法的查询。
+      const params = new URL(req.url, 'http://localhost').searchParams
+      const id = params.get('id') ?? ''
+      if (!/^[A-Za-z0-9_-]{1,80}$/.test(id)) throw fail(400, '日志 id 不合法')
+      const row = requestLog.detail(id)
+      if (row === null) throw fail(404, '该记录没有正文（早于内容记录上线，或已被 3 天滚动清理）')
+      json(res, 200, row)
     } else if (method === 'POST' && pathname === `${PREFIX}/requests/clear` && requestLog) {
       await readBody(req)
       json(res, 200, { ok: requestLog.clear() })

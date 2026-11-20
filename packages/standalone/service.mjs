@@ -277,13 +277,59 @@ export async function startStandalone({
       // 请求日志在 service 层观测：插件侧的 src/core 与渠道包保持逐字节不变
       // （它们的 sha256 在签名清单里），独立端要记日志只需包一层。
       // auto 请求在日志里记 `auto→真实模型`，token 用量仍按真实命中模型记账。
+      // 2026-11-20 起同时记录请求正文（输入/输出文本）：id 关联元数据行与独立
+      // detail 文件（3 天滚动清理，见 request-log.mjs）。捕获层只抽文本增量，
+      // 工具调用等非文本块记紧凑占位，两侧各 512KB 截断防撑爆。
       complete: async (request, onChunk) => {
         const started = Date.now()
         let first = 0
-        const tracked = onChunk === undefined ? undefined : chunk => { if (!first) first = Date.now(); onChunk(chunk) }
+        const logId = `${started}-${Math.random().toString(36).slice(2, 8)}`
+        let sawDelta = false
+        let answerText = ''
+        let reasoningText = ''
+        const toolCalls = []
+        const capture = chunk => {
+          if (chunk.type === 'text-delta' && typeof chunk.text === 'string') { sawDelta = true; answerText += chunk.text; return }
+          if (chunk.type === 'reasoning-delta' && typeof chunk.text === 'string') { sawDelta = true; reasoningText += chunk.text; return }
+          if (chunk.type === 'tool-call-delta') {
+            sawDelta = true
+            let call = toolCalls.find(row => row.slot === chunk.index)
+            if (call === undefined) { call = { slot: chunk.index, name: '', args: '' }; toolCalls.push(call) }
+            if (typeof chunk.argumentsDelta === 'string') call.args += chunk.argumentsDelta
+            if (typeof chunk.name === 'string' && chunk.name !== '') call.name = chunk.name
+            return
+          }
+          if (chunk.type === 'block-end' && chunk.block?.type === 'tool-call') {
+            sawDelta = true
+            const call = toolCalls.find(row => row.slot === chunk.index)
+            if (call === undefined) toolCalls.push({ slot: chunk.index, name: String(chunk.block.name ?? ''), args: String(chunk.block.arguments ?? '') })
+            else {
+              if (typeof chunk.block.name === 'string' && chunk.block.name !== '') call.name = chunk.block.name
+              if (typeof chunk.block.arguments === 'string') call.args = chunk.block.arguments
+            }
+          }
+        }
+        const tracked = onChunk === undefined ? undefined : chunk => { if (!first) first = Date.now(); capture(chunk); onChunk(chunk) }
         const smart = scheduler.handles(request.model)
         const routed = smart ? { model: '' } : undefined
         const loggedModel = () => routed?.model ? `${request.model}→${routed.model}` : request.model
+        // 输入记原始入站形态：OpenAI 入口的 body.messages（Responses 入口的 body.input），
+        // 或 Anthropic 入口已归一的 harness messages（system 已并入首行）。
+        const detailInput = () => {
+          const source = request.openAi?.messages ?? request.openAi?.input ?? request.messages
+          if (source === undefined) return ''
+          try { return JSON.stringify(source) } catch { return String(source) }
+        }
+        // 输出：流式走 chunk 增量拼接（含思考前缀与工具调用占位）；非流式（调用方
+        // 不订阅 chunk）回落完整 outcome.text。失败时追加失败标记。
+        const detailOutput = failure => {
+          let text = sawDelta
+            ? (reasoningText === '' ? '' : `【思考】\n${reasoningText}\n\n【回答】\n`) + answerText
+              + toolCalls.map(call => `\n[工具调用 ${call.name || '?'} args=${call.args}]`).join('')
+            : (typeof outcome?.text === 'string' ? outcome.text : '')
+          if (failure !== undefined) text += `${text === '' ? '' : '\n\n'}[请求失败] ${failure}`
+          return text
+        }
         let outcome
         try {
           outcome = smart
@@ -292,22 +338,27 @@ export async function startStandalone({
               ? await channels.complete(request, tracked)
               : await core.complete(request, tracked)
         } catch (error) {
+          const message = String(error?.message ?? error).slice(0, 200)
           requestLog?.append({
-            at: started, model: loggedModel(), ok: false,
+            id: logId, at: started, model: loggedModel(), ok: false,
             elapsedMs: Date.now() - started,
-            error: String(error?.message ?? error).slice(0, 200),
+            error: message,
+            inputText: detailInput(),
+            outputText: detailOutput(message),
           })
           throw error
         }
         const usage = outcome?.usage
         requestLog?.append({
-          at: started, model: loggedModel(), ok: outcome?.error === undefined,
+          id: logId, at: started, model: loggedModel(), ok: outcome?.error === undefined,
           input: usage?.prompt_tokens ?? 0, output: usage?.completion_tokens ?? 0,
           reasoning: usage?.completion_tokens_details?.reasoning_tokens ?? 0,
           cacheRead: usage?.prompt_tokens_details?.cached_tokens ?? 0,
           ttftMs: first ? first - started : undefined,
           elapsedMs: Date.now() - started,
           ...outcome?.error === undefined ? {} : { error: String(outcome.error).slice(0, 200) },
+          inputText: detailInput(),
+          outputText: detailOutput(outcome?.error === undefined ? undefined : String(outcome.error).slice(0, 200)),
         })
         return outcome
       },
