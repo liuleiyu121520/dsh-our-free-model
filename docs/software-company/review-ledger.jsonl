@@ -33,3 +33,4 @@
 {"ts":"2026-11-19T16:04:19Z","event":"v125_published","registry":"latest=1.2.5","feature":"自更新能力首个正式版（FR-17/S18-S20）","drill":"S19 两轮演练通过，第二轮完整链路成功"}
 {"ts":"2026-11-20T04:53:29Z","event":"v126_published","registry":"latest=1.2.6","feature":"Claude Code 签名按渠道改写（workbuddy→WorkBuddy/buddy→CodeBuddy，其他渠道透传）"}
 {"ts":"2026-11-20T05:20:21Z","event":"v127_published","registry":"latest=1.2.7","feature":"Claude Code 计费头指纹补齐（真实 483KB 提示词 14 块全量回放放行）"}
+{"ts":"2026-11-20T08:50:45Z","event":"o_free_model_130_published","registry":"o-free-model@latest=1.3.0","old_package":"our-free-model-standalone deprecated","features":"请求日志内容+DEMO抽屉+更名"}
