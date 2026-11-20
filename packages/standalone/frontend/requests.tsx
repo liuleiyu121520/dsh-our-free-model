@@ -23,7 +23,7 @@ const contentText = (content: unknown): string => {
 
 const singleLine = (text: string) => text.replace(/\s+/g, ' ').trim()
 
-/** 长正文默认折叠、点击整块头部展开/收起；短内容直接完整显示。 */
+/** 长正文默认折叠；「展开全文」落在渐隐截断处（视线落点），头部整行也可点击切换。 */
 function DetailBlock({ role, text }: { role: string; text: string }) {
   const [expanded, setExpanded] = useState(false)
   const long = text.length > 280 || text.split('\n').length > 6
@@ -32,9 +32,14 @@ function DetailBlock({ role, text }: { role: string; text: string }) {
       aria-expanded={expanded} title={expanded ? '点击收起' : '点击展开完整内容'}>
       <span className={`requests-block-role role-${role}`}>{role}</span>
       {!expanded && text !== '' && <span className="requests-block-preview">{singleLine(text).slice(0, 140)}</span>}
-      {long && <span className="requests-block-toggle">{expanded ? '收起' : '展开'}</span>}
     </button>
-    <pre className={`requests-block-text${expanded || !long ? '' : ' is-clamped'}`}>{text === '' ? '（空）' : text}</pre>
+    <div className="requests-block-body">
+      <pre className={`requests-block-text${expanded || !long ? '' : ' is-clamped'}`}>{text === '' ? '（空）' : text}</pre>
+      {long && <button type="button" className="requests-block-expand"
+        onClick={event => { event.stopPropagation(); setExpanded(value => !value) }}>
+        {expanded ? '收起' : '展开全文'}
+      </button>}
+    </div>
   </div>
 }
 

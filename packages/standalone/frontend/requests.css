@@ -87,3 +87,14 @@
   border-style: dashed; }
 [data-theme="dark"] .requests-timeline::before { background: var(--dsw-alias-border-l2); }
 [data-theme="dark"] .requests-timeline-seq { background: var(--paper); }
+
+/* 展开按钮落在折叠渐隐的收尾处（2026-11-20 用户裁定：展开应在文字消失的位置） */
+.requests-block-body { position: relative; }
+.requests-block-expand { position: absolute; right: 8px; bottom: 6px; padding: 2px 11px;
+  border: 1px solid var(--dsw-alias-border-l2); border-radius: 999px; background: var(--surface);
+  color: var(--green-ink); font-size: 11px; font-weight: 600; cursor: pointer;
+  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.08); }
+.requests-block-expand:hover { border-color: var(--green-ink); }
+.requests-block.is-expanded .requests-block-expand { position: static; display: inline-block;
+  margin: 2px 10px 10px; box-shadow: none; }
+[data-theme="dark"] .requests-block-expand { background: var(--paper); box-shadow: 0 1px 5px rgba(0, 0, 0, 0.35); }
