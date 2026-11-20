@@ -4,7 +4,7 @@ import { startStandalone } from './service.mjs'
 import { openExternal } from './open-external.mjs'
 
 const usage = `Our Free Model 独立本地服务
-用法：npx our-free-model-standalone [选项]
+用法：npx o-free-model [选项]
       node packages/standalone/cli.mjs [选项]
 
   --port <端口>       监听端口，默认 18900（冲突时自动选择可用端口）
