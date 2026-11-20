@@ -116,6 +116,16 @@ const CONTENT_FINGERPRINTS: readonly ContentFingerprint[] = [
     note: '本机 2026-11-01 对 copilot.tencent.com 实测：单独被拦、改写后单独放行（同账号/模型/头，max_tokens=1）',
   },
   {
+    // Claude Code 会把计费头行塞进 system 首块: x-anthropic-billing-header: cc_version=...; cc_entrypoint=cli;
+    // 2026-11-20 实测(workbuddy 端点, 同账号/模型/头, max_tokens=1): 整行拦、换版本号拦、
+    // 仅「x-anthropic-billing-header: test」也拦; 去掉头名或换头名均放行——触发面是头名字面量。
+    // 与下一条身份句指纹配合: 两条都改写后, Claude Code 全部 14 个真实 system 块(捕获自
+    // 本机 claude.exe v2.1.325 实发请求, 共 483KB)经网关回放全部放行。
+    find: 'x-anthropic-billing-header:',
+    replace: 'x-client-billing-header:',
+    note: '本机 2026-11-20 对 www.workbuddy.ai 实测: 头名字面量单点触发(A/B/C/D/E 五探针矩阵)',
+  },
+  {
     // Claude Code 系统提示词的开场身份句。Claude Code 经本网关调
     // `workbuddy` / `buddy` 时被同一风控（400/11128 "Illegal API invocation
     // from an unapproved channel"）稳定拦截。本机 2026-11-20 单变量矩阵
