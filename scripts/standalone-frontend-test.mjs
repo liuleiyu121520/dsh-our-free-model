@@ -232,6 +232,7 @@ assert.match(appSource, /updateWaitRef\.current\.phase !== 'waiting'/, '等待�
 assert.match(appSource, /location\.reload\(\)/, '探测到新版本必须整页 reload 回稳态（AC-48）')
 const noticeRule = rules.find(rule => rule.selectors === '.update-notice')
 assert.ok(noticeRule, '更新气泡必须有样式定义')
-assert.match(noticeRule.body, /position\s*:\s*absolute/, '气泡锚定顶栏右上（absolute 于 .topbar）')
+// f1d0132 起气泡改顶栏内流式横幅（flex-basis 100% 右对齐），不再 absolute 悬浮。
+assert.match(noticeRule.body, /flex\s*:\s*0\s+100%/, '气泡是顶栏内流式行（flex 0 100%，随顶栏长高不遮挡内容）')
 assert.match(sheet, /\[data-theme="?dark"?\]\s*\.update-notice/, '深色主题必须覆盖更新气泡')
 console.log('standalone-frontend: 资源登记、懒加载三页分包（smart/calendar/settings）、模型筛选、统计累计、设置校验与草稿同步、迟到摘要、退出保存、网关模型选择器与自更新气泡检查通过')

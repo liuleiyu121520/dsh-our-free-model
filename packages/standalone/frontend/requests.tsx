@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react'
-import { Activity, CircleAlert, RefreshCw, Trash2 } from 'lucide-react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { Activity, CircleAlert, Copy, RefreshCw, Trash2, X } from 'lucide-react'
 import { Button } from './components/ui'
 import type { Host, Summary } from './types'
+import './requests.css'
 
 type Request = <T = any>(path: string, body?: unknown, timeoutMs?: number) => Promise<T>
 
@@ -9,6 +10,7 @@ interface LogRow {
   at: number
   model: string
   ok: boolean
+  id?: string
   status?: number
   error?: string
   errorCode?: string
@@ -21,6 +23,7 @@ interface LogRow {
   origin?: string
 }
 interface LogPage { total: number; entries: LogRow[] }
+interface LogDetail { id: string; at: number; input: string; output: string }
 
 const number = (value?: number) => Number.isFinite(value) ? new Intl.NumberFormat('zh-CN').format(value as number) : '—'
 const time = (at: number) => new Date(at).toLocaleString('zh-CN', { hour12: false })
@@ -30,8 +33,9 @@ const duration = (ms?: number) => !Number.isFinite(ms) ? '—'
 /**
  * 网关请求日志页。
  *
- * 只展示元数据（模型、耗时、token、成败），不展示 prompt 或回答内容 ——
- * 日志本身就不记录它们。失败行保留短错误前缀，用来区分「上游拒绝」与
+ * 列表展示元数据（模型、耗时、token、成败）；点击一行在右侧抽屉（2/5 宽）里
+ * 展示该次请求的输入与输出正文（2026-11-20 起，正文只保留 3 天；更早的记录
+ * 点开时如实提示没有正文）。失败行保留短错误前缀，用来区分「上游拒绝」与
  * 「本地超时」。
  */
 export function Requests({ summary, host, active, request }: {
@@ -41,6 +45,11 @@ export function Requests({ summary, host, active, request }: {
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const [limit, setLimit] = useState(100)
+  const [drawer, setDrawer] = useState<LogRow | null>(null)
+  const [detail, setDetail] = useState<LogDetail | undefined>(undefined)
+  const [detailError, setDetailError] = useState('')
+  const drawerRef = useRef<HTMLElement>(null)
+  const lastFocusedRef = useRef<HTMLElement | null>(null)
 
   useEffect(() => {
     if (!active) return
@@ -52,6 +61,54 @@ export function Requests({ summary, host, active, request }: {
       .finally(() => { if (alive) setBusy(false) })
     return () => { alive = false }
   }, [active, limit, request])
+
+  // 抽屉正文：按 id 现取（列表载荷不含正文）。旧记录无 id → 直接提示。
+  useEffect(() => {
+    if (drawer === null) return
+    setDetail(undefined)
+    setDetailError('')
+    if (drawer.id === undefined) return
+    let alive = true
+    request<LogDetail>(`/requests/detail?id=${encodeURIComponent(drawer.id)}`, undefined, 20000)
+      .then(value => { if (alive) setDetail(value) })
+      .catch(reason => { if (alive) setDetailError(reason instanceof Error ? reason.message : '正文读取失败') })
+    return () => { alive = false }
+  }, [drawer, request])
+
+  // 抽屉真 modal：Esc 关闭、Tab 圈禁、打开聚焦抽屉、关闭归还触发行（参照日历抽屉）。
+  useEffect(() => {
+    if (drawer === null) return
+    lastFocusedRef.current = document.activeElement as HTMLElement | null
+    requestAnimationFrame(() => drawerRef.current?.focus())
+    const element = drawerRef.current
+    if (!element) return
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') { event.preventDefault(); setDrawer(null); return }
+      if (event.key !== 'Tab') return
+      const focusables = Array.from(element.querySelectorAll<HTMLElement>(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')).filter(el => !el.hasAttribute('disabled'))
+      if (focusables.length === 0) { event.preventDefault(); return }
+      const first = focusables[0], last = focusables[focusables.length - 1]
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus() }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus() }
+    }
+    element.addEventListener('keydown', onKeyDown)
+    return () => element.removeEventListener('keydown', onKeyDown)
+  }, [drawer])
+  useEffect(() => {
+    if (drawer === null && lastFocusedRef.current) { lastFocusedRef.current.focus(); lastFocusedRef.current = null }
+  }, [drawer])
+
+  // 输入正文可解析则美化展示，否则原样等宽呈现。
+  const prettyInput = useMemo(() => {
+    if (detail === undefined) return ''
+    try { return JSON.stringify(JSON.parse(detail.input), null, 2) } catch { return detail.input }
+  }, [detail])
+
+  const copy = async (text: string | undefined) => {
+    if (text === undefined || text === '') return
+    await host.copy(text)
+  }
 
   const clear = async () => {
     if (!window.confirm('清空全部请求日志？此操作不可恢复。')) return
@@ -72,7 +129,7 @@ export function Requests({ summary, host, active, request }: {
     <header className="dashboard-heading">
       <div>
         <h1>请求日志</h1>
-        <p>{page ? `最近 ${number(page.total)} 条记录` : '正在读取…'} · 只记录元数据，不含对话内容</p></div>
+        <p>{page ? `最近 ${number(page.total)} 条记录` : '正在读取…'} · 正文保留 3 天，点击行查看输入与输出</p></div>
       <div className="actions">
         <Button variant="outline" disabled={busy} onClick={() => { setBusy(true); request<LogPage>(`/requests?limit=${limit}`).then(setPage).catch(reason => setError(reason.message)).finally(() => setBusy(false)) }}>
           <RefreshCw size={15} className={busy ? 'spinning' : ''} />刷新
@@ -99,7 +156,12 @@ export function Requests({ summary, host, active, request }: {
           <span role="columnheader">状态</span><span role="columnheader">耗时</span>
           <span role="columnheader">首字</span><span role="columnheader">Token</span>
         </div>
-        {page?.entries.map((row, index) => <div className={`requests-row${row.ok ? '' : ' is-failed'}`} role="row" key={`${row.at}-${index}`}>
+        {page?.entries.map((row, index) => <div className={`requests-row is-clickable${row.ok ? '' : ' is-failed'}`} role="row" key={`${row.at}-${index}`}
+          tabIndex={0}
+          title="点击查看该请求的输入与输出"
+          aria-label={`${time(row.at)} ${row.model} ${row.ok ? '成功' : '失败'}，查看详情`}
+          onClick={() => setDrawer(row)}
+          onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); setDrawer(row) } }}>
           <span className="requests-time">{time(row.at)}</span>
           <span className="requests-model" title={row.model}>{row.model}</span>
           <span>{row.ok ? <span className="requests-ok">成功</span> : <span className="requests-fail" title={row.error ?? ''}>{row.status ? `失败 ${row.status}` : '失败'}</span>}</span>
@@ -108,5 +170,49 @@ export function Requests({ summary, host, active, request }: {
           <span className="requests-tokens">{number(row.input)} → {number(row.output)}{row.reasoning ? ` (思考 ${number(row.reasoning)})` : ''}</span>
         </div>)}
       </div>}
+
+    {drawer && <div className="requests-drawer-root" role="dialog" aria-modal="true" aria-label="请求详情">
+      <div className="requests-drawer-backdrop" onClick={() => setDrawer(null)} />
+      <aside className="requests-drawer" ref={drawerRef} tabIndex={-1}>
+        <header className="requests-drawer-head">
+          <h2 title={drawer.model}>{drawer.model}</h2>
+          <Button variant="ghost" aria-label="关闭详情" onClick={() => setDrawer(null)}><X size={16} /></Button>
+        </header>
+        <div className="requests-drawer-body">
+          <section className="requests-drawer-meta" aria-label="请求元信息">
+            <div className="requests-meta-row"><span>时间</span><span>{time(drawer.at)}</span></div>
+            <div className="requests-meta-row"><span>状态</span>
+              <span>{drawer.ok ? '成功' : `失败${drawer.status ? `（${drawer.status}）` : ''}`}</span></div>
+            <div className="requests-meta-row"><span>耗时</span><span>{duration(drawer.elapsedMs)}</span></div>
+            <div className="requests-meta-row"><span>首字</span><span>{duration(drawer.ttftMs)}</span></div>
+            <div className="requests-meta-row"><span>Token</span>
+              <span>{number(drawer.input)} → {number(drawer.output)}{drawer.reasoning ? `（思考 ${number(drawer.reasoning)}）` : ''}</span></div>
+            {drawer.error && <div className="requests-meta-row"><span>错误</span><span className="requests-meta-error" title={drawer.error}>{drawer.error}</span></div>}
+          </section>
+          <section className="requests-drawer-section" aria-label="输入">
+            <h3>
+              输入
+              {detail && detail.input !== '' && <Button variant="ghost" className="requests-copy" aria-label="复制输入" title="复制输入" onClick={() => void copy(detail.input)}><Copy size={13} /></Button>}
+            </h3>
+            {drawer.id === undefined
+              ? <p className="requests-drawer-empty">该记录早于内容记录功能上线，无正文。</p>
+              : detail === undefined
+                ? <p className="requests-drawer-empty">{detailError !== '' ? detailError : '正在读取正文…'}</p>
+                : <pre className="requests-drawer-pre">{prettyInput === '' ? '（空）' : prettyInput}</pre>}
+          </section>
+          <section className="requests-drawer-section" aria-label="输出">
+            <h3>
+              输出
+              {detail && detail.output !== '' && <Button variant="ghost" className="requests-copy" aria-label="复制输出" title="复制输出" onClick={() => void copy(detail.output)}><Copy size={13} /></Button>}
+            </h3>
+            {drawer.id === undefined
+              ? <p className="requests-drawer-empty">该记录早于内容记录功能上线，无正文。</p>
+              : detail === undefined
+                ? <p className="requests-drawer-empty">{detailError !== '' ? detailError : '正在读取正文…'}</p>
+                : <pre className="requests-drawer-pre">{detail.output === '' ? '（空）' : detail.output}</pre>}
+          </section>
+        </div>
+      </aside>
+    </div>}
   </div>
 }
