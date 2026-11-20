@@ -102,19 +102,23 @@ export function Requests({ summary, host, active, request }: {
     return () => { alive = false }
   }, [active, limit, request])
 
-  // 抽屉正文：按 id 现取（列表载荷不含正文）。旧记录无 id → 直接提示。
+  // 抽屉正文：按 id 现取。只在 id 变化时重置/重拉（防 15s 轮询导致的 request
+  // 函数身份变化触发重跑 → detail 归 undefined → Message 组件卸载重挂 → 展开
+  // 状态丢失）。request 经 ref 引用，不进依赖数组。
+  const requestRef = useRef(request)
+  requestRef.current = request
+  const drawerId = drawer?.id ?? null
   useEffect(() => {
-    if (drawer === null) return
+    if (drawerId === null) return
     setDetail(undefined)
     setDetailError('')
     setTab('overview')
-    if (drawer.id === undefined) return
     let alive = true
-    request<LogDetail>(`/requests/detail?id=${encodeURIComponent(drawer.id)}`, undefined, 20000)
+    requestRef.current<LogDetail>(`/requests/detail?id=${encodeURIComponent(drawerId)}`, undefined, 20000)
       .then(value => { if (alive) setDetail(value) })
       .catch(reason => { if (alive) setDetailError(reason instanceof Error ? reason.message : '正文读取失败') })
     return () => { alive = false }
-  }, [drawer, request])
+  }, [drawerId])
 
   // 抽屉真 modal：Esc 关闭、Tab 圈禁、打开聚焦抽屉、关闭归还触发行（参照日历抽屉）。
   useEffect(() => {
