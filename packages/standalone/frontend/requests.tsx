@@ -108,8 +108,13 @@ export function Requests({ summary, host, active, request }: {
   const requestRef = useRef(request)
   requestRef.current = request
   const drawerId = drawer?.id ?? null
+  const lastDrawerIdRef = useRef<string | null>(null)
   useEffect(() => {
     if (drawerId === null) return
+    // 同一条请求的重拉（3 天内列表刷新重建 row 对象）不重置 UI 状态——只在
+    // 切换到不同请求时才清 detail / 回概览 tab（防「展开丢失」与「tab 跳回」）。
+    if (lastDrawerIdRef.current === drawerId) return
+    lastDrawerIdRef.current = drawerId
     setDetail(undefined)
     setDetailError('')
     setTab('overview')
