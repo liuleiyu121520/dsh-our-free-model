@@ -1,5 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Activity, ArrowUpRight, Calendar, ChevronDown, CircleAlert, Copy, Info, RefreshCw, Trash2, X, Zap } from 'lucide-react'
+import {
+  Activity, ArrowUpRight, Box, Brain, CalendarDays, CheckCircle2, ChevronDown,
+  ChevronUp, ChevronsUpDown, CircleAlert, Clock3, Copy, FileCode2, Filter,
+  Layers3, Maximize2, MessageCircle, MessagesSquare, RefreshCw, SquareCode,
+  Trash2, X, Zap,
+} from 'lucide-react'
 import { Button } from './components/ui'
 import type { Host, Summary } from './types'
 import './requests.css'
@@ -22,25 +27,20 @@ const contentText = (content: unknown): string => {
 
 const singleLine = (text: string) => text.replace(/\s+/g, ' ').trim()
 
-/** 长正文默认折叠；「展开全文」落在渐隐截断处（视线落点），头部整行也可点击切换。 */
-function DetailBlock({ role, text }: { role: string; text: string }) {
-  const [expanded, setExpanded] = useState(false)
-  const long = text.length > 280 || text.split('\n').length > 6
-  return <div className={`requests-block${expanded ? ' is-expanded' : ''}`}>
-    <button type="button" className="requests-block-head" onClick={() => setExpanded(value => !value)}
-      aria-expanded={expanded} title={expanded ? '点击收起' : '点击展开完整内容'}>
-      <span className={`requests-block-role role-${role}`}>{role}</span>
-      {!expanded && text !== '' && <span className="requests-block-preview">{singleLine(text).slice(0, 140)}</span>}
-      {long && expanded && <span className="requests-block-toggle">收起</span>}
-    </button>
-    <div className="requests-block-body">
-      <pre className={`requests-block-text${expanded || !long ? '' : ' is-clamped'}`}>{text === '' ? '（空）' : text}</pre>
-      {long && <button type="button" className="requests-block-expand"
-        onClick={event => { event.stopPropagation(); setExpanded(value => !value) }}>
-        {expanded ? '收起' : '展开全文'}
-      </button>}
+/** DEMO 还原：单条消息卡（角色胶囊 + 单行预览 + chevron 折叠/展开正文）。 */
+function Message({ seq, role, text }: { seq: number; role: string; text: string }) {
+  const [collapsed, setCollapsed] = useState(true)
+  return <article className={`message${collapsed ? ' collapsed' : ''}`} data-role={role}>
+    <span className="step">{seq}</span>
+    <div className="message-card">
+      <button type="button" className="message-head" onClick={() => setCollapsed(v => !v)}>
+        <span className={`role ${role}`}>{role}</span>
+        <span className="message-summary">{singleLine(text).slice(0, 100)}</span>
+        <span className="message-toggle"><ChevronDown size={15} /></span>
+      </button>
+      {!collapsed && <div className="message-body">{text}</div>}
     </div>
-  </div>
+  </article>
 }
 
 interface LogRow {
@@ -83,8 +83,10 @@ export function Requests({ summary, host, active, request }: {
   const [busy, setBusy] = useState(false)
   const [limit, setLimit] = useState(100)
   const [drawer, setDrawer] = useState<LogRow | null>(null)
-  const [tab, setTab] = useState<'overview' | 'messages' | 'raw'>('overview')
+  const [tab, setTab] = useState<'overview' | 'messages' | 'output' | 'raw'>('overview')
   const [detail, setDetail] = useState<LogDetail | undefined>(undefined)
+  const [expandedText, setExpandedText] = useState<string | null>(null)
+  const [expandedTitle, setExpandedTitle] = useState('内容详情')
   const [detailError, setDetailError] = useState('')
   const drawerRef = useRef<HTMLElement>(null)
   const lastFocusedRef = useRef<HTMLElement | null>(null)
@@ -235,111 +237,135 @@ export function Requests({ summary, host, active, request }: {
         </div>)}
       </div>}
 
-    {drawer && <div className="requests-drawer-root" role="dialog" aria-modal="true" aria-label="请求详情">
+    {drawer && <div className="requests-drawer-root" role="dialog" aria-modal="true" aria-label="模型调用详情">
       <div className="requests-drawer-backdrop" onClick={() => setDrawer(null)} />
-      <aside className="requests-drawer" ref={drawerRef} tabIndex={-1}>
-        <header className="rqd-header">
-          <h2>模型调用详情</h2>
-          <button type="button" className="rqd-close" aria-label="关闭详情" onClick={() => setDrawer(null)}><X size={16} /></button>
+      <aside className="drawer" ref={drawerRef} tabIndex={-1}>
+        <header className="drawer-header">
+          <div className="header-top">
+            <div className="title-wrap">
+              <h2 className="drawer-title">模型调用详情</h2>
+              <div className="model-line">
+                <span className="route">{drawer.model}</span>
+                <span className="status"><CheckCircle2 size={13} strokeWidth={2.6} />{drawer.ok ? '成功' : '失败'}</span>
+              </div>
+            </div>
+            <button type="button" className="icon-btn" aria-label="关闭" onClick={() => setDrawer(null)}><X size={19} /></button>
+          </div>
+          <div className="meta-row">
+            <div className="meta-chip"><Clock3 size={14} />耗时 {duration(drawer.elapsedMs)}</div>
+            <div className="meta-chip"><Layers3 size={14} />Tokens {number(drawer.input)} → {number(drawer.output)}</div>
+            <div className="meta-chip"><CalendarDays size={14} />{time(drawer.at)}</div>
+            {drawer.id !== undefined && <div className="meta-chip id-chip" title={drawer.id}><SquareCode size={14} />{drawer.id.slice(0, 14)}…</div>}
+          </div>
+          <div className="tabs" role="tablist" aria-label="调用详情视图">
+            {(['overview', 'messages', 'output', 'raw'] as const).map(t =>
+              <button key={t} type="button" role="tab" aria-selected={tab === t}
+                className={`tab${tab === t ? ' active' : ''}`} onClick={() => setTab(t)}>
+                {t === 'overview' ? '概览' : t === 'messages' ? '输入消息' : t === 'output' ? '输出结果' : '原始日志'}
+              </button>)}
+          </div>
         </header>
-        <div className="rqd-subtitle">
-          <span className="rqd-route">{drawer.model.includes('→')
-            ? <><span className="rqd-route-from">{drawer.model.split('→')[0]} → </span><strong>{drawer.model.split('→')[1]}</strong></>
-            : <strong>{drawer.model}</strong>}</span>
-          <span className={`rqd-badge${drawer.ok ? ' ok' : ' fail'}`}>
-            {drawer.ok ? '成功' : `失败${drawer.status ? ` ${drawer.status}` : ''}`}
-          </span>
-        </div>
-        <div className="rqd-chips">
-          <span className="rqd-chip"><span className="rqd-chip-label">耗时</span>{duration(drawer.elapsedMs)}</span>
-          <span className="rqd-chip"><span className="rqd-chip-label">Tokens</span>{number(drawer.input)} → {number(drawer.output)}</span>
-          <span className="rqd-chip"><Calendar size={14} />{time(drawer.at)}</span>
-          {drawer.id !== undefined && <span className="rqd-chip">{drawer.id.slice(0, 14)}…</span>}
-        </div>
-        <div className="rqd-tabs" role="tablist" aria-label="详情视图">
-          <button type="button" role="tab" aria-selected={tab === 'overview'} className={`rqd-tab${tab === 'overview' ? ' active' : ''}`}
-            onClick={() => setTab('overview')}>概览</button>
-          <button type="button" role="tab" aria-selected={tab === 'messages'} className={`rqd-tab${tab === 'messages' ? ' active' : ''}`}
-            onClick={() => setTab('messages')}>消息</button>
-          <button type="button" role="tab" aria-selected={tab === 'raw'} className={`rqd-tab${tab === 'raw' ? ' active' : ''}`}
-            onClick={() => setTab('raw')}>原始日志</button>
-        </div>
-        <div className="requests-drawer-body">
-          {(tab === 'overview') && <div className="rqd-overview">
-            <div className="rqd-stat-cards">
-              <div className="rqd-stat-card"><span className="rqd-stat-label">模型</span><span className="rqd-stat-value">{drawer.model.split('→').pop()?.trim() ?? drawer.model}</span></div>
-              <div className="rqd-stat-card"><span className="rqd-stat-label">耗时</span><span className="rqd-stat-value">{duration(drawer.elapsedMs)}</span></div>
-              <div className="rqd-stat-card"><span className="rqd-stat-label">输入 Token</span><span className="rqd-stat-value">{number(drawer.input)}</span></div>
-              <div className="rqd-stat-card"><span className="rqd-stat-label">输出 Token</span><span className="rqd-stat-value">{number(drawer.output)}</span></div>
-              <div className="rqd-stat-card"><span className="rqd-stat-label">状态</span><span className="rqd-stat-value ok">{drawer.ok ? '成功' : '失败'}</span></div>
+        <div className="drawer-scroll">
+          {tab === 'overview' && <>
+            <div className="summary-grid">
+              <div className="metric"><div className="metric-icon"><Box size={17} /></div><div><div className="metric-label">模型</div><div className="metric-value">{drawer.model.split('→').pop()?.trim() ?? drawer.model}</div></div></div>
+              <div className="metric"><div className="metric-icon"><Clock3 size={17} /></div><div><div className="metric-label">耗时</div><div className="metric-value">{duration(drawer.elapsedMs)}</div></div></div>
+              <div className="metric compact"><div className="metric-icon"><Layers3 size={16} /></div><div><div className="metric-label">输入 Token</div><div className="metric-value">{number(drawer.input)}</div></div></div>
+              <div className="metric compact"><div className="metric-icon"><Layers3 size={16} /></div><div><div className="metric-label">输出 Token</div><div className="metric-value">{number(drawer.output)}</div></div></div>
+              <div className="metric compact status-metric"><div className="metric-icon"><CheckCircle2 size={16} /></div><div><div className="metric-label">状态</div><div className="metric-value">{drawer.ok ? '成功' : '失败'}</div></div></div>
             </div>
             {detail !== undefined && <>
-              <div className="rqd-section-card">
-                <div className="rqd-section-head">
-                  <Zap size={20} className="rqd-section-icon" />
-                  <h3>模型思考</h3>
-                  <Info size={16} className="rqd-section-info" />
-                  <span className="rqd-section-actions">
-                    <button type="button" onClick={() => void copy(detail.output)}><Copy size={14} />复制</button>
-                  </span>
+              <section className="section-card" id="messagesSection">
+                <div className="section-heading">
+                  <div className="section-title"><MessageCircle size={18} />输入消息</div>
+                  <div className="section-actions"><span className="count">共 {inputView?.blocks.length ?? 0} 条</span></div>
                 </div>
-                <div className="rqd-section-body rqd-thinking">
-                  <pre>{detail.output.split('【回答】')[0]?.replace('【思考】', '').trim() || '（无思考内容）'}</pre>
+                <div className="timeline">
+                  {inputView?.blocks.map((b, i) => <Message key={i} seq={i + 1} role={b.role} text={b.text} />)}
                 </div>
-              </div>
-              <div className="rqd-section-card">
-                <div className="rqd-section-head">
-                  <ArrowUpRight size={20} className="rqd-section-icon" />
-                  <h3>最终回答</h3>
-                  <span className="rqd-section-actions">
-                    <button type="button" onClick={() => void copy(detail.output)}><Copy size={14} />复制</button>
-                  </span>
+              </section>
+              <section className="section-card reasoning-card">
+                <div className="section-heading">
+                  <div className="section-title"><Brain size={18} />模型思考</div>
+                  <div className="section-actions">
+                    <button onClick={() => void copy(detail.output)}><Copy size={14} /><span>复制</span></button>
+                    <button onClick={() => { setExpandedText(detail.output); setExpandedTitle('模型思考') }}><Maximize2 size={14} /><span>展开</span></button>
+                  </div>
                 </div>
-                <div className="rqd-section-body rqd-answer">
-                  <pre>{detail.output.split('【回答】')[1]?.trim() || detail.output.trim() || '（空）'}</pre>
+                <div className="reasoning-content"><span className="tag">[reasoning]</span>{detail.output.split('【回答】')[0]?.replace('【思考】', '').trim() || '（无思考内容）'}</div>
+              </section>
+              <section className="section-card answer-card">
+                <div className="section-heading">
+                  <div className="section-title"><Zap size={18} />最终回答</div>
+                  <div className="section-actions">
+                    <button onClick={() => void copy(detail.output)}><Copy size={14} /><span>复制</span></button>
+                    <button onClick={() => { setExpandedText(detail.output); setExpandedTitle('最终回答') }}><Maximize2 size={14} /><span>展开</span></button>
+                  </div>
                 </div>
-              </div>
+                <div className="answer-content">{detail.output.split('【回答】')[1]?.trim() || detail.output.trim() || '（空）'}</div>
+              </section>
             </>}
-            {drawer.id === undefined && <p className="requests-drawer-empty">该记录早于内容记录功能上线，无正文。</p>}
-            {detail === undefined && drawer.id !== undefined && <p className="requests-drawer-empty">{detailError !== '' ? detailError : '正在读取正文…'}</p>}
-          </div>}
-          {(tab === 'messages') && (drawer.id === undefined
-            ? <p className="requests-drawer-empty">该记录早于内容记录功能上线，无正文。</p>
+            {drawer.id === undefined && <p className="messages-only-note">该记录早于内容记录功能上线，无正文。</p>}
+            {detail === undefined && drawer.id !== undefined && <p className="messages-only-note">{detailError !== '' ? detailError : '正在读取正文…'}</p>}
+          </>}
+          {tab === 'messages' && (drawer.id === undefined
+            ? <p className="messages-only-note">该记录早于内容记录功能上线，无正文。</p>
             : detail === undefined
-              ? <p className="requests-drawer-empty">{detailError !== '' ? detailError : '正在读取正文…'}</p>
-              : <div className="requests-input-view">
-                  {inputView !== undefined && inputView.scalars.length > 0
-                    && <div className="requests-params">{inputView.scalars.map(([key, value]) =>
-                      <span className="requests-param" key={key} title={`${key}: ${value}`}><b>{key}</b>{value}</span>)}</div>}
-                  <div className="rqd-msg-section">
-                    <div className="rqd-msg-head">
-                      <span className="rqd-msg-icon" aria-hidden="true" />
-                      <h3>输入消息</h3>
-                      <span className="rqd-msg-count">共 {inputView?.blocks.length ?? 0} 条</span>
-                    </div>
-                    <div className="requests-timeline" role="list">
-                      {inputView?.blocks.map((block, index) =>
-                        <div className="requests-timeline-item" role="listitem" key={index}>
-                          <span className="requests-timeline-seq" aria-hidden="true">{index + 1}</span>
-                          <DetailBlock role={block.role} text={block.text} />
-                        </div>)}
+              ? <p className="messages-only-note">{detailError !== '' ? detailError : '正在读取正文…'}</p>
+              : <section className="section-card">
+                  <div className="section-heading">
+                    <div className="section-title"><MessagesSquare size={18} />输入消息</div>
+                    <div className="section-actions"><span className="count">共 {inputView?.blocks.length ?? 0} 条</span></div>
+                  </div>
+                  <p className="messages-only-note">按模型实际接收顺序展示完整上下文，点击任意消息可展开或收起。</p>
+                  <div className="timeline">
+                    {inputView?.blocks.map((b, i) => <Message key={i} seq={i + 1} role={b.role} text={b.text} />)}
+                  </div>
+                </section>)}
+          {tab === 'output' && (detail === undefined
+            ? <p className="messages-only-note">{detailError !== '' ? detailError : '正在读取正文…'}</p>
+            : <>
+                <section className="section-card reasoning-card">
+                  <div className="section-heading">
+                    <div className="section-title"><Brain size={18} />模型思考</div>
+                    <div className="section-actions">
+                      <button onClick={() => void copy(detail.output)}><Copy size={14} /><span>复制</span></button>
+                      <button onClick={() => { setExpandedText(detail.output); setExpandedTitle('模型思考') }}><Maximize2 size={14} /><span>展开</span></button>
                     </div>
                   </div>
-                </div>)}
-          {(tab === 'raw') && (detail === undefined
-            ? <p className="requests-drawer-empty">{detailError !== '' ? detailError : '正在读取正文…'}</p>
-            : <div className="rqd-raw">
-                <div className="rqd-raw-section">
-                  <div className="rqd-raw-head">输入 JSON <button type="button" onClick={() => void copy(detail.input)}><Copy size={13} />复制</button></div>
-                  <pre className="rqd-raw-pre">{detail.input}</pre>
+                  <div className="reasoning-content"><span className="tag">[reasoning]</span>{detail.output.split('【回答】')[0]?.replace('【思考】', '').trim() || '（无思考内容）'}</div>
+                </section>
+                <section className="section-card answer-card">
+                  <div className="section-heading">
+                    <div className="section-title"><Zap size={18} />最终回答</div>
+                    <div className="section-actions">
+                      <button onClick={() => void copy(detail.output)}><Copy size={14} /><span>复制</span></button>
+                      <button onClick={() => { setExpandedText(detail.output); setExpandedTitle('最终回答') }}><Maximize2 size={14} /><span>展开</span></button>
+                    </div>
+                  </div>
+                  <div className="answer-content">{detail.output.split('【回答】')[1]?.trim() || detail.output.trim() || '（空）'}</div>
+                </section>
+              </>)}
+          {tab === 'raw' && (detail === undefined
+            ? <p className="messages-only-note">{detailError !== '' ? detailError : '正在读取正文…'}</p>
+            : <section className="section-card">
+                <div className="section-heading">
+                  <div className="section-title"><FileCode2 size={18} />原始调用日志</div>
+                  <div className="section-actions">
+                    <button onClick={() => void copy(`${detail.input}\n---\n${detail.output}`)}><Copy size={14} /><span>复制</span></button>
+                    <button onClick={() => { setExpandedText(`${detail.input}\n---\n${detail.output}`); setExpandedTitle('原始调用日志') }}><Maximize2 size={14} /><span>展开</span></button>
+                  </div>
                 </div>
-                <div className="rqd-raw-section">
-                  <div className="rqd-raw-head">输出全文 <button type="button" onClick={() => void copy(detail.output)}><Copy size={13} />复制</button></div>
-                  <pre className="rqd-raw-pre">{detail.output}</pre>
-                </div>
-              </div>)}
+                <pre className="raw-log">{detail.input}\n---\n{detail.output}</pre>
+              </section>)}
         </div>
       </aside>
+      {expandedText !== null && <div className="expanded-overlay open" onClick={e => { if (e.target === e.currentTarget) setExpandedText(null) }}>
+        <div className="expanded-dialog">
+          <div className="dialog-head"><span>{expandedTitle}</span><button onClick={() => setExpandedText(null)}>×</button></div>
+          <pre>{expandedText}</pre>
+        </div>
+      </div>}
     </div>}
   </div>
 }
