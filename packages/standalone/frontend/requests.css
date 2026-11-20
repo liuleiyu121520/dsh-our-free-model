@@ -104,3 +104,7 @@
 .requests-block .requests-block-text,
 :root:not([data-theme="dark"]) .requests-block .requests-block-text,
 [data-theme="dark"] .requests-block .requests-block-text { border-radius: 0 !important; }
+
+/* 展开态双收起位：头部右上角 + 正文尾部（2026-11-20 用户裁定两处都要） */
+.requests-block-toggle { flex-shrink: 0; margin-left: auto; font-size: 11px; font-weight: 600; color: var(--green-ink); }
+.requests-block-head:hover .requests-block-toggle { text-decoration: underline; }

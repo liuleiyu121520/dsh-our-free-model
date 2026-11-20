@@ -32,6 +32,7 @@ function DetailBlock({ role, text }: { role: string; text: string }) {
       aria-expanded={expanded} title={expanded ? '点击收起' : '点击展开完整内容'}>
       <span className={`requests-block-role role-${role}`}>{role}</span>
       {!expanded && text !== '' && <span className="requests-block-preview">{singleLine(text).slice(0, 140)}</span>}
+      {long && expanded && <span className="requests-block-toggle">收起</span>}
     </button>
     <div className="requests-block-body">
       <pre className={`requests-block-text${expanded || !long ? '' : ' is-clamped'}`}>{text === '' ? '（空）' : text}</pre>
