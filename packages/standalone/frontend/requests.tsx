@@ -135,17 +135,23 @@ export function Requests({ summary, host, active, request }: {
   const inputView = useMemo(() => {
     if (detail === undefined) return undefined
     try {
-      const parsed = JSON.parse(detail.input) as Record<string, unknown>
-      if (Array.isArray(parsed.messages)) {
-        const scalars = Object.entries(parsed)
-          .filter(([key, value]) => key !== 'messages' && key !== 'system'
-            && (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean'))
-          .map(([key, value]) => [key, String(value)] as [string, string])
+      const parsed = JSON.parse(detail.input) as unknown
+      // 兼容两种落盘形态：结构化对象（含 model/参数 + messages）与旧记录的裸消息数组。
+      const list: unknown[] | null = Array.isArray(parsed) ? parsed
+        : Array.isArray((parsed as Record<string, unknown>)?.messages) ? (parsed as Record<string, unknown>).messages as unknown[]
+        : null
+      if (list !== null) {
+        const scalars = Array.isArray(parsed) ? [] as [string, string][]
+          : Object.entries(parsed as Record<string, unknown>)
+            .filter(([key, value]) => key !== 'messages' && key !== 'system'
+              && (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean'))
+            .map(([key, value]) => [key, String(value)] as [string, string])
         const blocks: { role: string; text: string }[] = []
-        if (typeof parsed.system === 'string' && parsed.system !== '') {
-          blocks.push({ role: 'system', text: parsed.system })
+        const system = Array.isArray(parsed) ? undefined : (parsed as Record<string, unknown>).system
+        if (typeof system === 'string' && system !== '') {
+          blocks.push({ role: 'system', text: system })
         }
-        for (const [index, message] of (parsed.messages as unknown[]).entries()) {
+        for (const [index, message] of list.entries()) {
           const row = (message ?? {}) as Record<string, unknown>
           const role = typeof row.role === 'string' ? row.role : `#${index + 1}`
           blocks.push({ role, text: contentText(row.content) })

@@ -318,7 +318,15 @@ export async function startStandalone({
         const detailInput = () => {
           const source = request.openAi?.messages ?? request.openAi?.input ?? request.messages
           if (source === undefined) return ''
-          try { return JSON.stringify(source) } catch { return String(source) }
+          // 结构化落盘（2026-11-20 抽屉按字段拆开展示）：顶层带 model 与关键标量参数，
+          // messages 为本体；序列化失败原样兜底。旧记录的裸数组形态由前端解析兼容。
+          const detail = { model: request.model }
+          const body = request.openAi
+          for (const key of ['max_tokens', 'stream', 'temperature']) {
+            const value = body?.[key]
+            if (value !== undefined) detail[key] = value
+          }
+          try { return JSON.stringify({ ...detail, messages: source }) } catch { return String(source) }
         }
         // 输出：流式走 chunk 增量拼接（含思考前缀与工具调用占位）；非流式（调用方
         // 不订阅 chunk）回落完整 outcome.text。失败时追加失败标记。
