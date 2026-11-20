@@ -1,9 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Activity, CircleAlert, Copy, RefreshCw, Trash2, X } from 'lucide-react'
+import { Activity, ArrowUpRight, Calendar, ChevronDown, CircleAlert, Copy, Info, RefreshCw, Trash2, X, Zap } from 'lucide-react'
 import { Button } from './components/ui'
 import type { Host, Summary } from './types'
 import './requests.css'
-
 type Request = <T = any>(path: string, body?: unknown, timeoutMs?: number) => Promise<T>
 
 /** content 字段统一转文本：字符串直取，分块数组拼 text、其余以类型占位。 */
@@ -84,6 +83,7 @@ export function Requests({ summary, host, active, request }: {
   const [busy, setBusy] = useState(false)
   const [limit, setLimit] = useState(100)
   const [drawer, setDrawer] = useState<LogRow | null>(null)
+  const [tab, setTab] = useState<'overview' | 'messages' | 'raw'>('overview')
   const [detail, setDetail] = useState<LogDetail | undefined>(undefined)
   const [detailError, setDetailError] = useState('')
   const drawerRef = useRef<HTMLElement>(null)
@@ -105,6 +105,7 @@ export function Requests({ summary, host, active, request }: {
     if (drawer === null) return
     setDetail(undefined)
     setDetailError('')
+    setTab('overview')
     if (drawer.id === undefined) return
     let alive = true
     request<LogDetail>(`/requests/detail?id=${encodeURIComponent(drawer.id)}`, undefined, 20000)
@@ -237,34 +238,85 @@ export function Requests({ summary, host, active, request }: {
     {drawer && <div className="requests-drawer-root" role="dialog" aria-modal="true" aria-label="请求详情">
       <div className="requests-drawer-backdrop" onClick={() => setDrawer(null)} />
       <aside className="requests-drawer" ref={drawerRef} tabIndex={-1}>
-        <header className="requests-drawer-head">
-          <h2 title={drawer.model}>{drawer.model}</h2>
-          <Button variant="ghost" aria-label="关闭详情" onClick={() => setDrawer(null)}><X size={16} /></Button>
+        <header className="rqd-header">
+          <h2>模型调用详情</h2>
+          <button type="button" className="rqd-close" aria-label="关闭详情" onClick={() => setDrawer(null)}><X size={16} /></button>
         </header>
+        <div className="rqd-subtitle">
+          <span className="rqd-route">{drawer.model.includes('→')
+            ? <><span className="rqd-route-from">{drawer.model.split('→')[0]} → </span><strong>{drawer.model.split('→')[1]}</strong></>
+            : <strong>{drawer.model}</strong>}</span>
+          <span className={`rqd-badge${drawer.ok ? ' ok' : ' fail'}`}>
+            {drawer.ok ? '成功' : `失败${drawer.status ? ` ${drawer.status}` : ''}`}
+          </span>
+        </div>
+        <div className="rqd-chips">
+          <span className="rqd-chip"><span className="rqd-chip-label">耗时</span>{duration(drawer.elapsedMs)}</span>
+          <span className="rqd-chip"><span className="rqd-chip-label">Tokens</span>{number(drawer.input)} → {number(drawer.output)}</span>
+          <span className="rqd-chip"><Calendar size={14} />{time(drawer.at)}</span>
+          {drawer.id !== undefined && <span className="rqd-chip">{drawer.id.slice(0, 14)}…</span>}
+        </div>
+        <div className="rqd-tabs" role="tablist" aria-label="详情视图">
+          <button type="button" role="tab" aria-selected={tab === 'overview'} className={`rqd-tab${tab === 'overview' ? ' active' : ''}`}
+            onClick={() => setTab('overview')}>概览</button>
+          <button type="button" role="tab" aria-selected={tab === 'messages'} className={`rqd-tab${tab === 'messages' ? ' active' : ''}`}
+            onClick={() => setTab('messages')}>消息</button>
+          <button type="button" role="tab" aria-selected={tab === 'raw'} className={`rqd-tab${tab === 'raw' ? ' active' : ''}`}
+            onClick={() => setTab('raw')}>原始日志</button>
+        </div>
         <div className="requests-drawer-body">
-          <section className="requests-drawer-meta" aria-label="请求元信息">
-            <div className="requests-meta-row"><span>时间</span><span>{time(drawer.at)}</span></div>
-            <div className="requests-meta-row"><span>状态</span>
-              <span>{drawer.ok ? '成功' : `失败${drawer.status ? `（${drawer.status}）` : ''}`}</span></div>
-            <div className="requests-meta-row"><span>耗时</span><span>{duration(drawer.elapsedMs)}</span></div>
-            <div className="requests-meta-row"><span>首字</span><span>{duration(drawer.ttftMs)}</span></div>
-            <div className="requests-meta-row"><span>Token</span>
-              <span>{number(drawer.input)} → {number(drawer.output)}{drawer.reasoning ? `（思考 ${number(drawer.reasoning)}）` : ''}</span></div>
-            {drawer.error && <div className="requests-meta-row"><span>错误</span><span className="requests-meta-error" title={drawer.error}>{drawer.error}</span></div>}
-          </section>
-          <section className="requests-drawer-section" aria-label="输入">
-            <h3>
-              输入
-              {detail && detail.input !== '' && <Button variant="ghost" className="requests-copy" aria-label="复制输入" title="复制输入" onClick={() => void copy(detail.input)}><Copy size={13} /></Button>}
-            </h3>
-            {drawer.id === undefined
-              ? <p className="requests-drawer-empty">该记录早于内容记录功能上线，无正文。</p>
-              : detail === undefined
-                ? <p className="requests-drawer-empty">{detailError !== '' ? detailError : '正在读取正文…'}</p>
-                : <div className="requests-input-view">
-                    {inputView !== undefined && inputView.scalars.length > 0
-                      && <div className="requests-params">{inputView.scalars.map(([key, value]) =>
-                        <span className="requests-param" key={key} title={`${key}: ${value}`}><b>{key}</b>{value}</span>)}</div>}
+          {(tab === 'overview') && <div className="rqd-overview">
+            <div className="rqd-stat-cards">
+              <div className="rqd-stat-card"><span className="rqd-stat-label">模型</span><span className="rqd-stat-value">{drawer.model.split('→').pop()?.trim() ?? drawer.model}</span></div>
+              <div className="rqd-stat-card"><span className="rqd-stat-label">耗时</span><span className="rqd-stat-value">{duration(drawer.elapsedMs)}</span></div>
+              <div className="rqd-stat-card"><span className="rqd-stat-label">输入 Token</span><span className="rqd-stat-value">{number(drawer.input)}</span></div>
+              <div className="rqd-stat-card"><span className="rqd-stat-label">输出 Token</span><span className="rqd-stat-value">{number(drawer.output)}</span></div>
+              <div className="rqd-stat-card"><span className="rqd-stat-label">状态</span><span className="rqd-stat-value ok">{drawer.ok ? '成功' : '失败'}</span></div>
+            </div>
+            {detail !== undefined && <>
+              <div className="rqd-section-card">
+                <div className="rqd-section-head">
+                  <Zap size={20} className="rqd-section-icon" />
+                  <h3>模型思考</h3>
+                  <Info size={16} className="rqd-section-info" />
+                  <span className="rqd-section-actions">
+                    <button type="button" onClick={() => void copy(detail.output)}><Copy size={14} />复制</button>
+                  </span>
+                </div>
+                <div className="rqd-section-body rqd-thinking">
+                  <pre>{detail.output.split('【回答】')[0]?.replace('【思考】', '').trim() || '（无思考内容）'}</pre>
+                </div>
+              </div>
+              <div className="rqd-section-card">
+                <div className="rqd-section-head">
+                  <ArrowUpRight size={20} className="rqd-section-icon" />
+                  <h3>最终回答</h3>
+                  <span className="rqd-section-actions">
+                    <button type="button" onClick={() => void copy(detail.output)}><Copy size={14} />复制</button>
+                  </span>
+                </div>
+                <div className="rqd-section-body rqd-answer">
+                  <pre>{detail.output.split('【回答】')[1]?.trim() || detail.output.trim() || '（空）'}</pre>
+                </div>
+              </div>
+            </>}
+            {drawer.id === undefined && <p className="requests-drawer-empty">该记录早于内容记录功能上线，无正文。</p>}
+            {detail === undefined && drawer.id !== undefined && <p className="requests-drawer-empty">{detailError !== '' ? detailError : '正在读取正文…'}</p>}
+          </div>}
+          {(tab === 'messages') && (drawer.id === undefined
+            ? <p className="requests-drawer-empty">该记录早于内容记录功能上线，无正文。</p>
+            : detail === undefined
+              ? <p className="requests-drawer-empty">{detailError !== '' ? detailError : '正在读取正文…'}</p>
+              : <div className="requests-input-view">
+                  {inputView !== undefined && inputView.scalars.length > 0
+                    && <div className="requests-params">{inputView.scalars.map(([key, value]) =>
+                      <span className="requests-param" key={key} title={`${key}: ${value}`}><b>{key}</b>{value}</span>)}</div>}
+                  <div className="rqd-msg-section">
+                    <div className="rqd-msg-head">
+                      <span className="rqd-msg-icon" aria-hidden="true" />
+                      <h3>输入消息</h3>
+                      <span className="rqd-msg-count">共 {inputView?.blocks.length ?? 0} 条</span>
+                    </div>
                     <div className="requests-timeline" role="list">
                       {inputView?.blocks.map((block, index) =>
                         <div className="requests-timeline-item" role="listitem" key={index}>
@@ -272,19 +324,20 @@ export function Requests({ summary, host, active, request }: {
                           <DetailBlock role={block.role} text={block.text} />
                         </div>)}
                     </div>
-                  </div>}
-          </section>
-          <section className="requests-drawer-section" aria-label="输出">
-            <h3>
-              输出
-              {detail && detail.output !== '' && <Button variant="ghost" className="requests-copy" aria-label="复制输出" title="复制输出" onClick={() => void copy(detail.output)}><Copy size={13} /></Button>}
-            </h3>
-            {drawer.id === undefined
-              ? <p className="requests-drawer-empty">该记录早于内容记录功能上线，无正文。</p>
-              : detail === undefined
-                ? <p className="requests-drawer-empty">{detailError !== '' ? detailError : '正在读取正文…'}</p>
-                : <DetailBlock role="output" text={detail.output} />}
-          </section>
+                  </div>
+                </div>)}
+          {(tab === 'raw') && (detail === undefined
+            ? <p className="requests-drawer-empty">{detailError !== '' ? detailError : '正在读取正文…'}</p>
+            : <div className="rqd-raw">
+                <div className="rqd-raw-section">
+                  <div className="rqd-raw-head">输入 JSON <button type="button" onClick={() => void copy(detail.input)}><Copy size={13} />复制</button></div>
+                  <pre className="rqd-raw-pre">{detail.input}</pre>
+                </div>
+                <div className="rqd-raw-section">
+                  <div className="rqd-raw-head">输出全文 <button type="button" onClick={() => void copy(detail.output)}><Copy size={13} />复制</button></div>
+                  <pre className="rqd-raw-pre">{detail.output}</pre>
+                </div>
+              </div>)}
         </div>
       </aside>
     </div>}

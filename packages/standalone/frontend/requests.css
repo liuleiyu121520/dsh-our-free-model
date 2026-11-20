@@ -108,3 +108,117 @@
 /* 展开态双收起位：头部右上角 + 正文尾部（2026-11-20 用户裁定两处都要） */
 .requests-block-toggle { flex-shrink: 0; margin-left: auto; font-size: 11px; font-weight: 600; color: var(--green-ink); }
 .requests-block-head:hover .requests-block-toggle { text-decoration: underline; }
+
+/* ================================================================
+   模型调用详情抽屉 · 像素级还原设计稿（2026-11-20 用户提供）
+   色板/间距/字号均来自逐区域量取的设计稿规格。
+   ================================================================ */
+
+/* --- 顶部区 --- */
+.rqd-header { display: flex; align-items: center; justify-content: space-between; padding: 24px 24px 0 38px; }
+.rqd-header h2 { margin: 0; font-size: 27px; font-weight: 700; color: #000; letter-spacing: 0.5px; }
+.rqd-close { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px;
+  border: 0; border-radius: 8px; background: transparent; color: #292e35; cursor: pointer; }
+.rqd-close:hover { background: #f2f3f5; }
+
+.rqd-subtitle { display: flex; align-items: center; gap: 12px; padding: 6px 24px 0 38px; }
+.rqd-route { font-size: 18px; }
+.rqd-route-from { color: #454a50; font-weight: 400; }
+.rqd-route strong { color: #14181c; font-weight: 700; }
+.rqd-badge { display: inline-flex; align-items: center; gap: 6px; height: 31px; padding: 0 14px;
+  border-radius: 999px; font-size: 14px; font-weight: 600; }
+.rqd-badge.ok { background: #e1f5ed; color: #04804a; }
+.rqd-badge.ok::before { content: '✓'; display: inline-flex; width: 13px; height: 13px; border-radius: 50%;
+  background: #167f4a; color: #fff; font-size: 9px; line-height: 13px; text-align: center; }
+.rqd-badge.fail { background: #fee2e2; color: #b91c1c; }
+
+/* --- 指标条 chips --- */
+.rqd-chips { display: flex; flex-wrap: wrap; gap: 8px; padding: 14px 24px 0 38px; }
+.rqd-chip { display: inline-flex; align-items: center; gap: 5px; height: 34px; padding: 0 12px;
+  border-radius: 10px; background: #f2f3f5; font-size: 13px; color: #494d56; white-space: nowrap; }
+.rqd-chip svg { color: #6c6f74; }
+.rqd-chip-label { color: #6c6f74; font-weight: 500; margin-right: 2px; }
+
+/* --- Tab 栏 --- */
+.rqd-tabs { display: flex; gap: 0; margin: 18px 38px 0 38px; height: 48px;
+  background: #f3f4f7; border-radius: 8px; overflow: hidden; }
+.rqd-tab { flex: 1; border: 0; background: transparent; font-size: 16px; font-weight: 500; color: #2a2c2e;
+  cursor: pointer; transition: background 120ms, color 120ms; }
+.rqd-tab.active { background: #e6f5ee; color: #026c37; font-weight: 600;
+  box-shadow: inset 0 -6px 0 #0f8850; border-radius: 8px 8px 0 0; }
+.rqd-tab:not(.active):hover { background: #e9eaee; }
+
+/* --- 概览 tab：统计卡 --- */
+.rqd-overview { flex: 1; overflow-y: auto; padding: 14px 22px 0 38px; }
+.rqd-stat-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 14px; }
+.rqd-stat-card { display: flex; flex-direction: column; gap: 4px; padding: 14px 16px;
+  background: #f7f8fa; border: 1px solid #eceff2; border-radius: 8px; }
+.rqd-stat-label { font-size: 13px; color: #6e747c; }
+.rqd-stat-value { font-size: 17px; font-weight: 700; color: #14181c;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rqd-stat-value.ok { color: #17925a; }
+
+/* --- 概览 tab：思考/回答卡 --- */
+.rqd-section-card { background: #fff; border: 1px solid #e8edf1; border-radius: 11px; padding: 0;
+  margin-bottom: 12px; overflow: hidden; }
+.rqd-section-head { display: flex; align-items: center; gap: 10px; padding: 12px 16px 10px 14px; }
+.rqd-section-head h3 { margin: 0; font-size: 20px; font-weight: 700; color: #14181c; }
+.rqd-section-icon { color: #178f5a; flex-shrink: 0; }
+.rqd-section-info { color: #6c6e71; }
+.rqd-section-actions { margin-left: auto; display: flex; gap: 6px; }
+.rqd-section-actions button { display: inline-flex; align-items: center; gap: 4px; border: 0;
+  background: transparent; font-size: 14px; color: #4b5563; cursor: pointer; padding: 4px 8px; border-radius: 6px; }
+.rqd-section-actions button:hover { background: #f2f3f5; }
+.rqd-section-body { margin: 0 10px 12px 10px; padding: 18px 20px; border-radius: 10px; font-size: 16px;
+  line-height: 1.5; color: #1f1e27; }
+.rqd-section-body pre { margin: 0; font-family: inherit; white-space: pre-wrap; word-break: break-word; }
+.rqd-thinking { background: #eff2f2; border: 1px solid #e8eef0; }
+.rqd-answer { background: #e6f5ee; border: 1px solid #e3f4ec; }
+.rqd-answer pre { color: #010101; font-weight: 500; }
+
+/* --- 消息 tab --- */
+.requests-drawer-body { flex: 1; overflow-y: auto; }
+.rqd-msg-section { }
+.rqd-msg-head { display: flex; align-items: center; gap: 10px; padding: 16px 0 10px 0; }
+.rqd-msg-icon { width: 22px; height: 22px; border-radius: 6px; background: #cef2ec; flex-shrink: 0; }
+.rqd-msg-head h3 { margin: 0; font-size: 20px; font-weight: 700; color: #14181c; }
+.rqd-msg-count { font-size: 13px; color: #41474e; margin-left: auto; }
+.requests-drawer-body:has(.rqd-msg-section) { padding: 0 22px 0 38px; }
+
+/* --- 原始日志 tab --- */
+.rqd-raw { display: flex; flex-direction: column; gap: 14px; }
+.rqd-raw-section { }
+.rqd-raw-head { display: flex; align-items: center; gap: 8px; padding: 0 0 8px 0;
+  font-size: 14px; font-weight: 600; color: #41474e; }
+.rqd-raw-head button { display: inline-flex; align-items: center; gap: 3px; border: 0;
+  background: transparent; font-size: 13px; color: #4b5563; cursor: pointer; padding: 2px 8px; border-radius: 4px; }
+.rqd-raw-head button:hover { background: #f2f3f5; }
+.rqd-raw-pre { margin: 0; padding: 16px; background: #f2f3f5; border-radius: 4px;
+  font-family: ui-monospace, 'SF Mono', SFMono-Regular, Menlo, monospace;
+  font-size: 13px; line-height: 1.5; color: #1f1e27;
+  white-space: pre-wrap; word-break: break-word; overflow-x: auto; max-height: 480px; overflow-y: auto; }
+.requests-drawer-body:has(.rqd-raw) { padding: 14px 22px 0 38px; }
+
+/* --- 暗色主题（有限适配：抽屉在暗色下保持浅底设计稿风） --- */
+[data-theme="dark"] .rqd-header h2 { color: #e8e8e8; }
+[data-theme="dark"] .rqd-close { color: #a0a4aa; }
+[data-theme="dark"] .rqd-close:hover { background: #2a2c30; }
+[data-theme="dark"] .rqd-route strong { color: #e8e8e8; }
+[data-theme="dark"] .rqd-chip { background: #2a2c30; color: #9fa3a9; }
+[data-theme="dark"] .rqd-chip-label { color: #7c8086; }
+[data-theme="dark"] .rqd-tabs { background: #2a2c30; }
+[data-theme="dark"] .rqd-tab { color: #c0c4c8; }
+[data-theme="dark"] .rqd-tab.active { background: #1a3a2a; color: #4ade80; box-shadow: inset 0 -6px 0 #22c55e; }
+[data-theme="dark"] .rqd-stat-card { background: #1e2024; border-color: #2a2c30; }
+[data-theme="dark"] .rqd-stat-label { color: #7c8086; }
+[data-theme="dark"] .rqd-stat-value { color: #e8e8e8; }
+[data-theme="dark"] .rqd-section-card { background: #1a1c1f; border-color: #2a2c30; }
+[data-theme="dark"] .rqd-section-head h3 { color: #e8e8e8; }
+[data-theme="dark"] .rqd-thinking { background: #1e2024; border-color: #2a2c30; }
+[data-theme="dark"] .rqd-answer { background: #1a3a2a; border-color: #2a4a3a; }
+[data-theme="dark"] .rqd-raw-pre { background: #1e2024; color: #c8ccd0; }
+[data-theme="dark"] .requests-drawer { background: #161719; }
+
+/* 抽屉底色与投影（设计稿 #fbfbfc） */
+.requests-drawer { background: #fbfbfc; box-shadow: -8px 0 24px rgba(0,0,0,0.10); display: flex; flex-direction: column; }
+[data-theme="dark"] .requests-drawer { box-shadow: -8px 0 24px rgba(0,0,0,0.4); }
