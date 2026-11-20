@@ -18,7 +18,7 @@ import { standaloneSourceFiles, repositoryRoot } from './pack-standalone.mjs'
 const hash = bytes => crypto.createHash('sha256').update(bytes).digest('hex')
 const json = value => `${JSON.stringify(value, null, 2)}\n`
 
-export function buildNpmStandalonePackage({ name = 'our-free-model-standalone', outputName } = {}) {
+export function buildNpmStandalonePackage({ name = 'o-free-model', outputName } = {}) {
   const sources = standaloneSourceFiles().map(file => ({
     file, bytes: fs.readFileSync(path.join(repositoryRoot, file)),
   }))

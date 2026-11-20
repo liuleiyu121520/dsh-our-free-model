@@ -4,21 +4,21 @@
 
 **命令行模型网关 —— 一条命令，在你自己机器上跑起一个带网页控制台的 OpenAI 兼容网关。**
 
-[![npm](https://img.shields.io/npm/v/our-free-model-standalone?style=flat-square&color=2f6f4f)](https://www.npmjs.com/package/our-free-model-standalone)
-[![node](https://img.shields.io/node/v/our-free-model-standalone?style=flat-square&color=4b6fff)](https://nodejs.org)
-[![deps](https://img.shields.io/badge/dependencies-0-7da1de?style=flat-square)](https://www.npmjs.com/package/our-free-model-standalone)
-[![license](https://img.shields.io/npm/l/our-free-model-standalone?style=flat-square&color=263146)](https://github.com/liuleiyu121520/dsh-our-free-model/blob/main/LICENSE)
+[![npm](https://img.shields.io/npm/v/o-free-model?style=flat-square&color=2f6f4f)](https://www.npmjs.com/package/o-free-model)
+[![node](https://img.shields.io/node/v/o-free-model?style=flat-square&color=4b6fff)](https://nodejs.org)
+[![deps](https://img.shields.io/badge/dependencies-0-7da1de?style=flat-square)](https://www.npmjs.com/package/o-free-model)
+[![license](https://img.shields.io/npm/l/o-free-model?style=flat-square&color=263146)](https://github.com/liuleiyu121520/dsh-our-free-model/blob/main/LICENSE)
 
 </div>
 
 ## 安装并启动
 
 ```bash
-npm i -g our-free-model-standalone
+npm i -g o-free-model
 ofm
 ```
 
-不安装也可以：`npx our-free-model-standalone`
+不安装也可以：`npx o-free-model`
 
 启动后终端打印一次性管理链接（10 分钟内有效），浏览器打开即可。API 地址是
 `http://127.0.0.1:18900/v1`，API Key 在控制台「网关与 API 接入」页查看。
@@ -65,7 +65,7 @@ ofm --help                  # 全部选项
 
 自动更新仅支持 macOS / Linux 上的 npm 全局安装。`npx` 运行、项目内依赖或
 Windows 环境不会出现一键更新按钮，界面会显示手动升级命令
-（`npm i -g our-free-model-standalone@<版本>`），按提示执行即可。
+（`npm i -g o-free-model@<版本>`），按提示执行即可。
 
 ## 仓库
 

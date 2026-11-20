@@ -5,7 +5,7 @@
  * 用法：node scripts/release-standalone-npm.mjs <subcommand>
  *   preflight  发布前置断言（S10 记录 / 版本 1.1.0 / git 干净 / NPM-README / release-notes / whoami）
  *   build      npm run build:standalone-ui（tgz 含最终前端的前提）
- *   pack       产出 dist/our-free-model-standalone-1.1.0.tgz 并断言清单特征
+ *   pack       产出 dist/o-free-model-1.1.0.tgz 并断言清单特征
  *   smoke      与发布同一 tgz 字节：临时 prefix 全局安装 → 启动 → /v1/models 含 auto → 版本断言
  *   publish    whoami 复检 + npm publish <tgz> --access public + npm view dist-tags 断言
  *   record     发布记录落盘 docs/software-company/s11-release-record.md（无凭据字段）
@@ -20,7 +20,7 @@ import { fileURLToPath } from 'node:url'
 import os from 'node:os'
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
-const PRODUCT = 'our-free-model-standalone'
+const PRODUCT = 'o-free-model'
 // 版本单点：与 packages/standalone/package.json 同源，避免逐版本手改（1.2.0 起动态取值）
 const VERSION = JSON.parse(fs.readFileSync(path.join(ROOT, 'packages/standalone/package.json'), 'utf8')).version
 const TARBALL = path.join(ROOT, 'dist', `${PRODUCT}-${VERSION}.tgz`)

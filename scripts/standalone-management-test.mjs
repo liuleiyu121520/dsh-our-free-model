@@ -571,7 +571,7 @@ try {
     // 非全局安装 → 409，且文案必须含手动升级命令（AC-49）。
     const rejected = await request('/api/management/update/run', { body: {} })
     assert.equal(rejected.status, 409)
-    assert.match((await rejected.json()).error, /npm i -g our-free-model-standalone/)
+    assert.match((await rejected.json()).error, /npm i -g o-free-model/)
     // GET 该路径 → 404（else-if 路由链既有行为）；非 JSON body → 415（readBody 惯例）。
     assert.equal((await request('/api/management/update/run')).status, 404)
     assert.equal((await request('/api/management/update/run', { body: {}, headers: { 'content-type': 'text/plain' } })).status, 415)

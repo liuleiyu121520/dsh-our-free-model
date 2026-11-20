@@ -12,7 +12,7 @@ import path from 'node:path'
 import { spawn } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 
-export const SELF_UPDATE_PACKAGE = 'our-free-model-standalone'
+export const SELF_UPDATE_PACKAGE = 'o-free-model'
 const VERSION_PATTERN = /^\d+\.\d+\.\d+(?:-[\w.-]+)?$/
 const DEFAULT_MODULE_DIR = fileURLToPath(new URL('.', import.meta.url))
 
@@ -61,8 +61,8 @@ export function detectInstallKind({ platform, moduleDir }) {
   if (typeof moduleDir !== 'string' || moduleDir === '') return 'source'
   const normalized = moduleDir.split(path.sep).join('/')
   if (normalized.includes('/.npm/_npx/')) return 'npx'
-  if (/(^|\/)lib\/node_modules\/our-free-model-standalone\//.test(normalized)) return 'global'
-  if (/(^|\/)node_modules\/our-free-model-standalone\//.test(normalized)) return 'local'
+  if (/(^|\/)lib\/node_modules\/o-free-model\//.test(normalized)) return 'global'
+  if (/(^|\/)node_modules\/o-free-model\//.test(normalized)) return 'local'
   return 'source'
 }
 
