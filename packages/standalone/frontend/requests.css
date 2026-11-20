@@ -38,3 +38,32 @@
 @media (prefers-reduced-motion: reduce) {
   .requests-drawer { animation: none; }
 }
+
+/* 输入结构化视图：参数 chips + 逐消息折叠块（长内容默认收起，点击展开） */
+.requests-params { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 10px; }
+.requests-param { display: inline-flex; align-items: center; gap: 5px; max-width: 100%; padding: 3px 9px;
+  border: 1px solid var(--dsw-alias-border-l2); border-radius: 999px; background: var(--surface);
+  font-size: 11px; color: var(--ink-soft); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.requests-param b { font-weight: 600; color: var(--ink-quiet); }
+.requests-block { border: 1px solid var(--dsw-alias-border-l2); border-radius: var(--radius-control);
+  background: var(--surface); margin: 0 0 8px; overflow: hidden; }
+.requests-block-head { display: flex; align-items: center; gap: 8px; width: 100%; padding: 7px 10px;
+  border: 0; background: transparent; cursor: pointer; text-align: left; font: inherit; }
+.requests-block-head:hover { background: var(--hover); }
+.requests-block-role { flex-shrink: 0; padding: 2px 8px; border-radius: 999px; font-size: 10.5px;
+  font-weight: 600; letter-spacing: 0.02em; }
+.requests-block-role.role-system { background: var(--accent-soft); color: var(--green-ink); }
+.requests-block-role.role-user { background: var(--success-soft, var(--accent-soft)); color: var(--ink); }
+.requests-block-role.role-assistant { background: var(--hover); color: var(--ink-quiet); }
+.requests-block-role.role-output { background: var(--hover); color: var(--ink-quiet); }
+.requests-block-preview { flex: 1; min-width: 0; font-size: 11.5px; color: var(--muted);
+  overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.requests-block-toggle { flex-shrink: 0; font-size: 11px; color: var(--green-ink); font-weight: 600; }
+.requests-block-text { margin: 0; padding: 0 10px 10px; font-family: var(--mono-font, monospace);
+  font-size: 11.5px; line-height: 1.65; white-space: pre-wrap; word-break: break-word; color: var(--ink); }
+.requests-block-text.is-clamped { max-height: 66px; overflow: hidden;
+  -webkit-mask-image: linear-gradient(180deg, var(--ink) 55%, transparent);
+  mask-image: linear-gradient(180deg, var(--ink) 55%, transparent); }
+.requests-block.is-expanded .requests-block-text { padding-bottom: 10px; }
+[data-theme="dark"] .requests-block { background: var(--surface); }
+[data-theme="dark"] .requests-param { background: var(--paper); }

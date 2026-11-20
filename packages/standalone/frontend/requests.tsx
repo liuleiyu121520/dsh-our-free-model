@@ -6,6 +6,38 @@ import './requests.css'
 
 type Request = <T = any>(path: string, body?: unknown, timeoutMs?: number) => Promise<T>
 
+/** content 字段统一转文本：字符串直取，分块数组拼 text、其余以类型占位。 */
+const contentText = (content: unknown): string => {
+  if (typeof content === 'string') return content
+  if (Array.isArray(content)) {
+    return content.map(part => {
+      if (part === null || typeof part !== 'object') return String(part ?? '')
+      const row = part as Record<string, unknown>
+      if (row.type === 'text' && typeof row.text === 'string') return row.text
+      return `[${typeof row.type === 'string' ? row.type : '块'}]`
+    }).join('\n')
+  }
+  if (content === undefined || content === null) return ''
+  return JSON.stringify(content)
+}
+
+const singleLine = (text: string) => text.replace(/\s+/g, ' ').trim()
+
+/** 长正文默认折叠、点击整块头部展开/收起；短内容直接完整显示。 */
+function DetailBlock({ role, text }: { role: string; text: string }) {
+  const [expanded, setExpanded] = useState(false)
+  const long = text.length > 280 || text.split('\n').length > 6
+  return <div className={`requests-block${expanded ? ' is-expanded' : ''}`}>
+    <button type="button" className="requests-block-head" onClick={() => setExpanded(value => !value)}
+      aria-expanded={expanded} title={expanded ? '点击收起' : '点击展开完整内容'}>
+      <span className={`requests-block-role role-${role}`}>{role}</span>
+      {!expanded && text !== '' && <span className="requests-block-preview">{singleLine(text).slice(0, 140)}</span>}
+      {long && <span className="requests-block-toggle">{expanded ? '收起' : '展开'}</span>}
+    </button>
+    <pre className={`requests-block-text${expanded || !long ? '' : ' is-clamped'}`}>{text === '' ? '（空）' : text}</pre>
+  </div>
+}
+
 interface LogRow {
   at: number
   model: string
@@ -99,10 +131,29 @@ export function Requests({ summary, host, active, request }: {
     if (drawer === null && lastFocusedRef.current) { lastFocusedRef.current.focus(); lastFocusedRef.current = null }
   }, [drawer])
 
-  // 输入正文可解析则美化展示，否则原样等宽呈现。
-  const prettyInput = useMemo(() => {
-    if (detail === undefined) return ''
-    try { return JSON.stringify(JSON.parse(detail.input), null, 2) } catch { return detail.input }
+  // 输入按字段结构化：标量参数成 chips，messages/system 逐条成可折叠块（复制仍取原始全文）。
+  const inputView = useMemo(() => {
+    if (detail === undefined) return undefined
+    try {
+      const parsed = JSON.parse(detail.input) as Record<string, unknown>
+      if (Array.isArray(parsed.messages)) {
+        const scalars = Object.entries(parsed)
+          .filter(([key, value]) => key !== 'messages' && key !== 'system'
+            && (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean'))
+          .map(([key, value]) => [key, String(value)] as [string, string])
+        const blocks: { role: string; text: string }[] = []
+        if (typeof parsed.system === 'string' && parsed.system !== '') {
+          blocks.push({ role: 'system', text: parsed.system })
+        }
+        for (const [index, message] of (parsed.messages as unknown[]).entries()) {
+          const row = (message ?? {}) as Record<string, unknown>
+          const role = typeof row.role === 'string' ? row.role : `#${index + 1}`
+          blocks.push({ role, text: contentText(row.content) })
+        }
+        return { scalars, blocks }
+      }
+    } catch { /* 原文兜底 */ }
+    return { scalars: [] as [string, string][], blocks: [{ role: '原文', text: detail.input }] }
   }, [detail])
 
   const copy = async (text: string | undefined) => {
@@ -198,7 +249,13 @@ export function Requests({ summary, host, active, request }: {
               ? <p className="requests-drawer-empty">该记录早于内容记录功能上线，无正文。</p>
               : detail === undefined
                 ? <p className="requests-drawer-empty">{detailError !== '' ? detailError : '正在读取正文…'}</p>
-                : <pre className="requests-drawer-pre">{prettyInput === '' ? '（空）' : prettyInput}</pre>}
+                : <div className="requests-input-view">
+                    {inputView !== undefined && inputView.scalars.length > 0
+                      && <div className="requests-params">{inputView.scalars.map(([key, value]) =>
+                        <span className="requests-param" key={key} title={`${key}: ${value}`}><b>{key}</b>{value}</span>)}</div>}
+                    {inputView?.blocks.map((block, index) =>
+                      <DetailBlock key={index} role={block.role} text={block.text} />)}
+                  </div>}
           </section>
           <section className="requests-drawer-section" aria-label="输出">
             <h3>
@@ -209,7 +266,7 @@ export function Requests({ summary, host, active, request }: {
               ? <p className="requests-drawer-empty">该记录早于内容记录功能上线，无正文。</p>
               : detail === undefined
                 ? <p className="requests-drawer-empty">{detailError !== '' ? detailError : '正在读取正文…'}</p>
-                : <pre className="requests-drawer-pre">{detail.output === '' ? '（空）' : detail.output}</pre>}
+                : <DetailBlock role="output" text={detail.output} />}
           </section>
         </div>
       </aside>
