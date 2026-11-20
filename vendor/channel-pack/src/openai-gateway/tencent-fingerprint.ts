@@ -84,8 +84,9 @@ const TENCENT_PROVIDERS: readonly string[] = ['buddy', 'workbuddy']
 interface ContentFingerprint {
   /** 被拦的**字面量**（匹配时**大小写不敏感**，但不做任何模式泛化）。 */
   readonly find: string
-  /** 等义改写。两个端点均实测 200。 */
-  readonly replace: string
+  /** 等义改写（字符串），或按渠道（product id）映射的等义改写（2026-11-20
+   *  Claude Code 签名条目起支持；对象缺该渠道时回退 workbuddy 档）。 */
+  readonly replace: string | Readonly<Record<string, string>>
   /** 来源与证据，写死在代码里，免得后人「顺手」把它改成正则或删掉。 */
   readonly note: string
 }
@@ -113,6 +114,27 @@ const CONTENT_FINGERPRINTS: readonly ContentFingerprint[] = [
     find: 'You are an AI agent powered by DeepSeek Harness.',
     replace: 'You are an AI assistant running inside a harness.',
     note: '本机 2026-11-01 对 copilot.tencent.com 实测：单独被拦、改写后单独放行（同账号/模型/头，max_tokens=1）',
+  },
+  {
+    // Claude Code 系统提示词的开场身份句。Claude Code 经本网关调
+    // `workbuddy` / `buddy` 时被同一风控（400/11128 "Illegal API invocation
+    // from an unapproved channel"）稳定拦截。本机 2026-11-20 单变量矩阵
+    // （同账号/模型/头，max_tokens=16，workbuddy 端点）：
+    //   - 官方原句 "You are Claude Code, Anthropic's official CLI for Claude." → 6/6 拦（串行+并发）；
+    //   - 近义句 "You are Claude Code, a CLI tool." / "You are made by Anthropic."
+    //     / 中文「Claude Code 交互式命令行工具」→ 全放行；
+    //   - 6KB 长 system 无标识 / 带 tools → 放行（与大小、工具无关，内容签名）。
+    // 触发面是「Claude Code, Anthropic's official CLI for Claude」这一身份
+    // 片段（find 不含句号，段落中部命中同样覆盖）。replace 按渠道映射
+    // （用户 2026-11-20 裁定：检测到该签名才改、其他内容不动；其他渠道
+    // 不经本改写器）：workbuddy（国际版 www.workbuddy.ai）→ WorkBuddy；
+    // buddy（国内版 copilot.tencent.com，CodeBuddy 系）→ CodeBuddy。
+    find: "Claude Code, Anthropic's official CLI for Claude",
+    replace: {
+      buddy: 'CodeBuddy, the official coding CLI companion',
+      workbuddy: 'WorkBuddy, the official coding CLI companion',
+    },
+    note: '本机 2026-11-20 双端点实测：原句 6/6 拦、近义放行；改写后 workbuddy/buddy 双渠道放行且探针证实上游收到的即替换句（同账号/模型/头，max_tokens=16）；qodercn 对照无探针记录（原样透传）',
   },
 ]
 
@@ -205,7 +227,9 @@ export function rewriteTencentContentFingerprints(text: string, provider: string
     // 预检：不含（小写化后的）字面量就整条跳过，`out` 保持同一份字符串内容。
     if (!out.toLowerCase().includes(rule.findLower)) continue
     // `String.replace` 配 `g` 正则会在调用前后把 lastIndex 归零，不会串状态。
-    out = out.replace(rule.pattern, rule.replace)
+    // replace 支持按渠道映射（对象键 = product id）；字符串条目维持原行为。
+    const replacement = typeof rule.replace === 'string' ? rule.replace : rule.replace[provider] ?? rule.replace.workbuddy
+    out = out.replace(rule.pattern, replacement)
   }
   return out
 }

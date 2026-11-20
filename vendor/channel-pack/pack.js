@@ -35301,6 +35301,24 @@ var CONTENT_FINGERPRINTS = [
     find: "You are an AI agent powered by DeepSeek Harness.",
     replace: "You are an AI assistant running inside a harness.",
     note: "\u672C\u673A 2026-11-01 \u5BF9 copilot.tencent.com \u5B9E\u6D4B\uFF1A\u5355\u72EC\u88AB\u62E6\u3001\u6539\u5199\u540E\u5355\u72EC\u653E\u884C\uFF08\u540C\u8D26\u53F7/\u6A21\u578B/\u5934\uFF0Cmax_tokens=1\uFF09"
+  },
+  {
+    // Claude Code 系统提示词的开场身份句。Claude Code 经本网关调 buddy/workbuddy
+    // 被同一风控（400/11128 "Illegal API invocation from an unapproved channel"）
+    // 稳定拦截。本机 2026-11-20 单变量矩阵（同账号/模型/头，max_tokens=16）：
+    // 官方原句 6/6 拦（串行+并发）；近义句（"a CLI tool"/"made by Anthropic"/
+    // 中文表述）、6KB 无标识长 system、带 tools 全放行——内容签名，非大小/工具。
+    // 触发面是「Claude Code, Anthropic's official CLI for Claude」身份片段
+    // （find 不含句号，段落中部命中同样覆盖）。replace 按渠道映射（用户裁定：
+    // 检测到该签名才改，其他内容不动；其他渠道不经本改写器）：
+    // workbuddy（国际版，www.workbuddy.ai）→ WorkBuddy；buddy（国内版，
+    // copilot.tencent.com，CodeBuddy 系）→ CodeBuddy。
+    find: "Claude Code, Anthropic's official CLI for Claude",
+    replace: {
+      buddy: "CodeBuddy, the official coding CLI companion",
+      workbuddy: "WorkBuddy, the official coding CLI companion"
+    },
+    note: "\u672C\u673A 2026-11-20 \u5BF9 www.workbuddy.ai \u5B9E\u6D4B\uFF1A\u539F\u53E5 6/6 \u62E6\u3001\u8FD1\u4E49\u653E\u884C\uFF08\u540C\u8D26\u53F7/\u6A21\u578B/\u5934\uFF0Cmax_tokens=16\uFF09"
   }
 ];
 var SENTENCE_JOIN_PATTERN = /(?<=[.!?]) (?=[A-Z"'(])/g;
@@ -35321,7 +35339,9 @@ function rewriteTencentContentFingerprints(text, provider) {
   let out = text.replace(SENTENCE_JOIN_PATTERN, "\n");
   for (const rule of COMPILED) {
     if (!out.toLowerCase().includes(rule.findLower)) continue;
-    out = out.replace(rule.pattern, rule.replace);
+    // replace 支持按渠道映射（对象键 = product id）；字符串条目维持原行为。
+    const replacement = typeof rule.replace === "string" ? rule.replace : rule.replace[provider] ?? rule.replace.workbuddy;
+    out = out.replace(rule.pattern, replacement);
   }
   return out;
 }
