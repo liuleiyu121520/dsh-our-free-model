@@ -259,8 +259,13 @@ export function Requests({ summary, host, active, request }: {
                     {inputView !== undefined && inputView.scalars.length > 0
                       && <div className="requests-params">{inputView.scalars.map(([key, value]) =>
                         <span className="requests-param" key={key} title={`${key}: ${value}`}><b>{key}</b>{value}</span>)}</div>}
-                    {inputView?.blocks.map((block, index) =>
-                      <DetailBlock key={index} role={block.role} text={block.text} />)}
+                    <div className="requests-timeline" role="list">
+                      {inputView?.blocks.map((block, index) =>
+                        <div className="requests-timeline-item" role="listitem" key={index}>
+                          <span className="requests-timeline-seq" aria-hidden="true">{index + 1}</span>
+                          <DetailBlock role={block.role} text={block.text} />
+                        </div>)}
+                    </div>
                   </div>}
           </section>
           <section className="requests-drawer-section" aria-label="输出">

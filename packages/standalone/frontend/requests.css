@@ -67,3 +67,23 @@
 .requests-block.is-expanded .requests-block-text { padding-bottom: 10px; }
 [data-theme="dark"] .requests-block { background: var(--surface); }
 [data-theme="dark"] .requests-param { background: var(--paper); }
+
+/* 消息时间线：左轨竖线 + 序号节点，工具类消息缩进一级 */
+.requests-timeline { position: relative; display: flex; flex-direction: column; gap: 8px; padding-left: 4px; }
+.requests-timeline::before { content: ''; position: absolute; left: 13px; top: 14px; bottom: 14px; width: 2px;
+  border-radius: 1px; background: var(--dsw-alias-border-l2); }
+.requests-timeline-item { position: relative; display: flex; align-items: flex-start; gap: 8px; }
+.requests-timeline-seq { position: relative; z-index: 1; flex-shrink: 0; width: 22px; height: 22px;
+  display: inline-flex; align-items: center; justify-content: center; margin-top: 3px;
+  border-radius: 50%; border: 2px solid var(--dsw-alias-border-l2); background: var(--surface);
+  font-size: 10px; font-weight: 700; color: var(--ink-quiet); font-variant-numeric: tabular-nums; }
+.requests-timeline-item { flex: 1; }
+.requests-timeline-item .requests-block { flex: 1; min-width: 0; margin: 0; }
+/* 层级缩进：tool/tool_result 归属于其前驱调用，右移一级并在轨上断开视觉 */
+.requests-timeline-item:has(.role-tool), .requests-timeline-item:has(.role-tool_result), .requests-timeline-item:has(.role-function) {
+  margin-left: 26px; }
+.requests-timeline-item:has(.role-tool) .requests-timeline-seq, .requests-timeline-item:has(.role-tool_result) .requests-timeline-seq,
+.requests-timeline-item:has(.role-function) .requests-timeline-seq { width: 18px; height: 18px; margin-top: 5px; font-size: 9px;
+  border-style: dashed; }
+[data-theme="dark"] .requests-timeline::before { background: var(--dsw-alias-border-l2); }
+[data-theme="dark"] .requests-timeline-seq { background: var(--paper); }
