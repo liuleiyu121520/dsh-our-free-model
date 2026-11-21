@@ -14,7 +14,7 @@ import { createClaimsHistory } from './claims-history.mjs'
 import { createRequestLog } from './request-log.mjs'
 import { createSelfUpdate, runRestartSequence, passthroughArgs } from './self-update.mjs'
 
-const PRODUCT = 'our-free-model-standalone'
+const PRODUCT = 'o-free-model'
 const VERSION = JSON.parse(fs.readFileSync(new URL('./package.json', import.meta.url), 'utf8')).version
 
 export function resolveStandaloneDataDir(env = process.env, home = os.homedir()) {

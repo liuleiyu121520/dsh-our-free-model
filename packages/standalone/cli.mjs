@@ -76,9 +76,9 @@ async function main() {
   process.once('SIGTERM', shutdown)
   process.stdout.write(`${service.product} ${service.version}\n管理页面（10 分钟内一次性登录）：${service.managementUrl}\nAPI：${service.url}/v1\nAPI Key 保存在：${service.keyFile}\n`)
   if (options.open) {
-    // 一次性链接 10 分钟内只能兑换一次：先尝试自动打开浏览器。
-    // 打开失败不算启动失败 —— 链接已经打印在上面，手动打开同样能用。
-    const opened = await openExternal(service.managementUrl)
+    // 自动打开直接进管理页根地址（不带一次性登录片段）；
+    // 控制台打印的一次性登录链接保留给需要免密登录时手动使用。
+    const opened = await openExternal(service.url)
     if (!opened) process.stdout.write('未能自动打开浏览器，请手动打开上面的管理页面链接。\n')
   }
   if (service.lan.running) {

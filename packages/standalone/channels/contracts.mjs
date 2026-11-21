@@ -33,7 +33,7 @@ export const createToolResultMessage = ({ callId, content, isError }) => ({
   id: randomUUID(), role: 'tool', toolCallId: callId, content, isError,
   source: { kind: 'tool', callId },
 })
-export const attributionHeaders = () => ({ 'user-agent': 'our-free-model-standalone' })
+export const attributionHeaders = () => ({ 'user-agent': 'o-free-model' })
 export const CONTEXT_WINDOW_EXCEEDED_CODE = 'CONTEXT_WINDOW_EXCEEDED'
 export const EMPTY_RESPONSE_CODE = 'EMPTY_RESPONSE'
 export const QUOTA_EXCEEDED_CODE = 'QUOTA_EXCEEDED'

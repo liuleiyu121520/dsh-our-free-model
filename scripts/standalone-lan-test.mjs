@@ -502,7 +502,7 @@ try {
           received = value
           return { product: 'fixture', version: 'fixture', url: 'http://127.0.0.1:1', managementUrl: 'http://127.0.0.1:1/#login=fixture', keyFile: 'fixture/settings.json', lan: {} }
         },
-        process: { argv: ['node', 'cli.mjs', ...flags], once() {}, stdout: { write: text => { output += text } }, stderr: { write: text => { output += text } } },
+        process: { argv: ['node', 'cli.mjs', ...flags], env: {}, once() {}, stdout: { write: text => { output += text } }, stderr: { write: text => { output += text } } },
       })
       await new Promise(resolve => setImmediate(resolve))
       assert.deepEqual(JSON.parse(JSON.stringify(received)), expected)

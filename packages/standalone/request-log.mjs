@@ -28,6 +28,8 @@ const DEFAULT_MAX = 2000
 const RETAIN_MS = 3 * 24 * 60 * 60 * 1000
 /** 每侧正文（输入/输出）的截断上限：512KB，防极端超长（如 base64 图）撑爆文件。 */
 export const DETAIL_TEXT_LIMIT = 512 * 1024
+/** 正文文件字节硬上限：超过即强制压缩（压缩本身流式、恒定内存）。 */
+const DETAIL_FILE_BYTES_MAX = 256 * 1024 * 1024
 /** 关联正文的行 id 白名单：`时间戳-随机串`，顺带挡住路径注入类构造。 */
 const ID_PATTERN = /^[A-Za-z0-9_-]{1,80}$/
 
@@ -129,31 +131,64 @@ export function createRequestLog({ dataDir, maxEntries = DEFAULT_MAX, logger = c
 
   /** 流式统计正文文件：总行数 + 首行解析出的 at，不做整文件 JSON.parse。 */
   const scanDetail = () => {
+    // 流式扫描：64KB 分块读，逐行取 at 判 3 天窗口；行起始偏移记滚动窗口
+    // （最后 maxEntries 行）。全程 heap 恒定（单行峰值 ≤1MB，即弃），
+    // 绝不整文件读入——2026-11-21 修复 OOM：旧实现 readFileSync+全量 parse
+    // 在高频使用（2000 行 × 最大 1MB/行）时一次性把 GB 级拽进 heap。
     const handle = fs.openSync(detailFile, 'r')
     try {
+      const cutoff = now() - RETAIN_MS
       const buffer = Buffer.allocUnsafe(64 * 1024)
       let count = 0
-      let firstChunks = []
-      let firstComplete = false
+      let freshFromOffset = null   // 第一条 at >= cutoff 的行起始偏移
+      let windowOffsets = []       // 滚动窗口：最近 maxEntries 行的起始偏移
+      let lineStart = 0            // 当前行起始全局偏移
+      let carryStart = null        // 跨块半行的起始偏移
+      let carry = null
+      const finishLine = (rawLine, start) => {
+        count += 1
+        windowOffsets.push(start)
+        if (windowOffsets.length > maxEntries) windowOffsets.shift()
+        let at = null
+        try {
+          const row = JSON.parse(Buffer.concat([rawLine]).toString('utf8'))
+          if (Number.isFinite(row?.at)) at = Math.round(row.at)
+        } catch { /* 坏行按无时间处理：不进 3 天窗口 */ }
+        if (at !== null && at >= cutoff && freshFromOffset === null) freshFromOffset = start
+      }
       let read
       while ((read = fs.readSync(handle, buffer, 0, buffer.length, null)) > 0) {
         const view = buffer.subarray(0, read)
-        for (let offset = view.indexOf(10); offset >= 0; offset = view.indexOf(10, offset + 1)) count++
-        if (!firstComplete) {
-          const firstNewline = view.indexOf(10)
-          if (firstNewline >= 0) { firstChunks.push(view.subarray(0, firstNewline)); firstComplete = true }
-          else firstChunks.push(Buffer.from(view))
+        let searchFrom = 0
+        for (;;) {
+          const nl = view.indexOf(10, searchFrom)
+          if (nl === -1) {
+            const rest = view.subarray(searchFrom)
+            if (rest.length === 0) break   // 块末无剩余内容：不产生空 carry（否则 EOF 幽灵行会污染保留窗口）
+            if (carryStart === null) carryStart = lineStart
+            carry = carry === null ? Buffer.from(rest) : Buffer.concat([carry, rest])
+            break
+          }
+          const rawLine = carry === null
+            ? view.subarray(searchFrom, nl)
+            : Buffer.concat([carry, view.subarray(searchFrom, nl)])
+          const start = carryStart ?? lineStart
+          carry = null
+          carryStart = null
+          lineStart = start + rawLine.length + 1   // 下一行起点 = 本行末尾 + 换行
+          finishLine(rawLine, start)
+          searchFrom = nl + 1
         }
       }
-      const firstLine = firstChunks.length ? Buffer.concat(firstChunks).toString('utf8') : ''
-      let firstAt = null
-      if (firstLine.trim() !== '') {
-        try {
-          const row = JSON.parse(firstLine)
-          if (Number.isFinite(row?.at)) firstAt = Math.round(row.at)
-        } catch { /* 首行坏了按无时间处理，交给 compaction 重建 */ }
-      }
-      return { count, firstAt }
+      if (carry !== null && carry.length > 0) finishLine(carry, carryStart ?? lineStart) // 尾部无换行半行（空 carry 不算行）
+      const keepOffset = (() => {
+        // freshFrom = null：3 天窗口内没有任何行 → 全部丢弃（返回 null），
+        // 不能用行数窗口的 ws 兜底——窗口里的行同样过期（2026-11-21 修复）。
+        if (freshFromOffset === null) return null
+        const ws = windowOffsets.length ? windowOffsets[0] : null
+        return ws !== null ? Math.max(freshFromOffset, ws) : freshFromOffset
+      })()
+      return { count, keepOffset }
     } finally {
       fs.closeSync(handle)
     }
@@ -161,24 +196,41 @@ export function createRequestLog({ dataDir, maxEntries = DEFAULT_MAX, logger = c
 
   /** 全量重写正文文件：丢弃 3 天前与超上限的头部行（追加序 = 时间序）。 */
   const compactDetail = () => {
+    // 2026-11-21 OOM 修复：旧实现 readFileSync+逐行 JSON.parse+全量保留数组，
+    // 在高频使用（2000 行 × 单行最大 1MB）时一次性把 GB 级数据拽进 heap。
+    // 新实现：scanDetail 已流式算出保留起点偏移（3 天窗口 ∧ 最后 maxEntries 行），
+    // 这里只做**字节级流式复制**（readStream start=keepOffset → temp → rename），
+    // 全程 heap 恒定；无保留行 → 直接重开空文件。
     try {
       if (!fs.existsSync(detailFile)) { detailCount = 0; detailFirstAt = null; return }
-      const cutoff = now() - RETAIN_MS
-      const kept = []
-      for (const line of fs.readFileSync(detailFile, 'utf8').split('\n')) {
-        if (line.trim() === '') continue
-        try {
-          const row = JSON.parse(line)
-          if (row && typeof row === 'object' && Number.isFinite(row.at) && row.at >= cutoff) kept.push(row)
-        } catch { /* 坏行借机清除 */ }
-      }
-      const fresh = kept.slice(-maxEntries)
+      const { keepOffset } = scanDetail()
       fs.mkdirSync(dataDir, { recursive: true, mode: 0o700 })
+      if (keepOffset === null || keepOffset <= 0) {
+        fs.rmSync(detailFile, { force: true })
+        detailCount = 0
+        detailFirstAt = null
+        return
+      }
       const temp = `${detailFile}.${process.pid}.tmp`
-      fs.writeFileSync(temp, fresh.map(row => JSON.stringify(row)).join('\n') + (fresh.length ? '\n' : ''), { mode: 0o600 })
+      const source = fs.openSync(detailFile, 'r')
+      try {
+        const target = fs.openSync(temp, 'w', 0o600)
+        try {
+          const buffer = Buffer.allocUnsafe(256 * 1024)
+          let offset = keepOffset
+          let read
+          while ((read = fs.readSync(source, buffer, 0, buffer.length, offset)) > 0) {
+            fs.writeSync(target, buffer, 0, read)
+            offset += read
+          }
+        } finally { fs.closeSync(target) }
+      } finally { fs.closeSync(source) }
       fs.renameSync(temp, detailFile)
-      detailCount = fresh.length
-      detailFirstAt = fresh.length > 0 ? fresh[0].at : null
+      const stats = scanDetail()
+      detailCount = stats.count
+      detailFirstAt = stats.keepOffset !== null
+        ? (() => { const tail = Buffer.alloc(128); const n = fs.readSync(fs.openSync(detailFile, 'r'), tail, 0, 128, stats.keepOffset); const m = /"at":\s*(\d+)/.exec(tail.subarray(0, n).toString('utf8')); return m ? Number(m[1]) : null })()
+        : null
     } catch (error) {
       logger.warn?.(`请求正文日志整理失败：${error.message}`)
     }
@@ -189,11 +241,16 @@ export function createRequestLog({ dataDir, maxEntries = DEFAULT_MAX, logger = c
     detailLoaded = true
     try {
       if (!fs.existsSync(detailFile)) return
+      // 字节硬上限：超过即压缩（流式，恒定内存）；压缩由 compactDetail 决定保留起点。
+      const oversized = fs.statSync(detailFile).size > DETAIL_FILE_BYTES_MAX
       const stats = scanDetail()
       detailCount = stats.count
-      detailFirstAt = stats.firstAt
-      // 服务启动时的 3 天清理 + 行数上限兜底（用户 2026-11-20 需求）。
-      if (detailCount > maxEntries || (detailFirstAt !== null && detailFirstAt < now() - RETAIN_MS)) compactDetail()
+      // 3 天窗口与行数窗口之外还有内容 = 需要压缩（keepOffset > 0 即有丢弃）。
+      const needsCompact = oversized
+        || (stats.keepOffset !== null && stats.keepOffset > 0)
+        || (stats.keepOffset === null && detailCount > 0)
+      if (needsCompact) { compactDetail(); return }
+      detailCount = stats.count
     } catch (error) {
       logger.warn?.(`请求正文日志读取失败：${error.message}`)
     }
@@ -213,7 +270,8 @@ export function createRequestLog({ dataDir, maxEntries = DEFAULT_MAX, logger = c
       fs.appendFileSync(detailFile, `${line}\n`, { mode: 0o600 })
       detailCount += 1
       if (detailFirstAt === null) detailFirstAt = row.at
-      if (detailCount > maxEntries || detailFirstAt < now() - RETAIN_MS) compactDetail()
+      if (detailCount > maxEntries || detailFirstAt < now() - RETAIN_MS
+        || fs.statSync(detailFile).size > DETAIL_FILE_BYTES_MAX) compactDetail()
       return true
     } catch (error) {
       logger.warn?.(`请求正文日志写入失败：${error.message}`)

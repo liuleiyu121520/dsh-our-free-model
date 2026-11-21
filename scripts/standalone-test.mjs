@@ -140,7 +140,7 @@ try {
     const directory = path.join(scratch, 'replaced-lock')
     const isolated = await startStandalone({ dataDir: directory, port: 0, refresh: false, logger: { warn() {} } })
     const lockFile = path.join(directory, 'service.lock')
-    const replacement = JSON.stringify({ pid: process.pid, product: 'our-free-model-standalone', token: 'another-owner' })
+    const replacement = JSON.stringify({ pid: process.pid, product: 'o-free-model', token: 'another-owner' })
     fs.unlinkSync(lockFile)
     fs.writeFileSync(lockFile, replacement)
     await isolated.close()
@@ -161,7 +161,7 @@ try {
       const directory = path.join(scratch, 'permission-lock')
       const lockFile = path.join(directory, 'service.lock')
       fs.mkdirSync(directory)
-      const original = JSON.stringify({ pid: process.pid, product: 'our-free-model-standalone' })
+      const original = JSON.stringify({ pid: process.pid, product: 'o-free-model' })
       fs.writeFileSync(lockFile, original)
       const nativeKill = process.kill
       process.kill = () => { throw Object.assign(new Error('permission denied'), { code: 'EPERM' }) }

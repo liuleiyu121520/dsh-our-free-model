@@ -56,7 +56,7 @@ export function UpdateNotice({ update, wait, request, onWait, onWaitDone }: {
   }
   const copyCommand = async () => {
     try {
-      await navigator.clipboard.writeText(`npm i -g our-free-model-standalone@${info.latest}`)
+      await navigator.clipboard.writeText(`npm i -g o-free-model@${info.latest}`)
       setCopied(true)
       setTimeout(() => setCopied(false), 2500)
     } catch { /* 剪贴板不可用：命令文本仍可直接选中复制 */ }
@@ -88,7 +88,7 @@ export function UpdateNotice({ update, wait, request, onWait, onWaitDone }: {
     return <div className="update-notice" data-testid="update-notice" role="status">
       <ArrowUpCircle size={15} aria-hidden="true" />
       <span className="update-notice-text">发现新版本 {info.latest}（当前 {info.current}）。当前安装方式不支持一键更新，可手动执行：</span>
-      <code>npm i -g our-free-model-standalone@{info.latest}</code>
+      <code>npm i -g o-free-model@{info.latest}</code>
       <button type="button" className="ui-button ui-button-outline" onClick={() => void copyCommand()}>{copied ? <Check size={13} /> : <Copy size={13} />}{copied ? '已复制' : '复制'}</button>
       <button type="button" className="text-button" onClick={dismiss}>关闭</button>
     </div>

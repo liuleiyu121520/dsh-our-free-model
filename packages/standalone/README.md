@@ -8,7 +8,7 @@
 在一台**没有装 DSH**的机器上，只要满足 `engines` 要求的 Node.js，就可以直接跑：
 
 ```powershell
-npx our-free-model-standalone
+npx o-free-model
 ```
 
 这条命令会启动本机服务、打印一次性管理链接，并**尝试自动打开浏览器**。
@@ -52,7 +52,7 @@ npm run start:standalone -- --port 18900 --data-dir F:\ofm-data
 node scripts/pack-standalone-npm.mjs
 ```
 
-产物是 `dist/our-free-model-standalone-<版本>-dev-<源码摘要>.tgz`。
+产物是 `dist/o-free-model-<版本>-dev-<源码摘要>.tgz`。
 它是本地验证包：不 bump 版本、不签名、不发布，`package.json` 里也没有仓库地址或发布凭证。
 包内保留仓库的相对布局（`packages/standalone/` + `src/` + `vendor/`），
 所以 `bin` 直接指向 `packages/standalone/cli.mjs`，运行时不需要改任何路径。
@@ -60,8 +60,8 @@ node scripts/pack-standalone-npm.mjs
 装到干净目录验证：
 
 ```powershell
-npm install /绝对路径/our-free-model-standalone-*.tgz
-node_modules/.bin/our-free-model-standalone --no-open --no-refresh
+npm install /绝对路径/o-free-model-*.tgz
+node_modules/.bin/o-free-model --no-open --no-refresh
 ```
 
 要真正 `npx` 分发，需要把该 tarball 发布到 npm（或私有 registry），

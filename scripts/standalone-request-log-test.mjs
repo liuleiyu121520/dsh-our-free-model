@@ -178,9 +178,10 @@ try {
     assert.match(row.id ?? '', /^[0-9]+-[a-z0-9]{6,}$/, JSON.stringify(row))
     const detail = (await managementGet(`/api/management/requests/detail?id=${row.id}`, { authorization: `Bearer ${key}` })).value
     const input = JSON.parse(detail.input)
-    assert.equal(input[0].role, 'system')
-    assert.equal(input[0].content, '你是测试')
-    assert.equal(input[1].content, 'stream-hello')
+    assert.equal(input.model, model)
+    assert.equal(input.messages[0].role, 'system')
+    assert.equal(input.messages[0].content, '你是测试')
+    assert.equal(input.messages[1].content, 'stream-hello')
     assert.ok(String(detail.output).includes('core-ok'))
   })
 
@@ -206,8 +207,8 @@ try {
     const page = (await managementGet('/api/management/requests?limit=5', { authorization: `Bearer ${key}` })).value
     const detail = (await managementGet(`/api/management/requests/detail?id=${page.entries[0].id}`, { authorization: `Bearer ${key}` })).value
     const input = JSON.parse(detail.input)
-    assert.equal(input[0].role, 'system', 'system 提示应随 harness messages 记录')
-    assert.equal(input[0].content[0].text, 'anthropic-system')
+    assert.equal(input.messages[0].role, 'system', 'system 提示应随 harness messages 记录')
+    assert.equal(input.messages[0].content[0].text, 'anthropic-system')
     assert.ok(detail.output.includes('core-ok'))
   })
 

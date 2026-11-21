@@ -50,7 +50,7 @@ if (args[0] === 'view') {
 } else process.exit(0)
 `)
 fs.chmodSync(fakeNpm, 0o755)
-const globalStandaloneDir = path.join(scratch, 'fake-global', 'lib', 'node_modules', 'our-free-model-standalone', 'packages', 'standalone')
+const globalStandaloneDir = path.join(scratch, 'fake-global', 'lib', 'node_modules', 'o-free-model', 'packages', 'standalone')
 fs.mkdirSync(globalStandaloneDir, { recursive: true })
 const unitDataDir = path.join(scratch, 'unit-data')
 fs.mkdirSync(unitDataDir, { recursive: true })
@@ -73,14 +73,14 @@ await check('compareVersions：三段逐段、prerelease<release、非法输入�
   }
 })
 await check('detectInstallKind：npx/全局/本地/源码/Windows 安装来源矩阵', () => {
-  assert.equal(detectInstallKind({ platform: 'darwin', moduleDir: `${os.homedir()}/.nvm/versions/node/v22.20.0/lib/node_modules/our-free-model-standalone/packages/standalone` }), 'global')
-  assert.equal(detectInstallKind({ platform: 'darwin', moduleDir: '/usr/local/lib/node_modules/our-free-model-standalone/packages/standalone' }), 'global')
-  assert.equal(detectInstallKind({ platform: 'linux', moduleDir: '/home/x/.npm/_npx/abc123/node_modules/our-free-model-standalone/packages/standalone' }), 'npx')
-  assert.equal(detectInstallKind({ platform: 'darwin', moduleDir: '/Users/x/proj/node_modules/our-free-model-standalone/packages/standalone' }), 'local', '无 lib 段的项目本地安装必须禁用')
+  assert.equal(detectInstallKind({ platform: 'darwin', moduleDir: `${os.homedir()}/.nvm/versions/node/v22.20.0/lib/node_modules/o-free-model/packages/standalone` }), 'global')
+  assert.equal(detectInstallKind({ platform: 'darwin', moduleDir: '/usr/local/lib/node_modules/o-free-model/packages/standalone' }), 'global')
+  assert.equal(detectInstallKind({ platform: 'linux', moduleDir: '/home/x/.npm/_npx/abc123/node_modules/o-free-model/packages/standalone' }), 'npx')
+  assert.equal(detectInstallKind({ platform: 'darwin', moduleDir: '/Users/x/proj/node_modules/o-free-model/packages/standalone' }), 'local', '无 lib 段的项目本地安装必须禁用')
   assert.equal(detectInstallKind({ platform: 'darwin', moduleDir: '/Users/x/dsh-our-free-model/packages/standalone' }), 'source')
   assert.equal(detectInstallKind({ platform: 'darwin', moduleDir: '' }), 'source', '判定不可得 → 保守禁用')
-  assert.equal(detectInstallKind({ platform: 'win32', moduleDir: 'C:\\Users\\x\\lib\\node_modules\\our-free-model-standalone' }), 'unsupported', 'Windows 一律 unsupported（范围声明）')
-  assert.equal(detectInstallKind({ platform: 'win32', moduleDir: '/Users/x/.npm/_npx/a/node_modules/our-free-model-standalone' }), 'unsupported')
+  assert.equal(detectInstallKind({ platform: 'win32', moduleDir: 'C:\\Users\\x\\lib\\node_modules\\o-free-model' }), 'unsupported', 'Windows 一律 unsupported（范围声明）')
+  assert.equal(detectInstallKind({ platform: 'win32', moduleDir: '/Users/x/.npm/_npx/a/node_modules/o-free-model' }), 'unsupported')
 })
 await check('passthroughArgs：实际端口透传、data-dir/no-refresh 原样、lan 系与 probe 不透传', () => {
   assert.deepEqual(passthroughArgs(['node', 'cli.mjs', '--port', '0', '--data-dir', '/tmp/x', '--no-open'], 18999),
@@ -94,12 +94,12 @@ await check('forceReleaseLock：pid+product 校验通过才 unlink，异常归�
   const dir = path.join(scratch, 'lock-unit')
   fs.mkdirSync(dir, { recursive: true })
   const lockFile = path.join(dir, 'service.lock')
-  fs.writeFileSync(lockFile, JSON.stringify({ pid: process.pid, product: 'our-free-model-standalone', token: 't' }))
+  fs.writeFileSync(lockFile, JSON.stringify({ pid: process.pid, product: 'o-free-model', token: 't' }))
   const notes = []
   assert.equal(forceReleaseLock({ dataDir: dir, log: text => notes.push(text) }), true)
   assert.equal(fs.existsSync(lockFile), false, '归属校验通过的锁必须被删除')
   assert.equal(notes.length, 1)
-  fs.writeFileSync(lockFile, JSON.stringify({ pid: process.pid + 1, product: 'our-free-model-standalone', token: 't' }))
+  fs.writeFileSync(lockFile, JSON.stringify({ pid: process.pid + 1, product: 'o-free-model', token: 't' }))
   assert.equal(forceReleaseLock({ dataDir: dir, log: text => notes.push(text) }), false)
   assert.equal(fs.existsSync(lockFile), true, '他人锁不得自动删除')
   assert.match(notes[notes.length - 1], /手动删除/, '失败分支必须留删锁指引')
@@ -112,7 +112,7 @@ await check('forceReleaseLock：pid+product 校验通过才 unlink，异常归�
 await check('runRestartSequence：close 挂起兜底 exit(0) 且锁被强制释放（R9O-001）', async () => {
   const dir = path.join(scratch, 'restart-stuck')
   fs.mkdirSync(dir, { recursive: true })
-  fs.writeFileSync(path.join(dir, 'service.lock'), JSON.stringify({ pid: process.pid, product: 'our-free-model-standalone', token: 't' }))
+  fs.writeFileSync(path.join(dir, 'service.lock'), JSON.stringify({ pid: process.pid, product: 'o-free-model', token: 't' }))
   const exits = []
   const closeCalls = []
   await runRestartSequence({
@@ -130,7 +130,7 @@ await check('runRestartSequence：close 挂起兜底 exit(0) 且锁被强制释�
 await check('runRestartSequence：close reject 分支同样先强制释放锁再 exit(1)（R10O-001 闭环）', async () => {
   const dir = path.join(scratch, 'restart-reject')
   fs.mkdirSync(dir, { recursive: true })
-  fs.writeFileSync(path.join(dir, 'service.lock'), JSON.stringify({ pid: process.pid, product: 'our-free-model-standalone', token: 't' }))
+  fs.writeFileSync(path.join(dir, 'service.lock'), JSON.stringify({ pid: process.pid, product: 'o-free-model', token: 't' }))
   const exits = []
   await runRestartSequence({
     close: () => Promise.reject(new Error('组件关闭崩溃')),
@@ -250,7 +250,7 @@ await check('requestRun 拒绝路径：非全局 409（含手动命令）、无�
     firstDelayMs: 3_600_000, dataDir: unitDataDir, logger: { warn() {} }, performRestart: async () => {},
   })
   const sourceError = await reject409(Promise.resolve().then(() => source.requestRun()))
-  assert.match(sourceError.message, /npm i -g our-free-model-standalone/)
+  assert.match(sourceError.message, /npm i -g o-free-model/)
   source.stop()
   // 无更新（latest == current）→ 409
   process.env.FAKE_NPM_VERSION = '1.2.4'
@@ -419,7 +419,7 @@ for (let attempt = 0; ; attempt++) {
       return response.ok ? await response.json() : null
     }, { message: 'summary 未就绪' })
     assert.equal(summary.update.canSelfUpdate, true, '伪全局目录注入后必须判定为 global')
-    assert.equal(summary.update.current, '1.2.4')
+    assert.equal(summary.update.current, '1.3.0')
     await waitFor(async () => (await fetch(`http://127.0.0.1:${service.port}/api/management/summary`, { signal: AbortSignal.timeout(5000) })
       .then(response => response.json())).update?.latest === '1.9.9', { message: '首检后 latest 必须为 1.9.9' })
     const run = await fetch(`http://127.0.0.1:${service.port}/api/management/update/run`, {

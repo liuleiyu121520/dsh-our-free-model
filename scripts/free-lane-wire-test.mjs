@@ -179,7 +179,7 @@ console.log('\n=== 6. 目录请求与推理请求使用同一串 v2 UA ===')
 {
   // The host still passes an attribution UA (its API is unchanged); the v2
   // fingerprint means this lane cannot put it on the wire.
-  const attributionUserAgent = 'our-free-model-standalone/2.3.0'
+  const attributionUserAgent = 'o-free-model/2.3.0'
   await getJson('/inference/v1/models', { attributionUserAgent })
   check('目录请求使用 v2 指纹 UA', seen.at(-1).headers['user-agent'], up.CLIENT_UA)
   await postStreamed({
@@ -191,7 +191,7 @@ console.log('\n=== 6. 目录请求与推理请求使用同一串 v2 UA ===')
     timeoutMs: 5000,
   })
   check('推理请求使用同一串', seen.at(-1).headers['user-agent'], up.CLIENT_UA)
-  const unrelated = 'other-client/3.0 (+https://example.com/our-free-model-standalone)'
+  const unrelated = 'other-client/3.0 (+https://example.com/o-free-model)'
   await getJson('/inference/v1/models', { attributionUserAgent: unrelated })
   check('任何归属串都不再改变线上 UA', seen.at(-1).headers['user-agent'], up.CLIENT_UA)
 }

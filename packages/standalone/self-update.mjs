@@ -203,7 +203,10 @@ function runNpm(npmCommand, args, timeoutMs) {
     let child
     try {
       // spawn 继承 env：NPM_CONFIG_REGISTRY / 代理配置天然生效（R17）。
-      child = spawn(npmCommand, args, { timeout: timeoutMs })
+      // Windows：npm 是 npm.cmd，裸 spawn 必 ENOENT——shell:true 让 cmd 解析器处理
+      // （args 全为受控字面量，无注入面）。POSIX 保持 shell:false。
+      const useShell = process.platform === 'win32'
+      child = spawn(npmCommand, args, { timeout: timeoutMs, shell: useShell })
     } catch (error) {
       resolve({ ok: false, error: `无法启动 npm（${error?.message ?? error}）`, output: '' })
       return
@@ -293,6 +296,9 @@ export function createSelfUpdate({
   /** 30s 首检 + 60min 周期（对齐 auto-checkin 调度形态：setTimeout + unref + cancel）。 */
   function start() {
     if (timer !== null || stopped) return
+    // 非 global 安装（含 Windows）不启动检查定时器：自更新与 npm view 检查都
+    // 以 npm 全局为前提，unsupported/local 环境下定时器只会产出失败日志噪音。
+    if (installKind !== 'global') return
     timer = setTimeout(tick, firstDelayMs)
     timer.unref?.()
   }

@@ -219,7 +219,7 @@ assert.match(updateNoticeSource, /sessionStorage\.setItem\(DISMISS_KEY/)
 assert.match(updateNoticeSource, /dismissed === dismissVersion/, '关闭后同版本本会话不得再弹（含失败态按 target 记忆）')
 assert.match(updateNoticeSource, /进行中的调用会中断/, '二次确认必须明示重启中断（D36①）')
 assert.match(updateNoticeSource, /\/update\/run/)
-assert.match(updateNoticeSource, /npm i -g our-free-model-standalone@/, '非全局形态必须展示手动升级命令（AC-49）')
+assert.match(updateNoticeSource, /npm i -g o-free-model@/, '非全局形态必须展示手动升级命令（AC-49）')
 const manualBranch = updateNoticeSource.indexOf('if (!info.canSelfUpdate)')
 const autoButton = updateNoticeSource.indexOf('>立即更新</button>')
 assert.ok(manualBranch >= 0 && manualBranch < autoButton,
