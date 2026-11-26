@@ -315,6 +315,28 @@ export async function startStandalone({
         const loggedModel = () => routed?.model ? `${request.model}→${routed.model}` : request.model
         // 输入记原始入站形态：OpenAI 入口的 body.messages（Responses 入口的 body.input），
         // 或 Anthropic 入口已归一的 harness messages（system 已并入首行）。
+        // 图片块剔除（2026-11-21 用户裁定：图片不记录）：单张截图 base64 可达数 MB，
+        // 是正文文件暴涨的主加速器；落盘时把所有图片块整块剔除，其余内容原样保留。
+        const stripImages = value => {
+          if (Array.isArray(value)) {
+            return value
+              .filter(item => !(item && typeof item === 'object' && (
+                item.type === 'image_url' || item.type === 'image' || item.type === 'input_image' ||
+                (typeof item.image_url?.url === 'string' && item.image_url.url.startsWith('data:')) ||
+                (item.source && typeof item.source === 'object' && item.source.type === 'base64'))))
+              .map(item => stripImages(item))
+          }
+          if (value && typeof value === 'object') {
+            const out = {}
+            for (const [key, child] of Object.entries(value)) {
+              // openai 的 data: URL 与 anthropic 的纯 base64 数据串直接置空
+              if (typeof child === 'string' && (child.startsWith('data:image') || (key === 'data' && child.length > 4096 && /^[A-Za-z0-9+/=\r\n]+$/.test(child)))) continue
+              out[key] = stripImages(child)
+            }
+            return out
+          }
+          return value
+        }
         const detailInput = () => {
           const source = request.openAi?.messages ?? request.openAi?.input ?? request.messages
           if (source === undefined) return ''
@@ -326,7 +348,7 @@ export async function startStandalone({
             const value = body?.[key]
             if (value !== undefined) detail[key] = value
           }
-          try { return JSON.stringify({ ...detail, messages: source }) } catch { return String(source) }
+          try { return JSON.stringify({ ...detail, messages: stripImages(source) }) } catch { return String(source) }
         }
         // 输出：流式走 chunk 增量拼接（含思考前缀与工具调用占位）；非流式（调用方
         // 不订阅 chunk）回落完整 outcome.text。失败时追加失败标记。
